@@ -26,7 +26,9 @@ args = parser.parse_args()
 if args.location not in [ "LPC", "BRUX" ]: quit( "[ERR] Invalid -l (--location) argument used. Quitting..." )
 
 print( "[INFO] Evaluating cross section weights." )
-weightXSec = {}
+# Might not needed.
+# CHECK
+#weightXSec = {}
 if args.doMinorMC:
   files = config.samples_input[ args.year ][ "MINOR MC" ] 
 elif args.doMajorMC: 
@@ -37,40 +39,21 @@ elif args.doData:
   files = config.samples_input[ args.year ][ "DATA" ]
 else:
   quit( "[ERR] No valid option used, choose from doMajorMC, doMinorMC, doClosureMC, doData" )
-for f in files:
-  if args.doMinorMC or args.doMajorMC or args.doClosureMC:
-    nMC = 0
-    if "TTToSemiLeptonic" in f and "HT0Njet0_ttjj" in f:
-      rF_ = ROOT.TFile.Open( os.path.join( config.sourceDir[ "BRUX" ], config.sampleDir[ args.year ], "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_HT0Njet0_tt1b_hadd.root" ).replace( "step3", "step1hadds" ) )
-      rT_ = rF_.Get( "NumTrueHist" ).Clone( "NumTrueHist" )
-      nMC = rT_.Integral()
-    elif "TTTT" in f and args.year == "2018":
-      for i in range(1,4):
-        rF_ = ROOT.TFile.Open( os.path.join( config.sourceDir[ "BRUX" ], config.sampleDir[ args.year ], "TTTT_TuneCP5_13TeV-amcatnlo-pythia8_{}_hadd.root".format(i) ).replace( "step3", "step1hadds" ) )
-        rT_ = rF_.Get( "NumTrueHist" ).Clone( "NumTrueHist" )
-        nMC += rT_.Integral()
-    else:
-      rF_ = ROOT.TFile.Open( os.path.join( config.sourceDir[ "BRUX" ], config.sampleDir[ args.year ], f ).replace( "step3", "step1hadds" ) )
-      rT_ = rF_.Get( "NumTrueHist" ).Clone( "NumTrueHist" )
-      nMC = rT_.Integral()
-    weightXSec[f] = xsec.lumi[ args.year ] * xsec.xsec[f] / nMC
-    print( ">> {}: {:.1f} x {:.5f} = {:.1f}".format( f.split("_TuneCP5_")[0], nMC, weightXSec[f], xsec.lumi[ args.year ] * xsec.xsec[f] ) )
-    rF_.Close()
-  else:
-    weightXSec[f] = 1.
+#for f in files:
+#  if args.doMinorMC or args.doMajorMC or args.doClosureMC:
+#    weightXSec[f] = xsec.lumi[ args.year ] * xsec.xsec[f] / xsec.nRun[f] # assuming genweight = 1. #FIXME
+#    print( ">> {}: {:.1f} x {:.5f} = {:.1f}".format( f.split("_")[0], nRun[f], weightXSec[f], xsec.lumi[ args.year ] * xsec.xsec[f] ) )
+#    rF_.Close()
+#  else:
+#    weightXSec[f] = 1.
 
   
 ROOT.gInterpreter.Declare("""
-    float compute_weight( float scale, float triggerXSF, float triggerSF, float pileupWeight, float lepIdSF, float EGammaGsfSF, float isoSF, float L1NonPrefiringProb_CommonCalc, float MCWeight_MultiLepCalc, float xsecEff, float btagDeepJetWeight, float btagDeepJet2DWeight_HTnj ){
-      return scale * triggerXSF * triggerSF * pileupWeight * lepIdSF * EGammaGsfSF * isoSF * L1NonPrefiringProb_CommonCalc * ( MCWeight_MultiLepCalc / abs( MCWeight_MultiLepCalc ) ) * xsecEff * btagDeepJetWeight * btagDeepJet2DWeight_HTnj;
-  }
-""")
+float compute_weight( float genWeight, float lumi, float xsec, float nRun){ 
+return genWeight * lumi * xsec / (nRun * abs(genWeight));
+}
+""") # CHECK: should I include scale?
 
-ROOT.gInterpreter.Declare("""
-    float compute_weight_ttbar( float scale, float topPtWeight13TeV, float triggerXSF, float triggerSF, float pileupWeight, float lepIdSF, float EGammaGsfSF, float isoSF, float L1NonPrefiringProb_CommonCalc, float MCWeight_MultiLepCalc, float xsecEff, float btagDeepJetWeight, float btagDeepJet2DWeight_HTnj ){
-      return scale * topPtWeight13TeV * triggerXSF * triggerSF * pileupWeight * lepIdSF * EGammaGsfSF * isoSF * L1NonPrefiringProb_CommonCalc * ( MCWeight_MultiLepCalc / abs( MCWeight_MultiLepCalc ) ) * xsecEff * btagDeepJetWeight * btagDeepJet2DWeight_HTnj;
-  }
-""")
 
 class ToyTree:
   def __init__( self, name, trans_var ):
@@ -79,11 +62,11 @@ class ToyTree:
     self.rFile = ROOT.TFile.Open( "{}.root".format( name ), "RECREATE" )
     self.rTree = ROOT.TTree( "Events", name )
     self.variables = { # variables that are used regardless of the transformation variables
-      "xsecWeight": { "ARRAY": array( "f", [0] ), "STRING": "xsecWeight/F" }
+      "xsecWeight": { "ARRAY": array( "f", [0] ), "STRING": "xsecWeight/F" } # might not needed. #FIXME
     }
     for variable in config.variables.keys():
       if not config.variables[ variable ][ "TRANSFORM" ]:
-        self.variables[ variable ] = { "ARRAY": array( "i", [0] ), "STRING": str(variable) + "/I" }
+        self.variables[ variable ] = { "ARRAY": array( "i", [0] ), "STRING": str(variable) + "/I" } # MODIFY DATATYPE
     
     for variable in trans_var:
       self.variables[ variable ] = { "ARRAY": array( "f", [0] ), "STRING": "{}/F".format( variable ) }
@@ -91,9 +74,9 @@ class ToyTree:
     self.selection = config.selection 
     
     for variable in self.variables:
-      self.rTree.Branch( str( variable ), self.variables[ variable ][ "ARRAY" ], self.variables[ variable ][ "STRING" ] )
+      self.rTree.Branch( str( variable ), self.variables[ variable ][ "ARRAY" ], self.variables[ variable ][ "STRING" ] ) # create a tree with only useful branches
     
-  def Fill( self, event_data ):
+  def Fill( self, event_data ): # fill all tree branches for each event
     for variable in self.variables:
       self.variables[ variable ][ "ARRAY" ][0] = event_data[ variable ]
     self.rTree.Fill()
@@ -103,7 +86,7 @@ class ToyTree:
       self.rFile.Write()
       self.rFile.Close()
       
-def format_ntuple( inputs, output, trans_var, weight = None ):
+def format_ntuple( inputs, output, trans_var, weight = None ): # COMMENT: what is this weight for? # MODIFY
   sampleDir = config.sampleDir[ args.year ]
   if ( args.JECup or args.JECdown ) and "data" in output:
     print( "[WARNING] Ignoring JECup and/or JECdown arguments for data" )
@@ -125,10 +108,10 @@ def format_ntuple( inputs, output, trans_var, weight = None ):
       rPath = os.path.join( config.sourceDir[ "LPC" ], sampleDir, f )
     elif args.location == "BRUX":
       rPath = os.path.join( config.sourceDir[ "BRUX" ].replace( "/isilon/hadoop", "" ), sampleDir, f )
-    rDF = ROOT.RDataFrame( "ljmet", rPath )
-    sample_total = rDF.Count().GetValue()
+    rDF = ROOT.RDataFrame( "Events", rPath ) # read rdf for processing
+    sample_total = rDF.Count().GetValue() # COMMENT: What is this line for?
     filter_string = "" 
-    scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset
+    scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset # COMMENT: What is isTraining? # what is scale used for?
     for variable in ntuple.selection: 
       for i in range( len( ntuple.selection[ variable ][ "CONDITION" ] ) ):
         if filter_string == "": 
@@ -136,30 +119,20 @@ def format_ntuple( inputs, output, trans_var, weight = None ):
         else:
           filter_string += "&& ( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
     if args.year == "2018" and args.doData:
-      filter_string += " && ( leptonEta_MultiLepCalc > -1.3 || ( leptonPhi_MultiLepCalc < -1.57 || leptonPhi_MultiLepCalc > -0.87 ) )"
+      filter_string += " && ( leptonEta_MultiLepCalc > -1.3 || ( leptonPhi_MultiLepCalc < -1.57 || leptonPhi_MultiLepCalc > -0.87 ) )" # MODIFY
     rDF_filter = rDF.Filter( filter_string )
-    if f.startswith( "TTTo" ):
-      rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight_ttbar( {}, topPtWeight13TeV, triggerXSF, triggerSF, pileupWeight, lepIdSF, EGammaGsfSF, isoSF, L1NonPrefiringProb_CommonCalc, MCWeight_MultiLepCalc, {}, btagDeepJetWeight, btagDeepJet2DWeight_HTnj )".format(
-        scale, weight[f]
+    rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( genWeight, {}, {}, {} )".format(
+        xsec.lumi[f], xsec.xsec[f], xsec.nRun[f] # CHECK
       ) )
-    else:
-      rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, triggerXSF, triggerSF, pileupWeight, lepIdSF, EGammaGsfSF, isoSF, L1NonPrefiringProb_CommonCalc, MCWeight_MultiLepCalc, {}, btagDeepJetWeight, btagDeepJet2DWeight_HTnj )".format(
-        scale, weight[f]
-      ) )
-    sample_pass = rDF_filter.Count().GetValue()
-    dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) )
+    sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
+    dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) ) # useful rdf branches to numpy
     del rDF, rDF_filter, rDF_weight
-    n_inc = int( sample_pass * float( args.pEvents ) / 100. )
+    n_inc = int( sample_pass * float( args.pEvents ) / 100. ) # get a specified portion of the passed events
  
     for n in tqdm.tqdm( range( n_inc ) ):
       event_data = {}
       for variable in dict_filter:
-        if str( variable ) != "xsecWeight":
-          event_data[ variable ] = dict_filter[ variable ][n] 
-      
-      event_data[ "xsecWeight" ] = 1
-      if weight is not None:
-        event_data[ "xsecWeight" ] = dict_filter[ "xsecWeight" ][n]
+        event_data[ variable ] = dict_filter[ variable ][n] 
 
       ntuple.Fill( event_data )
 

@@ -50,7 +50,7 @@ variables = {
 }
 
 selection = { # edit these accordingly
-  "Bdecay_obs":{ "VALUE": [ 1 ], "CONDITION": [ "" ] },
+  "Bdecay_obs":{ "VALUE": [ 1 ], "CONDITION": [ "==" ] },
 }
 
 regions = {
