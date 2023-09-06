@@ -175,6 +175,7 @@ samples_input = {
       "WJetsHT4002018UL_hadd.root",
       "WJetsHT6002018UL_hadd.root",
       "WJetsHT8002018UL_hadd.root",
+      "WJetsHT12002018UL_hadd.root",
       "WJetsHT25002018UL_hadd.root",
     ],
     "MINOR MC": [],
