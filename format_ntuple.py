@@ -47,12 +47,12 @@ else:
 #  else:
 #    weightXSec[f] = 1.
 
-  
 ROOT.gInterpreter.Declare("""
-float compute_weight( float genWeight, float lumi, float xsec, float nRun){ 
-return genWeight * lumi * xsec / (nRun * abs(genWeight));
-}
-""") # CHECK: should I include scale?
+    float compute_weight( float genWeight, float lumi, float xsec, float nRun ){
+    return genWeight * lumi * xsec / (nRun * abs(genWeight));
+    }
+    """)
+# CHECK: should I include scale?
 
 
 class ToyTree:
@@ -121,7 +121,7 @@ def format_ntuple( inputs, output, trans_var):
     if args.year == "2018" and args.doData:
       filter_string += " && ( leptonEta_MultiLepCalc > -1.3 || ( leptonPhi_MultiLepCalc < -1.57 || leptonPhi_MultiLepCalc > -0.87 ) )" # MODIFY
     rDF_filter = rDF.Filter( filter_string )
-    rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( genWeight, {}, {}, {} )".format(xsec.lumi[f], xsec.xsec[f], xsec.nRun[f]) ) # CHECK
+    rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( genWeight, {}, {}, {} )".format(xsec.lumi[args.year], xsec.xsec[f], xsec.nRun[f]) ) # CHECK
     sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
     dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) ) # useful rdf branches to numpy
     del rDF, rDF_filter, rDF_weight
