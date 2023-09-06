@@ -62,7 +62,7 @@ class ToyTree:
     self.rFile = ROOT.TFile.Open( "{}.root".format( name ), "RECREATE" )
     self.rTree = ROOT.TTree( "Events", name )
     self.variables = { # variables that are used regardless of the transformation variables
-      "xsecWeight": { "ARRAY": array( "f", [0] ), "STRING": "xsecWeight/F" } # might not needed. #FIXME
+      "xsecWeight": { "ARRAY": array( "f", [0] ), "STRING": "xsecWeight/F" } # might not needed. # CHECK
     }
     for variable in config.variables.keys():
       if not config.variables[ variable ][ "TRANSFORM" ]:
@@ -86,7 +86,7 @@ class ToyTree:
       self.rFile.Write()
       self.rFile.Close()
       
-def format_ntuple( inputs, output, trans_var, weight = None ): # COMMENT: what is this weight for? # MODIFY
+def format_ntuple( inputs, output, trans_var):
   sampleDir = config.sampleDir[ args.year ]
   if ( args.JECup or args.JECdown ) and "data" in output:
     print( "[WARNING] Ignoring JECup and/or JECdown arguments for data" )
@@ -109,7 +109,7 @@ def format_ntuple( inputs, output, trans_var, weight = None ): # COMMENT: what i
     elif args.location == "BRUX":
       rPath = os.path.join( config.sourceDir[ "BRUX" ].replace( "/isilon/hadoop", "" ), sampleDir, f )
     rDF = ROOT.RDataFrame( "Events", rPath ) # read rdf for processing
-    sample_total = rDF.Count().GetValue() # COMMENT: What is this line for?
+    sample_total = rDF.Count().GetValue() # COMMENT: What is this line for? Only for the printout?
     filter_string = "" 
     scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset # COMMENT: What is isTraining? # what is scale used for?
     for variable in ntuple.selection: 
@@ -121,9 +121,7 @@ def format_ntuple( inputs, output, trans_var, weight = None ): # COMMENT: what i
     if args.year == "2018" and args.doData:
       filter_string += " && ( leptonEta_MultiLepCalc > -1.3 || ( leptonPhi_MultiLepCalc < -1.57 || leptonPhi_MultiLepCalc > -0.87 ) )" # MODIFY
     rDF_filter = rDF.Filter( filter_string )
-    rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( genWeight, {}, {}, {} )".format(
-        xsec.lumi[f], xsec.xsec[f], xsec.nRun[f] # CHECK
-      ) )
+    rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( genWeight, {}, {}, {} )".format(xsec.lumi[f], xsec.xsec[f], xsec.nRun[f]) ) # CHECK
     sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
     dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) ) # useful rdf branches to numpy
     del rDF, rDF_filter, rDF_weight
@@ -140,10 +138,10 @@ def format_ntuple( inputs, output, trans_var, weight = None ): # COMMENT: what i
   ntuple.Write()
   
 if args.doMajorMC:
-  format_ntuple( inputs = config.samples_input[ args.year ][ "MAJOR MC" ], output = args.name + "_" + args.year + "_mc_p" + args.pEvents, weight = weightXSec, trans_var = args.variables )
+  format_ntuple( inputs = config.samples_input[ args.year ][ "MAJOR MC" ], output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables )
 elif args.doMinorMC:
-  format_ntuple( inputs = config.samples_input[ args.year ][ "MINOR MC" ], output = args.name + "_" + args.year + "_mc_p" + args.pEvents, weight = weightXSec, trans_var = args.variables )
+  format_ntuple( inputs = config.samples_input[ args.year ][ "MINOR MC" ], output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables )
 elif args.doClosureMC:
-  format_ntuple( inputs = config.samples_input[ args.year ][ "CLOSURE" ], output = args.name + "_" + args.year + "_mc_p" + args.pEvents, weight = weightXSec, trans_var = args.variables )
+  format_ntuple( inputs = config.samples_input[ args.year ][ "CLOSURE" ], output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables )
 if args.doData:
-  format_ntuple( inputs = config.samples_input[ args.year ][ "DATA" ], output = args.name + "_" + args.year + "_data_p" + args.pEvents, weight = weightXSec, trans_var = args.variables )
+  format_ntuple( inputs = config.samples_input[ args.year ][ "DATA" ], output = args.name + "_" + args.year + "_data_p" + args.pEvents, trans_var = args.variables )
