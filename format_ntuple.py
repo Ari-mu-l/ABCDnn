@@ -10,11 +10,11 @@ import tqdm
 import xsec
 
 parser = ArgumentParser()
-parser.add_argument( "-y",  "--year", default = "2017", help = "Year for sample" )
+parser.add_argument( "-y",  "--year", default = "2018UL", help = "Year for sample" )
 parser.add_argument( "-n", "--name", required = True, help = "Output name of ROOT file" )
-parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "AK4HT", "DNN_1to40_3t" ], help = "Variables to transform" )
+parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "Bprime_mass" ], help = "Variables to transform" )
 parser.add_argument( "-p",  "--pEvents", default = 100, help = "Percent of events (0 to 100) to include from each file." )
-parser.add_argument( "-l",  "--location", default = "BRUX", help = "Location of input ROOT files: LPC,BRUX" )
+parser.add_argument( "-l",  "--location", default = "LPC", help = "Location of input ROOT files: LPC,BRUX" )
 parser.add_argument( "--doMajorMC", action = "store_true", help = "Major MC background to be weighted using ABCDnn" )
 parser.add_argument( "--doMinorMC", action = "store_true", help = "Minor MC background to be weighted using traditional SF" )
 parser.add_argument( "--doClosureMC", action = "store_true", help = "Closure MC background weighted using traditional SF" )
