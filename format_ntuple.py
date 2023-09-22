@@ -12,7 +12,7 @@ import xsec
 parser = ArgumentParser()
 parser.add_argument( "-y",  "--year", default = "2018UL", help = "Year for sample" )
 parser.add_argument( "-n", "--name", required = True, help = "Output name of ROOT file" )
-parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "Bprime_mass" ], help = "Variables to transform" )
+parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "Bprime_ST" ], help = "Variables to transform" )
 parser.add_argument( "-p",  "--pEvents", default = 100, help = "Percent of events (0 to 100) to include from each file." )
 parser.add_argument( "-l",  "--location", default = "LPC", help = "Location of input ROOT files: LPC,BRUX" )
 parser.add_argument( "--doMajorMC", action = "store_true", help = "Major MC background to be weighted using ABCDnn" )
@@ -25,35 +25,47 @@ args = parser.parse_args()
 
 if args.location not in [ "LPC", "BRUX" ]: quit( "[ERR] Invalid -l (--location) argument used. Quitting..." )
 
-print( "[INFO] Evaluating cross section weights." )
-# Might not needed.
-# CHECK
+# FIXME
+# might need to move backwards
+#print( "[INFO] Evaluating cross section weights." )
 #weightXSec = {}
-if args.doMinorMC:
-  files = config.samples_input[ args.year ][ "MINOR MC" ] 
-elif args.doMajorMC: 
-  files = config.samples_input[ args.year ][ "MAJOR MC" ]
-elif args.doClosureMC:
-  files = config.samples_input[ args.year ][ "CLOSURE" ] 
-elif args.doData:
-  files = config.samples_input[ args.year ][ "DATA" ]
-else:
-  quit( "[ERR] No valid option used, choose from doMajorMC, doMinorMC, doClosureMC, doData" )
+#if args.doMinorMC:
+#  files = config.samples_input[ args.year ][ "MINOR MC" ] 
+#elif args.doMajorMC: 
+#  files = config.samples_input[ args.year ][ "MAJOR MC" ]
+#elif args.doClosureMC:
+#  files = config.samples_input[ args.year ][ "CLOSURE" ] 
+#elif args.doData:
+#  files = config.samples_input[ args.year ][ "DATA" ]
+#else:
+#  quit( "[ERR] No valid option used, choose from doMajorMC, doMinorMC, doClosureMC, doData" )
 #for f in files:
 #  if args.doMinorMC or args.doMajorMC or args.doClosureMC:
-#    weightXSec[f] = xsec.lumi[ args.year ] * xsec.xsec[f] / xsec.nRun[f] # assuming genweight = 1. #FIXME
+#    weightXSec[f] = xsec.lumi[ args.year ] * xsec.xsec[f] / xsec.nRun[f] # FIXME # Check what nRun corresponds to
 #    print( ">> {}: {:.1f} x {:.5f} = {:.1f}".format( f.split("_")[0], nRun[f], weightXSec[f], xsec.lumi[ args.year ] * xsec.xsec[f] ) )
 #    rF_.Close()
 #  else:
 #    weightXSec[f] = 1.
 
+
+#ROOT.gInterpreter.Declare("""
+#float compute_weight_minor( float scale, float elRecoSF, float leptonIDSF, float leptonHLTSF, float xsecEff) {
+#return scale * elRecoSF * leptonIDSF * leptonHLTSF * xsecEff;
+#}
+#""") 
+
 ROOT.gInterpreter.Declare("""
     float compute_weight( float genWeight, float lumi, float xsec, float nRun ){
     return genWeight * lumi * xsec / (nRun * abs(genWeight));
     }
-    """)
-# CHECK: should I include scale?
+    """) #FIXME add SFs later
 
+#ROOT.gInterpreter.Declare("""  
+#    float compute_weight( float scale, float lumi, float xsec, float nRun, float genWeight, float elRecoSF, float leptonIDSF, float leptonHLTSF ) {
+#    return scale * elRecoSF * leptonIDSF * leptonHLTSF * genWeight * lumi * xsec / (nRun * abs(genWeight));
+#}
+#""") 
+#FIXME add more SFs
 
 class ToyTree:
   def __init__( self, name, trans_var ):
@@ -109,19 +121,20 @@ def format_ntuple( inputs, output, trans_var):
     elif args.location == "BRUX":
       rPath = os.path.join( config.sourceDir[ "BRUX" ].replace( "/isilon/hadoop", "" ), sampleDir, f )
     rDF = ROOT.RDataFrame( "Events", rPath ) # read rdf for processing
-    sample_total = rDF.Count().GetValue() # COMMENT: What is this line for? Only for the printout?
+    sample_total = rDF.Count().GetValue()
     filter_string = "" 
     scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset # COMMENT: What is isTraining? # what is scale used for?
     for variable in ntuple.selection: 
-      for i in range( len( ntuple.selection[ variable ][ "CONDITION" ] ) ):
+      for i in range( len( ntuple.selection[ variable ]["CONDITION"] ) ):
         if filter_string == "": 
           filter_string += "( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
         else:
-          filter_string += "&& ( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
-    if args.year == "2018" and args.doData:
-      filter_string += " && ( leptonEta_MultiLepCalc > -1.3 || ( leptonPhi_MultiLepCalc < -1.57 || leptonPhi_MultiLepCalc > -0.87 ) )" # MODIFY
+          filter_string += "|| ( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
+    print("filter_string: {}".format(filter_string))
+    #if args.year == "2018" and args.doData:
+    #  filter_string += " && ( leptonEta_MultiLepCalc > -1.3 || ( leptonPhi_MultiLepCalc < -1.57 || leptonPhi_MultiLepCalc > -0.87 ) )" 
     rDF_filter = rDF.Filter( filter_string )
-    rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( genWeight, {}, {}, {} )".format(xsec.lumi[args.year], xsec.xsec[f], xsec.nRun[f]) ) # CHECK
+    rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], xsec.xsec[f], xsec.nRun[f]) ) # CHECK
     sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
     dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) ) # useful rdf branches to numpy
     del rDF, rDF_filter, rDF_weight

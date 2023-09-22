@@ -3,22 +3,23 @@ import numpy as np
 
 data_path = os.path.join( os.getcwd() )
 results_path = os.path.join( os.getcwd(), "Results" )
-eosUserName = "xshen"
-postfix = "hadd"
+eosUserName = "jmanagan/"
+#postfix = "hadd"
 
 condorDir = "root://cmseos.fnal.gov//store/user/{}/".format( eosUserName ) 
 
 sourceDir = {
-  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Aug2023_2018/".format( eosUserName ),
+  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Sep2023_2018/".format( eosUserName ),
   "BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
 targetDir = {
-  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Aug2023_2018/".format( eosUserName ),
+  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Sep2023_2018/".format( eosUserName ),
   "BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
 sampleDir = {
+"2018UL":""
 #  year: "FWLJMET106XUL_singleLep{}UL_RunIISummer20_{}_step3/nominal/".format( year, postfix ) for year in [ "2016APV", "2016", "2017", "2018" ]
 }
 
@@ -26,44 +27,44 @@ variables = {
   "Bprime_mass": {
     "CATEGORICAL": False,
     "TRANSFORM": True,
-    "LIMIT": [0.,2500.],
+    "LIMIT": [0., 5000.], # what is this limit? should it include max and min? or does it specify the interesting range?
     "LATEX": "M_{reco}"
   },
-  "Bprime_mass": {
+  "gcJet_ST": {
     "CATEGORICAL": False,
     "TRANSFORM": True,
-    "LIMIT": [0.,2500.],
-    "LATEX": "M_reco"
+    "LIMIT": [0.,6000.], 
+    "LATEX": "ST_{gcJets}"
   },
   "NJets_forward": {
     "CATEGORICAL": True,
     "TRANSFORM": False,
-    "LIMIT": [0,1],
+    "LIMIT": [0,8],
     "LATEX": "N_{forward}"
   },
   "NJets_DeepFlavL": {
     "CATEGORICAL": True,
     "TRANSFORM": False,
-    "LIMIT": [1,7],
+    "LIMIT": [0,8],
     "LATEX": "N_b"
   },
 }
 
 selection = { # edit these accordingly
-  "Bdecay_obs":{ "VALUE": [ 1 ], "CONDITION": [ "==" ] },
+  "Bdecay_obs":{ "VALUE": [ 1, 4 ], "CONDITION": [ "==", "==" ] },
 }
 
 regions = {
   "X": {
     "VARIABLE": "NJets_DeepFlavL",
-    "INCLUSIVE": False,
-    "MIN": 1,
-    "MAX": 7,
-    "SIGNAL": 1
+    "INCLUSIVE": True,
+    "MIN": 0,
+    "MAX": None,
+    "SIGNAL": 0
   },
   "Y": {
     "VARIABLE": "NJets_forward",
-    "INCLUSIVE": False,
+    "INCLUSIVE": True,
     "MIN": 0,
     "MAX": 1,
     "SIGNAL": 1
@@ -142,7 +143,7 @@ hyper = {
 branches = [
   "NJets_forward", "NJets_DeepFlavL",
   "Bdecay_obs",
-  "Bprime_mass",
+  "Bprime_mass", "gcJet_ST"
   #"leptonPt_MultiLepCalc",
   #"isElectron", "isMuon", "isTraining",
   #"MT_lepMet",
@@ -161,24 +162,104 @@ for vName in variables:
 
 samples_input = {
   "2018UL": {
-    "DATA": [],
+    "DATA": [
+      "RDF_SingleMuon_finalsel_0.root",
+      "RDF_SingleMuon_finalsel_110.root",
+      "RDF_SingleMuon_finalsel_12.root",
+      "RDF_SingleMuon_finalsel_13.root",
+      "RDF_SingleMuon_finalsel_132.root",
+      "RDF_SingleMuon_finalsel_154.root",
+      "RDF_SingleMuon_finalsel_176.root",
+      "RDF_SingleMuon_finalsel_22.root",
+      "RDF_SingleMuon_finalsel_23.root",
+      "RDF_SingleMuon_finalsel_26.root",
+      "RDF_SingleMuon_finalsel_28.root",
+      "RDF_SingleMuon_finalsel_38.root",
+      "RDF_SingleMuon_finalsel_44.root",
+      "RDF_SingleMuon_finalsel_46.root",
+      "RDF_SingleMuon_finalsel_48.root",
+      "RDF_SingleMuon_finalsel_50.root",
+      "RDF_SingleMuon_finalsel_51.root",
+      "RDF_SingleMuon_finalsel_54.root",
+      "RDF_SingleMuon_finalsel_59.root",
+      "RDF_SingleMuon_finalsel_66.root",
+      "RDF_SingleMuon_finalsel_69.root",
+      "RDF_SingleMuon_finalsel_76.root",
+      "RDF_SingleMuon_finalsel_88.root",
+      "RDF_EGamma_finalsel_0.root",
+      "RDF_EGamma_finalsel_128.root",
+      "RDF_EGamma_finalsel_160.root",
+      "RDF_EGamma_finalsel_192.root",
+      "RDF_EGamma_finalsel_224.root",
+      "RDF_EGamma_finalsel_25.root",
+      "RDF_EGamma_finalsel_32.root",
+      "RDF_EGamma_finalsel_50.root",
+      "RDF_EGamma_finalsel_55.root",
+      "RDF_EGamma_finalsel_58.root",
+      "RDF_EGamma_finalsel_62.root",
+      "RDF_EGamma_finalsel_64.root",
+      "RDF_EGamma_finalsel_96.root",
+    ], # FIXME later
+
     "MAJOR MC": [
-      "Bprime_M1400_20UL18_hadd.root",
-      "QCDHT3002018UL_hadd.root",
-      "QCDHT5002018UL_hadd.root",
-      "QCDHT7002018UL_hadd.root",
-      "QCDHT10002018UL_hadd.root",
-      "QCDHT15002018UL_hadd.root",
-      "QCDHT20002018UL_hadd.root",
-      "TTToSemiLeptonic2018UL_hadd.root",
-      "WJetsHT2002018UL_hadd.root",
-      "WJetsHT4002018UL_hadd.root",
-      "WJetsHT6002018UL_hadd.root",
-      "WJetsHT8002018UL_hadd.root",
-      "WJetsHT12002018UL_hadd.root",
-      "WJetsHT25002018UL_hadd.root",
+      "RDF_BprimeBtoTW_M-1400_NWALO_TuneCP5_13TeV-madgraph-pythia8_finalsel_0.root",
+      "RDF_QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+      "RDF_QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+      "RDF_QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_7.root",
+      "RDF_QCD_HT2000toInf_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+      "RDF_QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+      "RDF_QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_23.root",
+      "RDF_QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+      "RDF_QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_77.root",
+      "RDF_QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+      "RDF_QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_24.root",
+      "RDF_QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+      "RDF_QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_34.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_0.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_114.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_133.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_142.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_143.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_144.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_146.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_152.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_171.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_19.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_190.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_209.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_228.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_247.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_266.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_285.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_304.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_323.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_342.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_361.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_365.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_370.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_38.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_380.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_57.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_76.root",
+      "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_95.root",
+      "RDF_WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+      "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+      "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_12.root",
+      "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_14.root",
+      "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_18.root",
+      "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_21.root",
+      "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_25.root",
+      "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_5.root",
+      "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_51.root",
+      "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_76.root",
+      "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_8.root",
+      "RDF_WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+      "RDF_WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+      "RDF_WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+      "RDF_WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+      "RDF_WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_5.root",
     ],
-    "MINOR MC": [],
+    "MINOR MC": [], # no need to add minor MC for now, because using ttbar MC as data
     "CLOSURE": []
   },
   # add other years here
@@ -186,18 +267,61 @@ samples_input = {
 
 samples_apply = {
   "2018UL": [
-    "Bprime_M1400_20UL18_hadd.root",
-      "QCDHT3002018UL_hadd.root",
-      "QCDHT5002018UL_hadd.root",
-      "QCDHT7002018UL_hadd.root",
-      "QCDHT10002018UL_hadd.root",
-      "QCDHT15002018UL_hadd.root",
-      "QCDHT20002018UL_hadd.root",
-      "TTToSemiLeptonic2018UL_hadd.root",
-      "WJetsHT2002018UL_hadd.root",
-      "WJetsHT4002018UL_hadd.root",
-      "WJetsHT6002018UL_hadd.root",
-      "WJetsHT8002018UL_hadd.root",
-      "WJetsHT25002018UL_hadd.root",
+    "RDF_BprimeBtoTW_M-1400_NWALO_TuneCP5_13TeV-madgraph-pythia8_finalsel_0.root",
+    "RDF_QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+    "RDF_QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+    "RDF_QCD_HT1500to2000_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_7.root",
+    "RDF_QCD_HT2000toInf_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+    "RDF_QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+    "RDF_QCD_HT200to300_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_23.root",
+    "RDF_QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+    "RDF_QCD_HT300to500_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_77.root",
+    "RDF_QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+    "RDF_QCD_HT500to700_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_24.root",
+    "RDF_QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_0.root",
+    "RDF_QCD_HT700to1000_TuneCP5_PSWeights_13TeV-madgraph-pythia8_finalsel_34.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_0.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_114.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_133.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_142.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_143.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_144.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_146.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_152.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_171.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_19.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_190.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_209.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_228.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_247.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_266.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_285.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_304.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_323.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_342.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_361.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_365.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_370.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_38.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_380.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_57.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_76.root",
+    "RDF_TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_finalsel_95.root",
+    "RDF_WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+    "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+    "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_12.root",
+    "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_14.root",
+    "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_18.root",
+    "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_21.root",
+    "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_25.root",
+    "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_5.root",
+    "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_51.root",
+    "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_76.root",
+    "RDF_WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_8.root",
+    "RDF_WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+    "RDF_WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+    "RDF_WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+    "RDF_WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_0.root",
+    "RDF_WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8_finalsel_5.root",
   ],
 }
