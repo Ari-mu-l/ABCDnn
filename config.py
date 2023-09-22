@@ -170,8 +170,8 @@ samples_input = {
       Bprime_M1400_2018UL,
       QCDHT10002018UL,
       QCDHT15002018UL,
-      #QCDHT20002018UL, # has no events
-      QCDHT2002018UL,
+      QCDHT20002018UL,
+      #QCDHT2002018UL, # has no events 
       QCDHT3002018UL,
       QCDHT5002018UL,
       QCDHT7002018UL,
