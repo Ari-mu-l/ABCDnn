@@ -8,11 +8,13 @@ from argparse import ArgumentParser
 import config
 import tqdm
 import xsec
+from utils import *
+from samples import *
 
 parser = ArgumentParser()
 parser.add_argument( "-y",  "--year", default = "2018UL", help = "Year for sample" )
 parser.add_argument( "-n", "--name", required = True, help = "Output name of ROOT file" )
-parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "Bprime_ST" ], help = "Variables to transform" )
+parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcJet_ST" ], help = "Variables to transform" )
 parser.add_argument( "-p",  "--pEvents", default = 100, help = "Percent of events (0 to 100) to include from each file." )
 parser.add_argument( "-l",  "--location", default = "LPC", help = "Location of input ROOT files: LPC,BRUX" )
 parser.add_argument( "--doMajorMC", action = "store_true", help = "Major MC background to be weighted using ABCDnn" )
@@ -114,13 +116,12 @@ def format_ntuple( inputs, output, trans_var):
     sys.exit( "[WARNING] Cannot run with both JECup and JECdown options. Select only one or none. Quitting..." )
   
   ntuple = ToyTree( output, trans_var )
-  for f in inputs:
-    print( ">> Processing {}".format( f ) )
-    if args.location == "LPC":
-      rPath = os.path.join( config.sourceDir[ "LPC" ], sampleDir, f )
-    elif args.location == "BRUX":
-      rPath = os.path.join( config.sourceDir[ "BRUX" ].replace( "/isilon/hadoop", "" ), sampleDir, f )
-    rDF = ROOT.RDataFrame( "Events", rPath ) # read rdf for processing
+
+  for sample in inputs:
+    samplename = sample.samplename.split('/')[1]
+    print( ">> Processing {}".format( samplename ) )
+    fChain = readTreeNominal(samplename,config.sourceDir["LPC"],"Events") # read rdf for processing
+    rDF = ROOT.RDataFrame(fChain)
     sample_total = rDF.Count().GetValue()
     filter_string = "" 
     scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset # COMMENT: What is isTraining? # what is scale used for?
@@ -130,11 +131,10 @@ def format_ntuple( inputs, output, trans_var):
           filter_string += "( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
         else:
           filter_string += "|| ( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
-    print("filter_string: {}".format(filter_string))
     #if args.year == "2018" and args.doData:
     #  filter_string += " && ( leptonEta_MultiLepCalc > -1.3 || ( leptonPhi_MultiLepCalc < -1.57 || leptonPhi_MultiLepCalc > -0.87 ) )" 
     rDF_filter = rDF.Filter( filter_string )
-    rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], xsec.xsec[f], xsec.nRun[f]) ) # CHECK
+    rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], sample.xsec, sample.nrun) )
     sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
     dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) ) # useful rdf branches to numpy
     del rDF, rDF_filter, rDF_weight
