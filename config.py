@@ -59,15 +59,15 @@ regions = {
   "X": {
     "VARIABLE": "NJets_DeepFlavL",
     "INCLUSIVE": True,
-    "MIN": 0,
+    "MIN": None,
     "MAX": None,
     "SIGNAL": 0
   },
   "Y": {
     "VARIABLE": "NJets_forward",
     "INCLUSIVE": True,
-    "MIN": 0,
-    "MAX": 1,
+    "MIN": None,
+    "MAX": None,
     "SIGNAL": 1
   }
 }
