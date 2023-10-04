@@ -61,14 +61,24 @@ regions = {
     "INCLUSIVE": True,
     "MIN": None,
     "MAX": None,
-    "SIGNAL": 0
+    "A": ["==",3],
+    "B": ["<=",2],
+    "C": ["==",3],
+    "D": ["<=",2],
+    "X": [">=",4],
+    "Y": [">=",4],
   },
   "Y": {
     "VARIABLE": "NJets_forward",
     "INCLUSIVE": True,
     "MIN": None,
     "MAX": None,
-    "SIGNAL": 1
+    "A":["==", 0],
+    "B":["==", 0],
+    "C":[">=", 1],
+    "D":[">=", 1],
+    "X":["==", 0],
+    "Y":[">=", 1],
   }
 }
 
