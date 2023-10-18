@@ -140,8 +140,21 @@ class OneHotEncoder_int( object ):
 
     lowerlimitapp = np.maximum( categoricalinputdata, self.lowerlimit )
     limitapp = np.minimum( lowerlimitapp, self.upperlimit )
-    
+
+    #print("given lowerlimit: {}".format(self.lowerlimit))
+    #print("given upperlimit: {}".format(self.upperlimit))
     #print("limitapp shape: {}".format(np.shape(limitapp)))
+    #print("limitapp first element: {}".format(limitapp[0]))
+    #print("categoricalinputdata max ele: {}".format(np.max(categoricalinputdata, axis=0)))
+    #print("categoricalinputdata min ele: {}".format(np.min(categoricalinputdata, axis=0)))
+    #print("limitapp max ele: {}".format(np.max(limitapp, axis=0)))
+    #print("limitapp min ele: {}".format(np.min(limitapp, axis=0)))
+    #regionC = (categoricalinputdata[:,2]>=1) & (categoricalinputdata[:,3]==3)
+    #print(categoricalinputdata[:,2]>=1)
+    #print(categoricalinputdata[:,3]==3)
+    #print(regionC)
+    #print("categoricalinputdata NJets_forward>=1 and NJets_DeepFlavorL==3: {}".format(categoricalinputdata[regionC]))
+    #print("limitapp NJets_forward>=1: {}".format(limitapp[regionC]))
     #exit()
     
     return limitapp
@@ -149,6 +162,14 @@ class OneHotEncoder_int( object ):
   def encode( self, inputdata ):
   # encoding done in prepdata()
     cat_limited = self.applylimit( inputdata ) - self.lowerlimit
+
+    #print("cat_limted shape: {}".format(cat_limited.shape))
+    #print("applylimit: {}".format(self.applylimit( inputdata )))
+    #print("made into cat_limited: {}".format(cat_limited))
+    #print("cat_limited max and min: {}, {}".format(np.max(cat_limited, axis=0), np.min(cat_limited, axis=0)))
+    #print("cat_limited NJets_forward: {}".format(cat_limited[:,2]))
+    #exit()
+
     # one hot encoding information
     if not self.categories_fixed:
       for icol, iscat in zip( range( self.ncolumns ), self.iscategorical ):
@@ -158,17 +179,26 @@ class OneHotEncoder_int( object ):
         else:
           self.categories_per_feature.append( 0 )
       self.categories_fixed = True
-    #print("categories_per_feature: {}".format(self.categories_per_feature)) # [0,0,9,9]
+ 
+    #print("categories_per_feature: {}".format(self.categories_per_feature)) # [0,0,2,3]
+    #print(self.ncolumns)
     #exit()
-
+    
     # the encoding part
     arraylist = []
+    ndebug = 0
     for icol, ncat_feat in zip( range( self.ncolumns ), self.categories_per_feature ):
       if ncat_feat > 0:
         res = np.eye( ncat_feat )[ cat_limited[ :,icol ].astype(int) ]
         arraylist.append( res )
+        #print("cat_limited[ :,icol ].astype(int): {}".format(cat_limited[ :,icol ].astype(int)))
+        #print("res: {}".format(res))
+        #ndebug+=1
+        #if(ndebug==3):
+          #exit()
       else:
         arraylist.append( inputdata[:,icol].reshape( ( inputdata.shape[0], 1 ) ) )
+    #exit()
     #print("arraylist length: {}".format(len(arraylist)))
     #print("arraylist 0th element: {}".format(arraylist[0]))
     #print("arraylist 0th element length: {}".format(len(arraylist[0])))
@@ -182,8 +212,9 @@ class OneHotEncoder_int( object ):
     #exit()
 
     encoded = np.concatenate( tuple( arraylist ), axis = 1 ).astype( np.float32 )
+    
     #print("encoded data shape: {}".format(np.shape(encoded)))
-    #print("encoded data first element: {}".format(encoded[0]))
+    #print("encoded data first three elements: {}".format(encoded[:3]))
     #print("encoded data first element shape: {}".format(np.shape(encoded[0])))
     #exit()
 
@@ -268,7 +299,12 @@ def prepdata( rSource, rMinor, rTarget, variables, regions, closure ):
   categorical = [ variables[ vName ][ "CATEGORICAL" ] for vName in vNames ]
   upperlimit  = [ variables[ vName ][ "LIMIT" ][1] for vName in vNames ]
   lowerlimit  = [ variables[ vName ][ "LIMIT" ][0] for vName in vNames ]
-  
+
+  #print("vNames: {}".format(vNames))
+  #print("categorical: {}".format(categorical))
+  #print("upperlimit: {}, lowerlimit: {}".format(upperlimit, lowerlimit))
+  #exit()
+
   _onehotencoder = OneHotEncoder_int( categorical, lowerlimit = lowerlimit, upperlimit = upperlimit )
 
   # read MC and data
@@ -300,16 +336,22 @@ def prepdata( rSource, rMinor, rTarget, variables, regions, closure ):
 
   inputRawMajor = dfMajor
   inputEncMajor = _onehotencoder.encode( inputRawMajor.to_numpy( dtype=np.float32 ) )
-  
+
   inputRawMinor = dfMinor # not used in training
 
   inputRawTarget = dfTarget
   inputEncTarget = _onehotencoder.encode( inputRawTarget.to_numpy( dtype=np.float32 ) )
 
+  #print("inputRawTarget: {}".format(inputRawTarget[:3]))
+  #print("inputEncTarget: {}".format(inputEncTarget[:3]))
+  #exit()
+
   ncats = _onehotencoder.ncatgroups
   ncat_per_feature = _onehotencoder.categories_per_feature
-  #print("ncats: {}".format(ncats))
-  #print("ncat_per_feature: {}".format(ncat_per_feature))
+
+  #print("ncats: {}".format(ncats)) #2
+  #print("ncat_per_feature: {}".format(ncat_per_feature)) #[0,0,2,3]
+  #exit()
   
   meanslist = []
   sigmalist = []
@@ -434,6 +476,7 @@ class ABCDnn(object):
   def category_sorted(self, numpydata, verbose ):
     categoricals, categorical_cats, unique_counts = np.unique( numpydata[:, self.inputdimreal:], axis=0, return_inverse = True, return_counts = True)
     print( categoricals )
+
     if verbose: 
       print( "Data has {} unique categorical features. The counts in categories are".format( categoricals ) )
       print( unique_counts )
@@ -444,17 +487,16 @@ class ABCDnn(object):
       cat_indices = np.where( categorical_cats == icat )[0]
       categorical_indices_grouped.append( cat_indices )
     
+    #print("categorical_indices_grouped shape: {}".format(np.shape(categorical_indices_grouped)))
+    #print("categorical_indices_grouped second element length: {}".format(len(categorical_indices_grouped[1])))
+    #exit()
+
     return categoricals, categorical_indices_grouped
 
   def setrealdata( self, numpydata, verbose ):
     self.numpydata = numpydata
     self.ntotalevents = numpydata.shape[0]
     self.datacounter = 0
-
-    print("numpydata: {}".format(numpydata))
-    print("ntotalevents: {}".format(ntotalevents))
-    exit()
-
     self.randorder = np.random.permutation( self.numpydata.shape[0] )
     # following is dummy
     self.dataeventweight = np.ones((self.ntotalevents, 1), np.float32)
@@ -468,7 +510,16 @@ class ABCDnn(object):
     self.mcdatacounter = 0
     self.mcrandorder = np.random.permutation( self.mcnumpydata.shape[0] )
     self.mceventweight = np.ones( ( self.mcntotalevents, 1 ) , np.float32 )
+
+    #print("mcnumpydata: {}".format(self.mcnumpydata))
+    #print("mcnumpydata shape: {}".format(np.shape(self.mcnumpydata)))
+    #print("mcntotalevents: {}".format(self.mcntotalevents))
+    #print("mceventweight: {}".format(self.mceventweight))
+    #print("mceventweight shape: {}".format(np.shape(self.mceventweight)))
+    #exit()
+
     self.categoricals_mc, self.categorical_mc_indices_grouped = self.category_sorted( self.mcnumpydata, verbose )
+    
     pass
 
   def savehyperparameters(self, inputs, means, sigmas, transfer ):
@@ -534,7 +585,14 @@ class ABCDnn(object):
     Args:
         conditional ([numpy]): [single conditional]
     """
+
+    #print("conditional: {}".format(conditional))
+    #print("categoricals_data shape: {}".format(self.categoricals_data.shape)) # length of 5 for 5 regions(cases)
+    #print("categoricals_data first element: {}".format(self.categoricals_data[1]))
+    #exit()
+
     idx_cond = ( ( self.categoricals_data == conditional ).all( axis = 1 ).nonzero()[0])[0]
+
     # Data
     data_for_cond = self.categorical_data_indices_grouped[idx_cond]
     nextdatabatchidx = np.random.permutation(data_for_cond)[0:size]
@@ -546,6 +604,13 @@ class ABCDnn(object):
     mcnextbatchidx = np.random.permutation(mc_for_cond)[0:size]
     source_b = self.mcnumpydata[mcnextbatchidx]
     weight_b = self.mceventweight[mcnextbatchidx]
+
+    #print("source_b shape: {}".format(np.shape(source_b)))
+    #print("source_b first 3: {}".format(source_b[:3]))
+    #print("weight_b shape: {}".format(np.shape(weight_b)))
+    #print("weight_b first 3: {}".format(weight_b[:3]))
+    #exit()
+
     return target_b, source_b, weight_b
   
   def get_next_batch( self, size=None ):
@@ -554,6 +619,9 @@ class ABCDnn(object):
     if size is None:
       size = int( self.minibatch )
 
+    #print("size: {}".format(size))
+    #exit()
+
     # reset counter if no more entries left for current batch
     if self.datacounter + size >= self.ntotalevents:
       self.datacounter = self.datacounter + size - self.ntotalevents
@@ -561,14 +629,15 @@ class ABCDnn(object):
 
     batchbegin = self.datacounter
     rChoice = np.random.choice( [ "X", "Y", "A", "C", "B" ], 1 )
-    if rChoice == "X": nextconditional = np.array( [ 1, 0, 1, 0, 0 ] )
-    if rChoice == "Y": nextconditional = np.array( [ 0, 1, 1, 0, 0 ] )
-    if rChoice == "A": nextconditional = np.array( [ 1, 0, 0, 1, 0 ] )
-    if rChoice == "C": nextconditional = np.array( [ 0, 1, 0, 1, 0 ] )
-    if rChoice == "B": nextconditional = np.array( [ 1, 0, 0, 0, 1 ] )
+    if rChoice == "X": nextconditional = np.array( [ 1, 0, 0, 0, 1 ] ) # NOT GENERAL
+    if rChoice == "Y": nextconditional = np.array( [ 0, 1, 0, 0, 1 ] ) # NOT GENERAL
+    if rChoice == "A": nextconditional = np.array( [ 1, 0, 0, 1, 0 ] ) # NOT GENERAL
+    if rChoice == "C": nextconditional = np.array( [ 0, 1, 0, 1, 0 ] ) # NOT GENERAL
+    if rChoice == "B": nextconditional = np.array( [ 1, 0, 1, 0, 0 ] ) # NOT GENERAL
     #nextconditional = self.numpydata[ self.randorder[batchbegin], self.inputdim: ]
+
     target_b, source_b, weight_b = self.find_condmatch( size, nextconditional )
-    
+
     while len( target_b ) != len( source_b ):
       self.datacounter += size
       if self.datacounter >= self.ntotalevents:
@@ -595,13 +664,19 @@ class ABCDnn(object):
       self.randorder = np.random.permutation( self.numpydata.shape[0] )
     
     batchbegin = self.datacounter
-    if region == "X": nextconditional = np.array( [ 1, 0, 1, 0, 0 ] )
-    if region == "Y": nextconditional = np.array( [ 0, 1, 1, 0, 0 ] )
-    if region == "A": nextconditional = np.array( [ 1, 0, 0, 1, 0 ] )
-    if region == "C": nextconditional = np.array( [ 0, 1, 0, 1, 0 ] )
-    if region == "B": nextconditional = np.array( [ 1, 0, 0, 0, 1 ] )
+    if region == "X": nextconditional = np.array( [ 1, 0, 0, 0, 1 ] ) # NOT GENERAL
+    if region == "Y": nextconditional = np.array( [ 0, 1, 0, 0, 1 ] ) # NOT GENERAL
+    if region == "A": nextconditional = np.array( [ 1, 0, 0, 1, 0 ] ) # NOT GENERAL
+    if region == "C": nextconditional = np.array( [ 0, 1, 0, 1, 0 ] ) # NOT GENERAL
+    if region == "B": nextconditional = np.array( [ 1, 0, 1, 0, 0 ] ) # NOT GENERAL
     target_b, source_b, weight_b = self.find_condmatch( size, nextconditional )
     
+    #print("region: {}".format(region))
+    #print("target_b first 3: {}".format(target_b[:3]))
+    #print("source_b first 3: {}".format(source_b[:3]))
+    #print("weight_b first 3: {}".format(weight_b[:3]))
+    #exit()
+
     while len( target_b ) != len( source_b ):
       self.datacounter += size
       if self.datacounter >= self.ntotalevents:
@@ -693,7 +768,12 @@ class ABCDnn(object):
         else:
           impatience += 1
       if i % monitor == 0:
-        cArr = target[:,-self.conddim:][0]
+        cArr = target[:,-self.conddim:][0] # get the region where the batch is from
+
+        print("cArr shape: {}".format(np.shape(cArr)))
+        print("cArr: {}".format(cArr))
+        exit()
+
         if cArr[0] == 1 and cArr[2] == 1: category_ = "X"
         if cArr[1] == 1 and cArr[2] == 1: category_ = "Y"
         if cArr[0] == 1 and cArr[3] == 1: category_ = "A"
@@ -746,9 +826,7 @@ class ABCDnn_training(object):
     #print("sourceSF: {}".format(self.sourceSF))
     #exit()
 
-    rawinputs, rawinputsmc, rawinputsminor, normedinputs, normedinputsmc, inputMean, \
-      inputSigma, inputnames, ncat_per_feature = prepdata( rSource, rMinor, rTarget,
-      variables, regions, closure )
+    rawinputs, rawinputsmc, rawinputsminor, normedinputs, normedinputsmc, inputMean, inputSigma, inputnames, ncat_per_feature = prepdata( rSource, rMinor, rTarget, variables, regions, closure )
 
     #print("Shapes of rawinputs, rawinputsmc, rawinputsminor, normedinputs, normedinputsmc: ".format(rawinputs.shape, rawinputsmc.shape, rawinputsminor.shape, normedinputs.shape, normedinputsmc.shape))
     #print("inputMean: {}".format(inputMean))
@@ -762,33 +840,39 @@ class ABCDnn_training(object):
     self.normedinputs = normedinputs          # normalized data tree after event selection
     self.normedinputsmc = normedinputsmc      # normalized mc tree after event selection
     self.inputs = inputnames                  # name of inputs
-    self.inputMean = inputMean              # mean of unnormalized data
+    self.inputMean = inputMean                # mean of unnormalized data
     self.inputSigma = inputSigma              # rms of unnormalized data
 
     self.inputdim = len( list( variables.keys() ) ) - 2 # the total number of transformed variables
     self.ncat_per_feature = ncat_per_feature[0:self.inputdim] # number of categories per categorical feature # FIXME. still think its wrong
     self.conddim = self.normedinputs.shape[1] - self.inputdim # ?
 
-    print("inputdim: {}".format(self.inputdim))
-    print("ncat_per_feature: {}".format(self.ncat_per_feature))
-    print("conddim: {}".format(self.conddim))
-    exit()
+    #print("inputdim: {}".format(self.inputdim))
+    #print("ncat_per_feature: {}".format(self.ncat_per_feature))
+    #print("conddim: {}".format(self.conddim))
+    #exit()
 
     # Data and MC in control region
-
     self.CV_x = self.regions["X"]["VARIABLE"] # First control variable name
     self.CV_y = self.regions["Y"]["VARIABLE"] # Second control variable name
 
     # apply region selection per event
-    if regions[ "X" ][ "INCLUSIVE" ]:
-      self.sig_select = ( self.rawinputs[ self.CV_x ] >= regions[ "X" ][ "SIGNAL" ] )
+    if regions[ "X" ][ "CONDITION" ]==">=":
+      self.sig_select = ( self.rawinputs[ self.CV_x ] >= regions[ "X" ][ "SIGNAL" ] ) # df of one column: True/False
       self.sig_select_mc = ( self.rawinputsmc[ self.CV_x ] >= regions[ "X" ][ "SIGNAL" ] )
+    elif regions[ "X" ][ "CONDITION" ]=="<=":
+      self.sig_select = ( self.rawinputs[ self.CV_x ] <= regions[ "X" ][ "SIGNAL" ] )
+      self.sig_select_mc = ( self.rawinputsmc[ self.CV_x ] <= regions[ "X" ][ "SIGNAL" ] )
     else:
       self.sig_select = ( self.rawinputs[ self.CV_x ] == regions[ "X" ][ "SIGNAL" ] )
       self.sig_select_mc = ( self.rawinputsmc[ self.CV_x ] == regions[ "X" ][ "SIGNAL" ] )
-    if regions[ "Y" ][ "INCLUSIVE" ]:
+
+    if regions[ "Y" ][ "CONDITION" ]==">=":
       self.sig_select &= ( self.rawinputs[ self.CV_y ] >= regions[ "Y" ][ "SIGNAL" ] )
       self.sig_select_mc &= ( self.rawinputsmc[ self.CV_y ] >= regions[ "Y" ][ "SIGNAL" ] )
+    elif regions[ "Y" ][ "CONDITION" ]=="<=":
+      self.sig_select &= ( self.rawinputs[ self.CV_y ] <= regions[ "Y" ][ "SIGNAL" ] )
+      self.sig_select_mc &= ( self.rawinputsmc[ self.CV_y ] <= regions[ "Y" ][ "SIGNAL" ] )
     else:
       self.sig_select &= ( self.rawinputs[ self.CV_y ] == regions[ "Y" ][ "SIGNAL" ] )
       self.sig_select_mc &= ( self.rawinputsmc[ self.CV_y ] == regions[ "Y" ][ "SIGNAL" ] )
@@ -867,6 +951,7 @@ class ABCDnn_training(object):
 
     self.model.setrealdata( self.normedinputs_bkg, verbose = verbose )
     self.model.setmcdata( self.normedinputsmc_bkg, verbose = verbose )
+
 
   def train( self, steps = 10000, monitor = 1000, patience = 100, early_stopping = True, display_loss = False, monitor_threshold = 0, hpo = False, periodic_save = False ):
     self.model.train( steps = steps, monitor = monitor, patience = patience, early_stopping = early_stopping, monitor_threshold = monitor_threshold, hpo = hpo, periodic_save = periodic_save )

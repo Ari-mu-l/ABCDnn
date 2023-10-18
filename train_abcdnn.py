@@ -2,7 +2,7 @@
 import numpy as np
 import os
 import tensorflow as tf
-import tensorflow.keras as keras
+from tensorflow import keras
 from json import loads as load_json
 from json import dumps as write_json
 from argparse import ArgumentParser

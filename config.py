@@ -28,7 +28,7 @@ variables = {
   "Bprime_mass": {
     "CATEGORICAL": False,
     "TRANSFORM": True,
-    "LIMIT": [0., 5000.], # what is this limit? should it include max and min? or does it specify the interesting range?
+    "LIMIT": [0., 5000.], # may be set to None?
     "LATEX": "M_{reco}"
   },
   "gcJet_ST": {
@@ -40,13 +40,13 @@ variables = {
   "NJets_forward": {
     "CATEGORICAL": True,
     "TRANSFORM": False,
-    "LIMIT": [0,8],
+    "LIMIT": [0,1],
     "LATEX": "N_{forward}"
   },
   "NJets_DeepFlavL": {
     "CATEGORICAL": True,
     "TRANSFORM": False,
-    "LIMIT": [0,8],
+    "LIMIT": [2,4],
     "LATEX": "N_b"
   },
 }
@@ -58,27 +58,31 @@ selection = { # edit these accordingly
 regions = {
   "X": {
     "VARIABLE": "NJets_DeepFlavL",
-    "INCLUSIVE": True,
+    #"INCLUSIVE": True,
     "MIN": None,
     "MAX": None,
-    "A": ["==",3],
-    "B": ["<=",2],
-    "C": ["==",3],
-    "D": ["<=",2],
-    "X": [">=",4],
-    "Y": [">=",4],
+    "SIGNAL": 2,
+    "CONDITION": "<=",
+    #"A": ["==",3],
+    #"B": ["<=",2],
+    #"C": ["==",3],
+    #"D": ["<=",2],
+    #"X": [">=",4],
+    #"Y": [">=",4],
   },
   "Y": {
     "VARIABLE": "NJets_forward",
-    "INCLUSIVE": True,
+    #"INCLUSIVE": True,
     "MIN": None,
     "MAX": None,
-    "A":["==", 0],
-    "B":["==", 0],
-    "C":[">=", 1],
-    "D":[">=", 1],
-    "X":["==", 0],
-    "Y":[">=", 1],
+    "SIGNAL": 1,
+    "CONDITION": ">=",
+    #"A":["==", 0],
+    #"B":["==", 0],
+    #"C":[">=", 1],
+    #"D":[">=", 1],
+    #"X":["==", 0],
+    #"Y":[">=", 1],
   }
 }
 
@@ -155,16 +159,6 @@ branches = [
   "NJets_forward", "NJets_DeepFlavL",
   "Bdecay_obs",
   "Bprime_mass", "gcJet_ST"
-  #"leptonPt_MultiLepCalc",
-  #"isElectron", "isMuon", "isTraining",
-  #"MT_lepMet",
-  #"NresolvedTops1pFake", "NJetsCSV_JetSubCalc", "NJets_JetSubCalc",
-  #"NJetsTtagged", "NJetsWtagged",
-  #"corr_met_MultiLepCalc",
-  #"MT_lepMet",
-  #"minDR_lepJet",
-  #"AK4HT",
-  #"DataPastTriggerX", "MCPastTriggerX"
 ]
 
 for vName in variables:
@@ -177,7 +171,7 @@ samples_input = {
     ], # FIXME later
 
     "MAJOR MC": [
-      Bprime_M1400_2018UL,
+      #Bprime_M1400_2018UL,
       QCDHT10002018UL,
       QCDHT15002018UL,
       QCDHT20002018UL,

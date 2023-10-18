@@ -131,6 +131,7 @@ def format_ntuple( inputs, output, trans_var):
           filter_string += "( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
         else:
           filter_string += "|| ( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
+    #print("filter_string: {}".format(filter_string))
     #if args.year == "2018" and args.doData:
     #  filter_string += " && ( leptonEta_MultiLepCalc > -1.3 || ( leptonPhi_MultiLepCalc < -1.57 || leptonPhi_MultiLepCalc > -0.87 ) )" 
     rDF_filter = rDF.Filter( filter_string )
