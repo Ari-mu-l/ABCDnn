@@ -770,15 +770,19 @@ class ABCDnn(object):
       if i % monitor == 0:
         cArr = target[:,-self.conddim:][0] # get the region where the batch is from
 
-        print("cArr shape: {}".format(np.shape(cArr)))
-        print("cArr: {}".format(cArr))
-        exit()
+        #print("cArr shape: {}".format(np.shape(cArr)))
+        #print("cArr: {}".format(cArr))
+        #exit()
 
-        if cArr[0] == 1 and cArr[2] == 1: category_ = "X"
-        if cArr[1] == 1 and cArr[2] == 1: category_ = "Y"
-        if cArr[0] == 1 and cArr[3] == 1: category_ = "A"
-        if cArr[1] == 1 and cArr[3] == 1: category_ = "C"
-        if cArr[0] == 1 and cArr[4] == 1: category_ = "B"
+        if cArr[0] == 1 and cArr[4] == 1: category_ = "X" # NOT GENERAL
+        if cArr[1] == 1 and cArr[4] == 1: category_ = "Y" # NOT GENERAL
+        if cArr[0] == 1 and cArr[3] == 1: category_ = "A" # NOT GENERAL
+        if cArr[1] == 1 and cArr[3] == 1: category_ = "C" # NOT GENERAL
+        if cArr[0] == 1 and cArr[2] == 1: category_ = "B" # NOT GENERAL
+
+        #print("category_: {}".format(category_))
+        #exit()
+
         print( "{:<5}   {:<9.2e}   {:<9.2e}   {:<9.2e}   {:<16.2e}   {:<6}     {:<10.2e}".format( 
           self.checkpoint.global_step.numpy(),
           mmdloss.numpy(),
@@ -806,6 +810,7 @@ class ABCDnn(object):
     os.system( "cp -v ./Results/{}.data-00000-of-00001 ./Results/{}_EPOCH{}.data-00000-of-00001".format( self.model_tag, self.model_tag, self.minepoch ) )
     os.system( "cp -v ./Results/{}.index ./Results/{}_EPOCH{}.index".format( self.model_tag, self.model_tag, self.minepoch ) )
     self.save_training_monitor()
+
 
 class ABCDnn_training(object):
   def __init__( self ):
@@ -986,59 +991,76 @@ class ABCDnn_training(object):
     self.plottext = []
     self.region = [ "X", "Y", "A", "C", "B", "D" ]
 
-    i = 0
-    for x in np.linspace( self.regions[ "X" ][ "MIN" ], self.regions[ "X" ][ "MAX" ], self.regions[ "X" ][ "MAX" ] - self.regions[ "X" ][ "MIN" ] + 1 ):
-      for y in np.linspace( self.regions[ "Y" ][ "MIN" ], self.regions[ "Y" ][ "MAX" ], self.regions[ "Y" ][ "MAX" ] - self.regions[ "Y" ][ "MIN" ] + 1 ):
-        if hpo and self.region[i] != "D": 
-          if verbose: print( "[OPT] Running in HPO mode, skipping evaluation of Region {}".format( self.region[i] ) )
-          i += 1
-          continue
-        if x == self.regions[ "X" ][ "SIGNAL" ] and self.regions[ "X" ][ "INCLUSIVE" ]:
-          self.select[ "DATA" ][ self.region[i] ] = ( self.rawinputs[ self.regions[ "X" ][ "VARIABLE" ] ] >= x )
-          self.select[ "MC" ][ self.region[i] ] = ( self.rawinputsmc[ self.regions[ "X" ][ "VARIABLE" ] ] >= x )
-          self.select[ "MINOR" ][ self.region[i] ] = ( self.rawinputsminor[ self.regions[ "X" ][ "VARIABLE" ] ] >= x )
-        else: 
-          self.select[ "DATA" ][ self.region[i] ] = ( self.rawinputs[ self.regions[ "X" ][ "VARIABLE" ] ] == x )
-          self.select[ "MC" ][ self.region[i] ] = ( self.rawinputsmc[ self.regions[ "X" ][ "VARIABLE" ] ] == x )
-          self.select[ "MINOR" ][ self.region[i] ] = ( self.rawinputsminor[ self.regions[ "X" ][ "VARIABLE" ] ] == x )
-        if y == self.regions[ "Y" ][ "SIGNAL" ] and self.regions[ "Y" ][ "INCLUSIVE" ]:
-          self.select[ "DATA" ][ self.region[i] ] &= ( self.rawinputs[ self.regions[ "Y" ][ "VARIABLE" ] ] >= y )
-          self.select[ "MC" ][ self.region[i] ] &= ( self.rawinputsmc[ self.regions[ "Y" ][ "VARIABLE" ] ] >= y )
-          self.select[ "MINOR" ][ self.region[i] ] &= ( self.rawinputsminor[ self.regions[ "Y" ][ "VARIABLE" ] ] >= y )
-        else:
-          self.select[ "DATA" ][ self.region[i] ] &= ( self.rawinputs[ self.regions[ "Y" ][ "VARIABLE" ] ] == y )
-          self.select[ "MC" ][ self.region[i] ] &= ( self.rawinputsmc[ self.regions[ "Y" ][ "VARIABLE" ] ] == y )
-          self.select[ "MINOR" ][ self.region[i] ] &= ( self.rawinputsminor[ self.regions[ "Y" ][ "VARIABLE" ] ] == y )
+    for region in self.region:
+      if hpo and region != "D": 
+        if verbose: print( "[OPT] Running in HPO mode, skipping evaluation of Region {}".format( region ) )
+        continue
 
-        self.count[ "DATA" ][ self.region[i] ] = np.count_nonzero( self.select[ "DATA" ][ self.region[i] ] )
-        self.count[ "MC" ][ self.region[i] ] = np.count_nonzero( self.select[ "MC" ][ self.region[i] ] )
-        self.count[ "MINOR" ][ self.region[i] ] = np.sum( self.rawinputsminor[ "xsecWeight" ][ self.select[ "MINOR" ][ self.region[i] ] ] ) 
-        x_eq = ">=" if ( self.regions[ "X" ][ "INCLUSIVE" ] ) and ( x == self.regions[ "X" ][ "MAX" ] ) else "=="
-        y_eq = ">=" if ( self.regions[ "Y" ][ "INCLUSIVE" ] ) and ( y == self.regions[ "Y" ][ "MAX" ] ) else "=="
-        if verbose:
-          print( "Region {} ({} {} {}, {} {} {}): MC = {}, DATA = {}, MINOR = {:.1f}".format(
-              self.region[i], 
-              self.regions[ "X" ][ "VARIABLE" ], x_eq, int( x ),
-              self.regions[ "Y" ][ "VARIABLE" ], y_eq, int( y ),
-              int( self.count[ "MC" ][ self.region[i] ] ), int( self.count[ "DATA" ][ self.region[i] ] ), self.count[ "MINOR" ][ self.region[i] ]
-          ) )
-
-        # text for plots
-        text = "$"
-        if self.regions[ "X" ][ "INCLUSIVE" ] == True and x == self.regions[ "X" ][ "MAX" ]:
-          text += "{}\geq {}, ".format( self.variables[ self.regions[ "X" ][ "VARIABLE" ] ][ "LATEX" ], int(x) )
-        else:
-          text += "{}={}, ".format( self.variables[ self.regions[ "X" ][ "VARIABLE" ] ][ "LATEX" ], int(x) )
+      print("{}: {}".format(region, self.regions[ "X" ][ region ]))
+      if self.regions[ "X" ][ region ][0] == ">=":
+        self.select[ "DATA" ][ region ] = ( self.rawinputs[ self.regions[ "X" ][ "VARIABLE" ] ] >= self.regions[ "X" ][ region ][1] )
+        self.select[ "MC" ][ region ] = ( self.rawinputsmc[ self.regions[ "X" ][ "VARIABLE" ] ] >= self.regions[ "X" ][ region ][1] )
+        self.select[ "MINOR" ][ region ] = ( self.rawinputsminor[ self.regions[ "X" ][ "VARIABLE" ] ] >= self.regions[ "X" ][ region ][1] )
+      elif self.regions[ "X" ][ region ][0] == "<=":
+        self.select[ "DATA" ][ region ] = ( self.rawinputs[ self.regions[ "X" ][ "VARIABLE" ] ] <= self.regions[ "X" ][ region ][1] )
+        self.select[ "MC" ][ region ] = ( self.rawinputsmc[ self.regions[ "X" ][ "VARIABLE" ] ] <= self.regions[ "X" ][ region ][1] )
+        self.select[ "MINOR" ][ region ] = ( self.rawinputsminor[ self.regions[ "X" ][ "VARIABLE" ] ] <= self.regions[ "X" ][ region ][1] )
+      else:
+        self.select[ "DATA" ][ region ] = ( self.rawinputs[ self.regions[ "X" ][ "VARIABLE" ] ] == self.regions[ "X" ][ region ][1] )
+        self.select[ "MC" ][ region ] = ( self.rawinputsmc[ self.regions[ "X" ][ "VARIABLE" ] ] == self.regions[ "X" ][ region ][1] )
+        self.select[ "MINOR" ][ region ] = ( self.rawinputsminor[ self.regions[ "X" ][ "VARIABLE" ] ] == self.regions[ "X" ][ region ][1] )
+      if self.regions[ "Y" ][ region ][0] == ">=":
+        self.select[ "DATA" ][ region ] &= ( self.rawinputs[ self.regions[ "Y" ][ "VARIABLE" ] ] >= self.regions[ "Y" ][ region ][1] )
+        self.select[ "MC" ][ region ] &= ( self.rawinputsmc[ self.regions[ "Y" ][ "VARIABLE" ] ] >= self.regions[ "Y" ][ region ][1] )
+        self.select[ "MINOR" ][ region ] &= ( self.rawinputsminor[ self.regions[ "Y" ][ "VARIABLE" ] ] >= self.regions[ "Y" ][ region ][1] )
+      elif self.regions[ "Y" ][ region ][0] == "<=":
+        self.select[ "DATA" ][ region ] &= ( self.rawinputs[ self.regions[ "Y" ][ "VARIABLE" ] ] <= self.regions[ "Y" ][ region ][1] )
+        self.select[ "MC" ][ region ] &= ( self.rawinputsmc[ self.regions[ "Y" ][ "VARIABLE" ] ] <= self.regions[ "Y" ][ region ][1] )
+        self.select[ "MINOR" ][ region ] &= ( self.rawinputsminor[ self.regions[ "Y" ][ "VARIABLE" ] ] <= self.regions[ "Y" ][ region ][1] )
+      else:
+        self.select[ "DATA" ][ region ] &= ( self.rawinputs[ self.regions[ "Y" ][ "VARIABLE" ] ] == self.regions[ "Y" ][ region ][1] )
+        self.select[ "MC" ][ region ] &= ( self.rawinputsmc[ self.regions[ "Y" ][ "VARIABLE" ] ] == self.regions[ "Y" ][ region ][1] )
+        self.select[ "MINOR" ][ region ] &= ( self.rawinputsminor[ self.regions[ "Y" ][ "VARIABLE" ] ] == self.regions[ "Y" ][ region ][1] )
         
-        if self.regions[ "Y" ][ "INCLUSIVE" ] == True and y == self.regions[ "Y" ][ "MAX" ]:
-          text += "{}\geq {}".format( self.variables[ self.regions[ "Y" ][ "VARIABLE" ] ][ "LATEX" ], int(y) )
-        else:
-          text += "{}={}".format( self.variables[ self.regions[ "Y" ][ "VARIABLE" ] ][ "LATEX" ], int(y) )
-        text += "$"
-        self.plottext.append( text )
-      
-        i += 1
-      
+      #print("Selected DATA X min: {}".format(self.rawinputs[self.select["DATA"][region]][self.regions[ "X" ][ "VARIABLE" ]].min()))
+      #print("Selected DATA X max: {}".format(self.rawinputs[self.select["DATA"][region]][self.regions[ "X" ][ "VARIABLE" ]].max()))
+      #print("Selected DATA Y min: {}".format(self.rawinputs[self.select["DATA"][region]][self.regions[ "Y" ][ "VARIABLE" ]].min()))
+      #print("Selected DATA Y max: {}".format(self.rawinputs[self.select["DATA"][region]][self.regions[ "Y" ][ "VARIABLE" ]].max()))
+
+      self.count[ "DATA" ][ region ] = np.count_nonzero( self.select[ "DATA" ][ region ] ) # counts the number of events in signal region for DATA
+      self.count[ "MC" ][ region ] = np.count_nonzero( self.select[ "MC" ][ region ] )
+      self.count[ "MINOR" ][ region ] = np.sum( self.rawinputsminor[ "xsecWeight" ][ self.select[ "MINOR" ][ region ] ] ) ###### FIXME ##### 
+
+      print("Number of DATA events in region {}: {}".format(region, self.count[ "DATA" ][ region ]))
+      print("Number of MC events in region {}: {}".format(region, self.count[ "MC" ][ region ]))
+      print("Number of MINOR events in region {}: {}".format(region, self.count[ "MINOR" ][ region ]))
+
+      if verbose:
+        print( "Region {} ({} {} {}, {} {} {}): MC = {}, DATA = {}, MINOR = {:.1f}".format(
+          region, 
+          self.regions[ "X" ][ "VARIABLE" ], self.regions[ "X" ][ region ][0], int( self.regions[ "X" ][ region ][1] ),
+          self.regions[ "Y" ][ "VARIABLE" ], self.regions[ "Y" ][ region ][0], int( self.regions[ "Y" ][ region ][1] ),
+          int( self.count[ "MC" ][ region ] ), int( self.count[ "DATA" ][ region ] ), self.count[ "MINOR" ][ region ]
+        ) )
+
+      # text for plots
+      text = "$"
+      if self.regions[ "X" ][ region ][0] == ">=":
+        text += "{}\geq {}, ".format( self.variables[ self.regions[ "X" ][ "VARIABLE" ] ][ "LATEX" ], int(self.regions[ "X" ][ region ][1]) )
+      elif self.regions[ "X" ][ region ][0] == "<=":
+        text += "{}\leq {}, ".format( self.variables[ self.regions[ "X" ][ "VARIABLE" ] ][ "LATEX" ], int(self.regions[ "X" ][ region ][1]) )
+      else:
+        text += "{}={}, ".format( self.variables[ self.regions[ "X" ][ "VARIABLE" ] ][ "LATEX" ], int(self.regions[ "X" ][ region ][1]) )
+        
+      if self.regions[ "Y" ][ region ][0] == ">=":
+        text += "{}\geq {}".format( self.variables[ self.regions[ "Y" ][ "VARIABLE" ] ][ "LATEX" ], int(self.regions[ "Y" ][ region ][1]) )
+      elif self.regions[ "Y" ][ region ][0] == "<=":
+        text += "{}\leq {}".format( self.variables[ self.regions[ "Y" ][ "VARIABLE" ] ][ "LATEX" ], int(self.regions[ "Y" ][ region ][1]) )
+      else:
+        text += "{}={}".format( self.variables[ self.regions[ "Y" ][ "VARIABLE" ] ][ "LATEX" ], int(self.regions[ "Y" ][ region ][1]) )
+      text += "$"
+      self.plottext.append( text )
+
   def extended_ABCD( self ):
     # compute the norm of the raw data
     dA, dB, dC, dD, dX, dY = self.count[ "DATA" ][ "A" ], self.count[ "DATA" ][ "B" ], self.count[ "DATA" ][ "C" ], self.count[ "DATA" ][ "D" ], self.count[ "DATA" ][ "X" ], self.count[ "DATA" ][ "Y" ]

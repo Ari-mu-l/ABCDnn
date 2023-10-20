@@ -80,16 +80,16 @@ abcdnn_.setup_model(
   retrain = config.params[ "MODEL" ][ "RETRAIN" ]
 )
 
-abcdnn_.train(
-  steps = config.params[ "TRAIN" ][ "EPOCHS" ],
-  patience = config.params[ "TRAIN" ][ "PATIENCE" ],
-  monitor = config.params[ "TRAIN" ][ "MONITOR" ],
-  display_loss = config.params[ "TRAIN" ][ "SHOWLOSS" ],
-  early_stopping = config.params[ "TRAIN" ][ "EARLY STOP" ],
-  monitor_threshold = config.params[ "TRAIN" ][ "MONITOR THRESHOLD" ],
-  periodic_save = config.params[ "TRAIN" ][ "PERIODIC SAVE" ],
-)
+#abcdnn_.train(
+#  steps = config.params[ "TRAIN" ][ "EPOCHS" ],
+#  patience = config.params[ "TRAIN" ][ "PATIENCE" ],
+#  monitor = config.params[ "TRAIN" ][ "MONITOR" ],
+#  display_loss = config.params[ "TRAIN" ][ "SHOWLOSS" ],
+#  early_stopping = config.params[ "TRAIN" ][ "EARLY STOP" ],
+#  monitor_threshold = config.params[ "TRAIN" ][ "MONITOR THRESHOLD" ],
+#  periodic_save = config.params[ "TRAIN" ][ "PERIODIC SAVE" ],
+#)
 
 abcdnn_.evaluate_regions()
-abcdnn_.extended_ABCD()
+#abcdnn_.extended_ABCD()
 abcdnn_.save_hyperparameters()
