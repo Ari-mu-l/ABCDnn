@@ -12,6 +12,7 @@ import numpy as np
 import os, uproot, pickle
 from scipy import stats
 from json import dumps as write_json
+import pandas as pd
 
 def invsigmoid( x ):
 # inverse sigmoid function for transformer
@@ -262,9 +263,44 @@ class SawtoothSchedule( LearningRateSchedule ):
         "name": self.name
     }
   
-def unweight(pddata):
+def unweight_pd(pddata):
 # by default, this isn't used, need to use option prepdata( mc_weight = "unweight" )
   nrows = pddata.shape[0]
+  #print("nrows: {}".format(nrows))
+  #print('pddata xsecWeight: {}'.format(pddata['xsecWeight']))
+  xsec_unique = pd.unique(pddata['xsecWeight'])
+  #print("type of unique:{}".format(type(unique)))
+  print('xsecWeight unique: {}'.format(xsec_unique))
+
+  xsec_min = xsec_unique.min()
+  print("unique min: {}".format(xsec_min))
+
+  xsec_frac = xsec_unique/(xsec_unique.sum())
+  print("fraction of each unique xsec value: {}".format(xsec_frac))
+
+  n_per_xsec = xsec_frac * nrows
+  n_per_xsec.astype(int)
+  print("Number of events for each unique xsec value: {}".format(n_per_xsec))
+
+  for i in range(len(xsec_unique)):
+    datatoexpand = pddata[pddata['xsecWeight']==xsec_unique[i]]
+    nexist = datatoexpand.shape[0]
+    print("{}_th xsec: {}, n_expected: {}, n_exist: {}".format(i, xsec_unique[i], int(n_per_xsec[i]), nexist))
+    
+    del_n = int(n_per_xsec[i]) - nexist
+    if del_n>0:
+      print("pddata before:\n {}".format(pddata))
+      for j in range(del_n):
+        randomsample = datatoexpand.sample(random_state=1) # random_state sets the seed
+        pddata = pddata.append(randomsample)
+        #print("randomly sampled row: {}".format(randomsample))
+      
+      print("pddata after:\n {}".format(pddata))
+      print("n rows: {}".format(pddata[pddata['xsecWeight']==xsec_unique[i]].shape[0]))
+      
+      
+
+  exit()
 
   minweight = pddata['xsecWeight'].min()
   maxweight = pddata['xsecWeight'].max()
