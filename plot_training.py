@@ -41,6 +41,9 @@ if args.transfer:
 def get_region( x, y ):
   x_region = np.linspace( config.regions[ "X" ][ "MIN" ], config.regions[ "X" ][ "MAX" ], config.regions[ "X" ][ "MAX" ] - config.regions[ "X" ][ "MIN" ] + 1 )
   y_region = np.linspace( config.regions[ "Y" ][ "MIN" ], config.regions[ "Y" ][ "MAX" ], config.regions[ "Y" ][ "MAX" ] - config.regions[ "Y" ][ "MIN" ] + 1 )
+  print("x_region: {}".format(x_region))
+  print("y_region: {}".format(y_region))
+  exit()
   if x == x_region[0] and y == y_region[0]: return "X"
   elif x == x_region[0] and y >= y_region[1]: return "Y"
   elif x == x_region[1] and y == y_region[0]: return "A"
@@ -74,79 +77,109 @@ if config.regions["Y"]["VARIABLE"] in config.variables and config.regions["X"]["
 else:
   sys.exit( "[ERROR] Control variables not listed in config.variables, please add. Exiting..." )
 
+#print("variables: {}".format(variables))
+#print("variables_transform: {}".format(variables_transform))
+#exit()
+
 categorical = [ config.variables[ vName ][ "CATEGORICAL" ] for vName in variables ]
-lowerlimit = [ config.variables[ vName ][ "LIMIT" ][0] for vName in variables ]
+lowerlimit = [ config.variables[ vName ][ "LIMIT" ][0] for vName in variables ] # MIGHT NEED TO BE FIXED
 upperlimit = [ config.variables[ vName ][ "LIMIT" ][1] for vName in variables ]
+
+#print("categorical: {}".format(categorical))
+#print("lowerlimit: {}".format(lowerlimit)) # shrinked 6 grids
+#print("upperlimit: {}".format(upperlimit))
+#exit()
 
 print( ">> Found {} variables: ".format( len( variables ) ) )
 for i, variable in enumerate( variables ):
   print( "  + {}: [{},{}], Categorical = {}".format( variable, lowerlimit[i], upperlimit[i], categorical[i] ) )
 
-inputs_src = sTree.pandas.df( variables )
+#exit()
 
-x_region = np.linspace( config.regions[ "X" ][ "MIN" ], config.regions[ "X" ][ "MAX" ], config.regions[ "X" ][ "MAX" ] - config.regions[ "X" ][ "MIN" ] + 1 )
-y_region = np.linspace( config.regions[ "Y" ][ "MIN" ], config.regions[ "Y" ][ "MAX" ], config.regions[ "Y" ][ "MAX" ] - config.regions[ "Y" ][ "MIN" ] + 1 )
+#inputs_src = sTree.pandas.df( variables ) # uproot3
+inputs_src = sTree.arrays( variables, library="pd" ) # uproot4
+
+X_MIN = inputs_src[ variables[3] ].min()
+X_MAX = inputs_src[ variables[3] ].max()
+Y_MIN = inputs_src[ variables[2] ].min()
+Y_MAX = inputs_src[ variables[2] ].max()
+
+#print("X_VAR: {}".format(variables[3]))
+#print("X_MIN: {}".format(X_MIN))
+#print("X_MAX: {}".format(X_MAX))
+#print("Y_VAR: {}".format(variables[2]))
+#print("Y_MIN: {}".format(Y_MIN))
+#print("Y_MAX: {}".format(Y_MAX))
+#exit()
+
+x_region = np.linspace( X_MIN, X_MAX, X_MAX - X_MIN + 1 )
+y_region = np.linspace( Y_MIN, Y_MAX, Y_MAX - Y_MIN + 1 )
+
+#print("x_region: {}".format(x_region))
+#print("y_region: {}".format(y_region))
+#exit()
+
 inputs_src_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
 print( ">> Found {} total source entries".format( inputs_src.shape[0] ) )
-inputs_tgt = tTree.pandas.df( variables ) 
+#inputs_tgt = tTree.pandas.df( variables ) # uproot3
+inputs_tgt = tTree.arrays( variables, library="pd" ) # uproot4 
 inputs_tgt_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
 print( ">> Found {} total target entries".format( inputs_tgt.shape[0] ) )
 
-inputs_mnr = mTree.pandas.df( variables + [ "xsecWeight" ] )
+#inputs_mnr = mTree.pandas.df( variables + [ "xsecWeight" ] ) # uproot3 
+inputs_mnr = mTree.arrays( variables, library="pd" ) # uproot4
 inputs_mnr_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
 print( ">> Found {} total minor background entries".format( inputs_mnr.shape[0] ) )
 
-inputs_src_region["X"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-inputs_tgt_region["X"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-inputs_mnr_region["X"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-inputs_src_region["A"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-inputs_tgt_region["A"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-inputs_mnr_region["A"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
+for region in [ "X", "Y", "A", "B", "C", "D" ]:
+  if config.regions["X"][region][0] == ">=":
+    select_src = inputs_src[ config.regions["X"]["VARIABLE"] ] >= config.regions[ "X" ][ region ][1]
+    select_tgt = inputs_tgt[ config.regions["X"]["VARIABLE"] ] >= config.regions[ "X" ][ region ][1]
+    select_mnr = inputs_mnr[ config.regions["X"]["VARIABLE"] ] >= config.regions[ "X" ][ region ][1]
+  elif config.regions["X"][region][0] == "<=":
+    select_src = inputs_src[ config.regions["X"]["VARIABLE"] ] <= config.regions[ "X" ][ region ][1]
+    select_tgt = inputs_tgt[ config.regions["X"]["VARIABLE"] ] <= config.regions[ "X" ][ region ][1]
+    select_mnr = inputs_mnr[ config.regions["X"]["VARIABLE"] ] <= config.regions[ "X" ][ region ][1]
+  else:
+    select_src = inputs_src[ config.regions["X"]["VARIABLE"] ] == config.regions[ "X" ][ region ][1]
+    select_tgt = inputs_tgt[ config.regions["X"]["VARIABLE"] ] == config.regions[ "X" ][ region ][1]
+    select_mnr = inputs_mnr[ config.regions["X"]["VARIABLE"] ] == config.regions[ "X" ][ region ][1]
 
-if config.regions["Y"]["INCLUSIVE"]:
-  inputs_src_region["Y"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  inputs_tgt_region["Y"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  inputs_mnr_region["Y"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  inputs_src_region["C"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  inputs_tgt_region["C"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  inputs_mnr_region["C"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-else:
-  inputs_src_region["Y"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-  inputs_tgt_region["Y"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-  inputs_mnr_region["Y"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-  inputs_src_region["C"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-  inputs_tgt_region["C"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-  inputs_mnr_region["C"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
+  if config.regions["Y"][region][0] == ">=":
+    select_src &= inputs_src[ config.regions["Y"]["VARIABLE"] ] >= config.regions[ "Y" ][ region ][1]
+    select_tgt &= inputs_tgt[ config.regions["Y"]["VARIABLE"] ] >= config.regions[ "Y" ][ region ][1]
+    select_mnr &= inputs_mnr[ config.regions["Y"]["VARIABLE"] ] >= config.regions[ "Y" ][ region ][1]
+  elif config.regions["Y"][region][0] == "<=":
+    select_src &= inputs_src[ config.regions["Y"]["VARIABLE"] ] <= config.regions[ "Y" ][ region ][1]
+    select_tgt &= inputs_tgt[ config.regions["Y"]["VARIABLE"] ] <= config.regions[ "Y" ][ region ][1]
+    select_mnr &= inputs_mnr[ config.regions["Y"]["VARIABLE"] ] <= config.regions[ "Y" ][ region ][1]
+  else:
+    select_src &= inputs_src[ config.regions["Y"]["VARIABLE"] ] == config.regions[ "Y" ][ region ][1]
+    select_tgt &= inputs_tgt[ config.regions["Y"]["VARIABLE"] ] == config.regions[ "Y" ][ region ][1]
+    select_mnr &= inputs_mnr[ config.regions["Y"]["VARIABLE"] ] == config.regions[ "Y" ][ region ][1]
 
-if config.regions["X"]["INCLUSIVE"]:
-  inputs_src_region["B"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-  inputs_tgt_region["B"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-  inputs_mnr_region["B"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-else:
-  inputs_src_region["B"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-  inputs_tgt_region["B"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-  inputs_mnr_region["B"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] == y_region[0] ) ]
+  #print("select: {}".format(select))
+  #exit()
 
-if config.regions["X"]["INCLUSIVE"] and config.regions["Y"]["INCLUSIVE"]:
-  inputs_src_region["D"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  inputs_tgt_region["D"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  inputs_mnr_region["D"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-elif config.regions["X"]["INCLUSIVE"] and not config.regions["Y"]["INCLUSIVE"]:
-  inputs_src_region["D"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-  inputs_tgt_region["D"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-  inputs_mnr_region["D"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-elif not config.regions["X"]["INCLUSIVE"] and config.regions["Y"]["INCLUSIVE"]:
-  inputs_src_region["D"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  inputs_tgt_region["D"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  inputs_mnr_region["D"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-else:
-  inputs_src_region["D"] = inputs_src.loc[ ( inputs_src[ config.regions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_src[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-  inputs_tgt_region["D"] = inputs_tgt.loc[ ( inputs_tgt[ config.regions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_tgt[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-  inputs_mnr_region["D"] = inputs_mnr.loc[ ( inputs_mnr[ config.regions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_mnr[ config.regions["Y"]["VARIABLE"] ] == y_region[1] ) ]
+  inputs_src_region[region] = inputs_src.loc[select_src]
+  inputs_tgt_region[region] = inputs_tgt.loc[select_tgt]
+  inputs_mnr_region[region] = inputs_mnr.loc[select_mnr]
+  
+  #print("region {}".format(region))
+  #print("{} min: {}".format(config.regions["X"]["VARIABLE"], inputs_src_region[region][config.regions["X"]["VARIABLE"]].min()))
+  #print("{} max: {}".format(config.regions["X"]["VARIABLE"], inputs_src_region[region][config.regions["X"]["VARIABLE"]].max()))
+  #print("{} min: {}".format(config.regions["Y"]["VARIABLE"], inputs_src_region[region][config.regions["Y"]["VARIABLE"]].min()))
+  #print("{} max: {}".format(config.regions["Y"]["VARIABLE"], inputs_src_region[region][config.regions["Y"]["VARIABLE"]].max()))
+
+#print("inputs_src_region in region A:")
+#print(inputs_src_region["A"])
+#exit()
 
 print( ">> Yields in each region:" )
 for region in inputs_src_region:
   print( "  + Region {}: Source = {}, Target = {}".format( region, inputs_src_region[region].shape[0], inputs_tgt_region[region].shape[0] ) )
+
+#exit()
 
 print( ">> Encoding and normalizing source inputs" )
 inputs_enc_region = {}
@@ -160,10 +193,29 @@ for region in inputs_src_region:
   inputs_enc_region[ region ] = encoder[region].encode( inputs_src_region[ region ].to_numpy( dtype = np.float32 ) )
   inputs_nrm_region[ region ] = ( inputs_enc_region[ region ] - inputmeans ) / inputsigmas
 
+#print("inputmeans: {}".format(inputmeans))
+#print("inputsigmas: {}".format(inputsigmas))
+#print("encoder:")
+#print(encoder)
+#print("inputs_enc_region length: ")
+#print(len(inputs_enc_region))
+#print("inputs_enc_region type: ")
+#print(type(inputs_enc_region))
+#print("inputs_enc_region first three in region A: ")
+#print(inputs_enc_region['A'][:3])
+#print("inputs_nrm_region length: ")
+#print(len(inputs_nrm_region))
+#print("inputs_nrm_region first three: ")
+#print(inputs_nrm_region[:3])
+#exit()
 
 print( ">> Processing checkpoints" )
 predictions = {}
 predictions_best = { region: [] for region in [ "X", "Y", "A", "B", "C", "D" ] }
+
+#print(predictions_best)
+#exit()
+
 NAF = abcdnn.NAF( 
   inputdim = params["INPUTDIM"],
   conddim = params["CONDDIM"],
@@ -180,6 +232,7 @@ NAF.load_weights( os.path.join( folder, args.tag ) )
 
 for region in tqdm.tqdm( predictions_best ):
   NAF_predict = np.asarray( NAF.predict( np.asarray( inputs_nrm_region[ region ] )[::2] ) )
+  print("NAF_predict shape: {}".format(NAF_predict.shape))
   predictions_best[ region ] = NAF_predict * inputsigmas[0:2] + inputmeans[0:2] 
  
   

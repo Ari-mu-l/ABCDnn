@@ -53,6 +53,7 @@ variables = {
 
 selection = { # edit these accordingly
   "Bdecay_obs":{ "VALUE": [ 1, 4 ], "CONDITION": [ "==", "==" ] },
+  "W_MT":{ "VALUE": [ 200 ], "CONDITION": [ "<=" ] },
 }
 
 regions = {
