@@ -2,6 +2,8 @@
 # last updated 10/25/2021 by Daniel Li
 
 import tensorflow as tf
+#import tensorflow.keras as keras
+#import tensorflow.keras.layers as layers
 from tensorflow import keras
 from tensorflow.keras import layers
 import tensorflow_probability as tfp
@@ -11,7 +13,7 @@ import os, uproot, pickle
 from scipy import stats
 from json import dumps as write_json
 import pandas as pd
-from tqdm import tqdm
+from math import floor
 
 def invsigmoid( x ):
 # inverse sigmoid function for transformer
@@ -263,31 +265,77 @@ class SawtoothSchedule( LearningRateSchedule ):
     }
   
 def unweight_pd(pddata):
+# by default, this isn't used, need to use option prepdata( mc_weight = "unweight" )
   nrows = pddata.shape[0]
+  #print("nrows: {}".format(nrows))
+  #print('pddata xsecWeight: {}'.format(pddata['xsecWeight']))
   xsec_unique = pd.unique(pddata['xsecWeight'])
-  #print('xsecWeight unique: {}'.format(xsec_unique))
+  #print("type of unique:{}".format(type(unique)))
+  print('xsecWeight unique: {}'.format(xsec_unique))
 
   xsec_min = xsec_unique.min()
-  frac_per_xsec = xsec_unique/(xsec_unique.sum())
-  nExpect_per_xsec = (frac_per_xsec * nrows).astype(int)
+  print("unique min: {}".format(xsec_min))
 
-  for i in tqdm(range(len(xsec_unique))):
+  xsec_frac = xsec_unique/(xsec_unique.sum())
+  print("fraction of each unique xsec value: {}".format(xsec_frac))
+
+  n_per_xsec = xsec_frac * nrows
+  n_per_xsec.astype(int)
+  print("Number of events for each unique xsec value: {}".format(n_per_xsec))
+
+  for i in range(len(xsec_unique)):
     datatoexpand = pddata[pddata['xsecWeight']==xsec_unique[i]]
     nexist = datatoexpand.shape[0]
-    del_n = nExpect_per_xsec[i] - nexist
+    del_n = int(n_per_xsec[i]) - nexist
   
     if (del_n > 0):
       if (del_n > nexist):
-        for j in tqdm(range(del_n//nexist)):
+        for j in range(del_n//nexist):
           pddata = pddata.append(datatoexpand.sample(n=nexist, random_state=1))
         pddata = pddata.append(datatoexpand.sample(n=del_n%nexist, random_state=1))
       else:
-        pddata = pddata.append(datatoexpand.sample(n=del_n, random_state=1))
+        for j in range(nexist//del_n):
+          pddata = pddata.append(datatoexpand.sample(n=del_n, random_state=1))
+        pddata = pddata.append(datatoexpand.sample(n=nexist%del_n, random_state=1))  
         
-    print("N pddata before: {}, N pddata expected: {}, N pddata after: {}".format(nexist, nExpect_per_xsec[i], pddata[pddata['xsecWeight']==xsec_unique[i]].shape[0]))
+    print("N pddata before: {}, N pddata expected: {}, N pddata after: {}".format(nexist, pddata[pddata['xsecWeight']==xsec_unique[i]].shape[0]))
 
-  exit()
-  
+    exit()
+    #if del_n > 0:
+      #print("pddata before:\n {}".format(pddata))
+      #if del_n < nexist:
+        #randomsample = datatoexpand.sample(n=del_n, random_state=1)
+      #else:
+        #appended_n = del_n
+        #while(del_n > appended_n):
+          #randomsample = datatoexpand.sample(n=nexist, random_state=1)
+          #appended_n += nexist
+          
+      #for j in range(del_n):
+        #randomsample = datatoexpand.sample(random_state=1) # random_state sets the seed
+        #pddata = pddata.append(randomsample)
+        #print("randomly sampled row: {}".format(randomsample))
+      
+     # print("pddata after:\n {}".format(pddata))
+     # print("n rows: {}".format(pddata[pddata['xsecWeight']==xsec_unique[i]].shape[0]))
+
+  #exit()
+
+  minweight = pddata['xsecWeight'].min()
+  maxweight = pddata['xsecWeight'].max()
+  selrows = pddata['xsecWeight']>minweight # identify all entries above the minimum xsec weight
+
+  datatoexpand = pddata[selrows].sort_values(by=['xsecWeight']) # sort selected entries by xsec weight
+  nselected = datatoexpand.shape[0] 
+  idx = 0
+  while idx < nselected-1: # loop through all selected entries
+    thisweight = datatoexpand.iloc[idx]['xsecWeight']
+    multfactor = int(thisweight//minweight)
+    selectrows = (datatoexpand['xsecWeight']==thisweight)
+    matches = datatoexpand[selectrows]
+    nmatches = matches.shape[0]
+    pddata = pddata.append([matches]*multfactor)
+    idx += nmatches
   return pddata
 
 def prepdata( rSource, rMinor, rTarget, variables, regions, closure, unweight ):
@@ -1093,6 +1141,17 @@ class ABCDnn_training(object):
     print( "Data Count: {}".format( dD ) )
     
     self.transfer = float( self.pred ) / float( mcD )
+    self.transfer_err = np.sqrt( ( self.sigma_pred / mcD )**2 + ( self.pred * np.sqrt( mcD ) / mcD**2 )**2 )
+    print( "Transfer Factor ( Ext. ABCD / MC ) = {:.5f} pm {:.5f}".format( 
+      self.transfer,
+      self.transfer_err
+    ) )
+    pass
+
+  def save_hyperparameters( self ):
+    print( ">> Saving hyper parameters" )
+    self.model.savehyperparameters( self.inputs, self.inputMean, self.inputSigma, self.transfer )
+ ) / float( mcD )
     self.transfer_err = np.sqrt( ( self.sigma_pred / mcD )**2 + ( self.pred * np.sqrt( mcD ) / mcD**2 )**2 )
     print( "Transfer Factor ( Ext. ABCD / MC ) = {:.5f} pm {:.5f}".format( 
       self.transfer,
