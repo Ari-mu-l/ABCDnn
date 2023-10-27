@@ -299,9 +299,9 @@ def prepdata( rSource, rMinor, rTarget, variables, regions, closure):
   #dfMinor = tMinor.pandas.df( vNames + [ "xsecWeight" ] )
   #dfTarget = tTarget.pandas.df( vNames )
 
-  dfMajor = tMajor.arrays(vNames + [ "xsecWeight" ], library="pd")
+  dfMajor = tMajor.arrays(vNames, library="pd")
   dfMinor = tMinor.arrays(vNames + [ "xsecWeight" ], library="pd")
-  dfTarget = tTarget.arrays(vNames + [ "xsecWeight" ], library="pd")
+  dfTarget = tTarget.arrays(vNames, library="pd")
 
   #print("dfMajor shape: {}".format(dfMajor.shape))
   #exit()
@@ -1045,6 +1045,7 @@ class ABCDnn_training(object):
     # compute the norm of the raw data
     dA, dB, dC, dD, dX, dY = self.count[ "DATA" ][ "A" ], self.count[ "DATA" ][ "B" ], self.count[ "DATA" ][ "C" ], self.count[ "DATA" ][ "D" ], self.count[ "DATA" ][ "X" ], self.count[ "DATA" ][ "Y" ]
     mA, mB, mC, mD, mX, mY = self.count[ "MINOR" ][ "A" ], self.count[ "MINOR" ][ "B" ], self.count[ "MINOR" ][ "C" ], self.count[ "MINOR" ][ "D" ], self.count[ "MINOR" ][ "X" ], self.count[ "MINOR" ][ "D" ]
+
     cA = dA * self.targetSF - mA * self.minorSF
     cB = dB * self.targetSF - mB * self.minorSF
     cC = dC * self.targetSF - mC * self.minorSF
