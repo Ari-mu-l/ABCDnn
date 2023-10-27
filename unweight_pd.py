@@ -1,5 +1,4 @@
 import pandas as pd
-from tqdm import tqdm
 import numpy as np
 import sys
 import uproot
@@ -15,7 +14,7 @@ def unweight_pd(pddata):
 
   np.random.seed(0)
 
-  for i in tqdm(range(len(xsec_unique))):
+  for i in range(len(xsec_unique)):
     datatoexpand = pddata.loc[pddata['xsecWeight']==xsec_unique[i]]
     nexist = datatoexpand.shape[0]
     del_n = nExpect_per_xsec[i] - nexist
