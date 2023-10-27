@@ -261,36 +261,8 @@ class SawtoothSchedule( LearningRateSchedule ):
         "random_fluctuation": self.random_fluctuation,
         "name": self.name
     }
-  
-def unweight_pd(pddata):
-  nrows = pddata.shape[0]
-  xsec_unique = pd.unique(pddata['xsecWeight'])
-  #print('xsecWeight unique: {}'.format(xsec_unique))
 
-  xsec_min = xsec_unique.min()
-  frac_per_xsec = xsec_unique/(xsec_unique.sum())
-  nExpect_per_xsec = (frac_per_xsec * nrows).astype(int)
-
-  for i in tqdm(range(len(xsec_unique))):
-    datatoexpand = pddata[pddata['xsecWeight']==xsec_unique[i]]
-    nexist = datatoexpand.shape[0]
-    del_n = nExpect_per_xsec[i] - nexist
-  
-    if (del_n > 0):
-      if (del_n > nexist):
-        for j in tqdm(range(del_n//nexist)):
-          pddata = pddata.append(datatoexpand.sample(n=nexist, random_state=1))
-        pddata = pddata.append(datatoexpand.sample(n=del_n%nexist, random_state=1))
-      else:
-        pddata = pddata.append(datatoexpand.sample(n=del_n, random_state=1))
-        
-    print("N pddata before: {}, N pddata expected: {}, N pddata after: {}".format(nexist, nExpect_per_xsec[i], pddata[pddata['xsecWeight']==xsec_unique[i]].shape[0]))
-
-  exit()
-  
-  return pddata
-
-def prepdata( rSource, rMinor, rTarget, variables, regions, closure, unweight ):
+def prepdata( rSource, rMinor, rTarget, variables, regions, closure):
 # mc_weight(str) = option for weighting MC by the xsec
 # rSource (str) = source ROOT file
 # rTarget (str) = target ROOT file
@@ -341,12 +313,6 @@ def prepdata( rSource, rMinor, rTarget, variables, regions, closure, unweight ):
 
   #print("dfMajor shape: {}".format(dfMajor.shape))
   #exit() 
-
-  if(unweight):
-    unweight_pd(dfMajor)
-    unweight_pd(dfMinor)
-    unweight_pd(dfTarget)
-  exit()
 
   inputRawMajor = dfMajor
   inputEncMajor = _onehotencoder.encode( inputRawMajor.to_numpy( dtype=np.float32 ) )
@@ -845,7 +811,7 @@ class ABCDnn_training(object):
     #print("sourceSF: {}".format(self.sourceSF))
     #exit()
 
-    rawinputs, rawinputsmc, rawinputsminor, normedinputs, normedinputsmc, inputMean, inputSigma, inputnames, ncat_per_feature = prepdata( rSource, rMinor, rTarget, variables, regions, closure, True )
+    rawinputs, rawinputsmc, rawinputsminor, normedinputs, normedinputsmc, inputMean, inputSigma, inputnames, ncat_per_feature = prepdata( rSource, rMinor, rTarget, variables, regions, closure)
 
     #print("Shapes of rawinputs, rawinputsmc, rawinputsminor, normedinputs, normedinputsmc: ".format(rawinputs.shape, rawinputsmc.shape, rawinputsminor.shape, normedinputs.shape, normedinputsmc.shape))
     #print("inputMean: {}".format(inputMean))
