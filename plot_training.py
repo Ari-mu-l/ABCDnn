@@ -1,4 +1,4 @@
-# this script is run on the condor node for applying the trained ABCDnn model to ttbar samples
+# this script is run on the condor node for applying gthe trained ABCDnn model to ttbar samples
 # last updated 11/15/2021 by Daniel Li
 
 import numpy as np
@@ -294,6 +294,7 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   data_mod_scale = float( np.sum(data_mod) )
 
   # plot the data first
+  print("region: {}, blind: {}".format(region_key[x][y], blind))
   if not blind:
     ax.errorbar(
       0.5 * ( data_hist[1][1:] + data_hist[1][:-1] ),
@@ -423,7 +424,10 @@ for i, variable in enumerate( variables_transform ):
   
   for x in range(6):
     for y in range(2):
-      blind = True if ( x == 5 and y == 1 and not args.unblind ) else False # FIXME
+      blind = False
+      if ( not args.unblind and y==1 ):
+        if ( x == 4 or x == 5 ):
+          blind = True
       if x % 2 == 0:
         plot_hist(
           ax = axs[x,y],
