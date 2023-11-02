@@ -1,3 +1,5 @@
+# python unweight_pd.py Major_2018UL_mc_p100.root
+
 import pandas as pd
 import numpy as np
 import sys
@@ -21,7 +23,7 @@ def unweight_pd(pddata):
 
     if (del_n > 0):
       if (del_n > nexist):
-        for j in tqdm(range(del_n//nexist)):
+        for j in range(del_n//nexist):
           pddata = pddata.append(datatoexpand.sample(n=nexist, random_state=1))
         pddata = pddata.append(datatoexpand.sample(n=del_n%nexist, random_state=1))
       else:
@@ -30,7 +32,6 @@ def unweight_pd(pddata):
       pddata = pddata.drop(np.random.choice(datatoexpand.index, -del_n, replace=False))
         
     print("N pddata before: {}, N pddata expected: {}, N pddata after: {}".format(nexist, nExpect_per_xsec[i], pddata[pddata['xsecWeight']==xsec_unique[i]].shape[0]))
-
   return pddata
 
 # read MC and data

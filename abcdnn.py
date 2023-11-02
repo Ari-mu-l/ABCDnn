@@ -10,8 +10,7 @@ import numpy as np
 import os, uproot, pickle
 from scipy import stats
 from json import dumps as write_json
-import pandas as pd
-from tqdm import tqdm
+#from tqdm import tqdm
 
 def invsigmoid( x ):
 # inverse sigmoid function for transformer

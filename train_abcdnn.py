@@ -90,6 +90,6 @@ abcdnn_.train(
   periodic_save = config.params[ "TRAIN" ][ "PERIODIC SAVE" ],
 )
 
-#abcdnn_.evaluate_regions()
-#abcdnn_.extended_ABCD()
-#abcdnn_.save_hyperparameters()
+abcdnn_.evaluate_regions()
+abcdnn_.extended_ABCD()
+abcdnn_.save_hyperparameters()
