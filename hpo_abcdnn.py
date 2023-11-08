@@ -14,13 +14,14 @@ import config
 import abcdnn
 
 parser = ArgumentParser()
-parser.add_argument( "-s", "--source", default = "", required = False )
-parser.add_argument( "-t", "--target", default = "", required = False )
+parser.add_argument( "-s", "--source", default = "", required = True )
+parser.add_argument( "-t", "--target", default = "", required = True )
 parser.add_argument( "-v", "--verbose", action = "store_true" )
+parser.add_argument( "--closure", action = "store_true" )
 args = parser.parse_args()
 
-if args.source != "": config.params[ "EVENTS" ][ "SOURCE" ] = os.path.join( config.data_path, args.source )
-if args.target != "": config.params[ "EVENTS" ][ "TARGET" ] = os.path.join( config.data_path, args.target )
+#if args.source != "": config.params[ "EVENTS" ][ "SOURCE" ] = os.path.join( config.data_path, args.source )
+#if args.target != "": config.params[ "EVENTS" ][ "TARGET" ] = os.path.join( config.data_path, args.target )
 
 #nTrans = len( [ var for var in config.variables if config.variables[ var ][ "TRANSFORM" ] == True ] )
 
@@ -49,12 +50,16 @@ def objective(**X):
 
   abcdnn_ = abcdnn.ABCDnn_training()
   abcdnn_.setup_events( 
-    rSource = config.params[ "EVENTS" ][ "SOURCE" ], 
-    rTarget = config.params[ "EVENTS" ][ "TARGET" ], 
+    #rSource = config.params[ "EVENTS" ][ "SOURCE" ], 
+    #rTarget = config.params[ "EVENTS" ][ "TARGET" ], 
+    rSource = args.source,
+    rMinor = args.minor,
+    rTarget = args.target,
     selection = config.selection, 
     variables = config.variables, 
     regions = config.regions, 
-    mc_weight = config.params[ "EVENTS" ][ "MCWEIGHT" ] 
+    closure = args.closure,
+    #mc_weight = config.params[ "EVENTS" ][ "MCWEIGHT" ] 
     )
   
   vars = [ var for var in config.variables if config.variables[ var ][ "TRANSFORM" ] == True ]

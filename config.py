@@ -10,12 +10,12 @@ eosUserName = "jmanagan"
 condorDir = "root://cmseos.fnal.gov//store/user/xshen/"
 
 sourceDir = {
-  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Sep2023_2018/".format( eosUserName ),
+  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Oct2023_fullRun2/".format( eosUserName ),
   "BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
 targetDir = {
-  "LPC": "root://cmseos.fnal.gov//store/user/xshen/BtoTW_Sep2023_2018/",
+  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Oct2023_fullRun2/".format( eosUserName ),
   "BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
@@ -37,6 +37,12 @@ variables = {
     "LIMIT": [0.,6000.], 
     "LATEX": "ST_{gcJet}"
   },
+  #"gcOSFatJet_pNetJ[0]":{
+  #  "CATEGORICAL": False,
+  #  "TRANSFORM": True,
+  #  "LIMIT": [0,1],
+  #  "LATEX": "gcOSFatJet pNetQCD"
+  #},
   "NJets_forward": {
     "CATEGORICAL": True,
     "TRANSFORM": False,
@@ -91,7 +97,7 @@ params = {
   "MODEL": { # parameters for setting up the NAF model
     "NODES_COND": 8,
     "HIDDEN_COND": 1,
-    "NODES_TRANS": 8,
+    "NODES_TRANS": 1,
     "LRATE": 1e-2,
     "DECAY": 0.1,
     "GAP": 200,
@@ -159,7 +165,10 @@ hyper = {
 branches = [
   "NJets_forward", "NJets_DeepFlavL",
   "Bdecay_obs",
-  "Bprime_mass", "gcJet_ST"
+  "Bprime_mass", "gcJet_ST",
+  #"PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]",
+  #"btagWeights[17]"
+  #"gcOSFatJet_pNetJ[0]"
 ]
 
 for vName in variables:
@@ -167,12 +176,17 @@ for vName in variables:
 
 samples_input = {
   "2018UL": {
-    "DATA": [
-      TTToSemiLeptonic2018UL,
-    ], # FIXME later
-
+    "DATA": [ # NEED TO UPDATE FOR NEWER DATASET
+      SingleElecRun2018A,
+      SingleElecRun2018B,
+      SingleElecRun2018C,
+      SingleElecRun2018D,
+      SingleMuonRun2018A,
+      SingleMuonRun2018B,
+      SingleMuonRun2018C,
+      SingleMuonRun2018D,
+    ], 
     "MAJOR MC": [
-      #Bprime_M1400_2018UL,
       QCDHT10002018UL,
       QCDHT15002018UL,
       QCDHT20002018UL,
@@ -188,7 +202,32 @@ samples_input = {
       WJetsHT6002018UL,
       WJetsHT8002018UL,
     ],
-    "MINOR MC": [], # no need to add minor MC for now, because using ttbar MC as data
+    "MINOR MC": [
+      DYMHT12002018UL,
+      DYMHT2002018UL,
+      DYMHT25002018UL,
+      DYMHT4002018UL,
+      DYMHT6002018UL,
+      DYMHT8002018UL,
+      STs2018UL,
+      STt2018UL,
+      STtb2018UL,
+      STtW2018UL,
+      STtWb2018UL,
+      TTHB2018UL,
+      TTHnonB2018UL,
+      TTMT10002018UL,
+      TTMT7002018UL,
+      TTTo2L2Nu2018UL,
+      TTToHadronic2018UL,
+      TTWl2018UL,
+      TTWq2018UL,
+      TTZM102018UL,
+      TTZM1to102018UL,
+      WW2018UL,
+      WZ2018UL,
+      ZZ2018UL,
+    ], # no need to add minor MC for now, because using ttbar MC as data
     "CLOSURE": []
   },
   # add other years here
