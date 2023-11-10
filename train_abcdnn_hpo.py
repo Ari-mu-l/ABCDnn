@@ -23,19 +23,22 @@ parser.add_argument( "--verbose", action = "store_true" )
 parser.add_argument( "--closure", action = "store_true" )
 parser.add_argument( "-m", "--modeltag", default = "best_model", help = "Name of model saved to Results directory" )
 parser.add_argument( "-d", "--disc_tag", default = "ABCDnn", help = "Postfix appended to original branch names of transformed variables" )
-parser.add_argument( "-c", "--nodescond", help = "NODES_COND")
-parser.add_argument( "-i", "--hiddencond", help = "HIDDEN_COND")
-parser.add_argument( "-r", "--nodestrans", help = "NODES_TRANS")
+#parser.add_argument( "-c", "--nodescond", help = "NODES_COND")
+#parser.add_argument( "-i", "--hiddencond", help = "HIDDEN_COND")
+#parser.add_argument( "-r", "--nodestrans", help = "NODES_TRANS")
 args = parser.parse_args()
 
 if args.randomize: config.params["MODEL"]["SEED"] = np.random.randint( 100000 )
 
 hp = { key: config.params["MODEL"][key] for key in config.params[ "MODEL" ]  }
 
-hp["NODES_COND"] = int(args.nodescond)
-hp["HIDDEN_COND"] = int(args.hiddencond)
-hp["NODES_TRANS"] = int(args.nodestrans)
+hp["NODES_COND"] = int(args.modeltag.split('_')[2])
+hp["HIDDEN_COND"] = int(args.modeltag.split('_')[3])
+hp["NODES_TRANS"] = int(args.modeltag.split('_')[4])
+hp["MMD SIGMAS"] = [float(args.modeltag.split('_')[5]), float(args.modeltag.split('_')[6]), float(args.modeltag.split('_')[7])]
+#hp["LRATE"] = float(args.modeltag.split('_')[5])
 #print("hp: {}".format(hp))
+#print(type(hp["LRATE"]))
 #exit()
 
 print( "[START] Training ABCDnn model {} iwth discriminator: {}".format( args.modeltag, args.disc_tag ) )
