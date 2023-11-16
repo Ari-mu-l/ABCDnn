@@ -36,9 +36,10 @@ hp["NODES_COND"] = int(args.modeltag.split('_')[2])
 hp["HIDDEN_COND"] = int(args.modeltag.split('_')[3])
 hp["NODES_TRANS"] = int(args.modeltag.split('_')[4])
 hp["MMD SIGMAS"] = [float(args.modeltag.split('_')[5]), float(args.modeltag.split('_')[6]), float(args.modeltag.split('_')[7])]
+hp["MINIBATCH"] = int(args.modeltag.split('_')[8]) 
 #hp["LRATE"] = float(args.modeltag.split('_')[5])
 #print("hp: {}".format(hp))
-#print(type(hp["LRATE"]))
+#print(type(hp["MINIBATCH"]))
 #exit()
 
 print( "[START] Training ABCDnn model {} iwth discriminator: {}".format( args.modeltag, args.disc_tag ) )
