@@ -29,21 +29,21 @@ if args.randomize: config.params["MODEL"]["SEED"] = np.random.randint( 100000 )
 
 #hp = { key: config.params["MODEL"][key] for key in config.params[ "MODEL" ]  }
 hp = { # parameters for setting up the NAF model
-    "NODES_COND": np.random.randint(1,16, size=1)[0],
-    "HIDDEN_COND": np.random.randint(1,4, size=1)[0],
-    "NODES_TRANS": np.random.randint(1,16, size=1)[0],
-    "LRATE": np.random.choice([1e-2, 1e-3, 1e-4, 1e-5, 1e-6], 1)[0],
-    "DECAY": np.random.choice([1, 1e-1, 1e-2], 1)[0],
-    "GAP": np.random.choice([100, 200, 300, 400, 500, 600, 1000], 1)[0],
-    "DEPTH": np.random.randint(1, 4, size=1)[0],
-    "REGULARIZER": np.random.choice(["L1","L2","L1+L2","None"], 1)[0], # DROPOUT, BATCHNORM, ALL, NONE                       
+    "NODES_COND": int(np.random.randint(1,16, size=1)[0]),
+    "HIDDEN_COND": int(np.random.randint(1,4, size=1)[0]),
+    "NODES_TRANS": int(np.random.randint(1,16, size=1)[0]),
+    "LRATE": float(np.random.choice([1e-2, 1e-3, 1e-4, 1e-5, 1e-6], 1)[0]),
+    "DECAY": float(np.random.choice([1, 1e-1, 1e-2], 1)[0]),
+    "GAP": int(np.random.choice([100, 200, 300, 400, 500, 600, 1000], 1)[0]),
+    "DEPTH": int(np.random.randint(1, 4, size=1)[0]),
+    "REGULARIZER": (np.random.choice(["L1","L2","L1+L2","None"], 1).tolist()[0]), # DROPOUT, BATCHNORM, ALL, NONE                       
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": np.random.choice(["swish", "relu", "elu", "softplus"], 1)[0], # softplus, relu, swish
-    "BETA1": np.random.choice([0.90, 0.99, 0.999], 1)[0],
-    "BETA2": np.random.choice([0.90, 0.99, 0.999], 1)[0],
-    "MMD SIGMAS": np.random.choice([0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6], 3),
+    "ACTIVATION": (np.random.choice(["swish", "relu", "elu", "softplus"], 1)).tolist()[0], # softplus, relu, swish
+    "BETA1": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
+    "BETA2": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
+    "MMD SIGMAS": (np.random.choice([0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6], 3)).tolist(),
     "MMD WEIGHTS": None,
-    "MINIBATCH": 2**6,
+    "MINIBATCH": int(np.random.choice([32, 64, 128, 256], 1)[0]),
     "RETRAIN": True,
     "PERMUTE": False,
     "SEED": 101, # this can be overridden when running train_abcdnn.py 
@@ -60,6 +60,9 @@ hp = { # parameters for setting up the NAF model
 #hp["LRATE"] = float(args.modeltag.split('_')[8])
 #print("hp: {}".format(hp))
 #print(type(hp["MINIBATCH"]))
+#for param in hp:
+#	print("{}: {}, type: {}".format(param, hp[param], type(hp[param])))
+#exit()
 
 with open('{}/hp_{}.txt'.format('Results', args.modeltag), 'w') as hp_file:
   hp_file.write(str(hp))
@@ -105,7 +108,7 @@ abcdnn_.setup_model(
   beta2 = hp[ "BETA2" ],
   mmd_sigmas = hp[ "MMD SIGMAS" ],
   mmd_weights = hp[ "MMD WEIGHTS" ],
-  minibatch = config.params[ "MODEL" ][ "MINIBATCH" ],
+  minibatch = hp[ "MINIBATCH" ],
   savedir = config.params[ "MODEL" ][ "SAVEDIR" ],
   disc_tag = args.disc_tag,
   seed = config.params[ "MODEL" ][ "SEED" ],
