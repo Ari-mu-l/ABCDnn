@@ -36,7 +36,8 @@ ROOT.gInterpreter.Declare("""
 ROOT.gInterpreter.Declare("""                                                                                                
     float compute_weight_noSF( float genWeight, float lumi, float xsec, float nRun ){                                  
     return genWeight * lumi * xsec / (nRun * abs(genWeight));
-    }                                                                                                                            """)
+    }
+""")
 
 class ToyTree:
   def __init__( self, name, trans_var ):
@@ -68,31 +69,32 @@ class ToyTree:
       print( ">> Writing {} entries to {}.root".format( self.rTree.GetEntries(), self.name ) )
       self.rFile.Write()
       self.rFile.Close()
-      
-def format_ntuple( inputs, output, trans_var):
-  sampleDir = config.sampleDir[ args.year ]
+
+def getfChain( samplename, year ):
   if ( args.JECup or args.JECdown ) and "data" in output:
     print( "[WARNING] Ignoring JECup and/or JECdown arguments for data" )
+    fChain = readTreeNominal( samplename, year, config.sourceDir["LPC"],"Events_Nominal" ) # read rdf for processing
   elif args.JECup and not args.JECdown:
     print( "[INFO] Running with JECup samples" )
-    sampleDir = sampleDir.replace( "nominal", "JECup" )
+    fChain = readTreeNominal( samplename, year, config.sourceDir["LPC"],"Events_JECup" )
     output = output.replace( "mc", "mc_JECup" )
-  elif args.JECdown and not args.JECup:
-    print( "[INFO] Running with JECdown samples" )
-    sampleDir = sampleDir.replace( "nominal", "JECdown" )
-    output = output.replace( "mc", "mc_JECdown" )
+  elif not args.JECup and args.JECdown:
+    print( "[INFO] Running with JECdn samples" )
+    fChain = readTreeNominal( samplename, year, config.sourceDir["LPC"],"Events_JECdn" )
+    output = output.replace( "mc", "mc_JECdn" )
   elif args.JECdown and args.JECup:
     sys.exit( "[WARNING] Cannot run with both JECup and JECdown options. Select only one or none. Quitting..." )
-  
+  else:
+    fChain = readTreeNominal( samplename, year, config.sourceDir["LPC"],"Events_Nominal" )
+  return fChain
+
+def format_ntuple( inputs, output, trans_var, doMCdata):
   ntuple = ToyTree( output, trans_var )
 
-  for sample in inputs:
-    if(args.doData):
-      samplename = sample.prefix
-    else:
-      samplename = sample.samplename.split('/')[1]
+  for sample in inputs["2018"][doMCdata]:
+    samplename = sample.samplename.split('/')[1]
     print( ">> Processing {}".format( samplename ) )
-    fChain = readTreeNominal(samplename,config.sourceDir["LPC"],"Events_Nominal") # read rdf for processing
+    fChain = getfChain( samplename, "2018" )
     rDF = ROOT.RDataFrame(fChain)
     sample_total = rDF.Count().GetValue()
     filter_string = "" 
@@ -103,20 +105,17 @@ def format_ntuple( inputs, output, trans_var):
           filter_string += "( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
         else:
           filter_string += "|| ( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
-    #print("filter_string: {}".format(filter_string))
-    #if args.year == "2018" and args.doData:
-    #  filter_string += " && ( leptonEta_MultiLepCalc > -1.3 || ( leptonPhi_MultiLepCalc < -1.57 || leptonPhi_MultiLepCalc > -0.87 ) )" 
     rDF_filter = rDF.Filter( filter_string )
-    #if "WJets"  in samplename:
-    #  rDF_weight = rDF_filter.Define( "xsecWeight", "gcHTCorr_WjetLHE[0] * compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
-    #elif "TTToSemiLeptonic" in samplename:
-    #  rDF_weight = rDF_filter.Define( "xsecWeight", "gcHTCorr_top[0] * compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
-    #else:
-      #rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
-    if args.doData:
+
+    if "WJets"  in samplename:
+      rDF_weight = rDF_filter.Define( "xsecWeight", "gcHTCorr_WjetLHE[0] * compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+    elif "TTToSemiLeptonic" in samplename:
+      rDF_weight = rDF_filter.Define( "xsecWeight", "gcHTCorr_top[0] * compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+    elif args.doData:
       rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")
     else:
-      rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight_noSF( {}, {}, {}, {} )".format(genWeight, xsec.lumi[args.year], sample.xsec, sample.nrun))
+      rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+
     sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
     dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) ) # useful rdf branches to numpy
     del rDF, rDF_filter, rDF_weight
@@ -133,10 +132,10 @@ def format_ntuple( inputs, output, trans_var):
   ntuple.Write()
   
 if args.doMajorMC:
-  format_ntuple( inputs = config.samples_input[ args.year ][ "MAJOR MC" ], output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables )
+  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables, doMCdata = "MAJOR MC" )
 elif args.doMinorMC:
-  format_ntuple( inputs = config.samples_input[ args.year ][ "MINOR MC" ], output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables )
+  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables, doMCdata = "MINOR MC" )
 elif args.doClosureMC:
-  format_ntuple( inputs = config.samples_input[ args.year ][ "CLOSURE" ], output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables )
-if args.doData:
-  format_ntuple( inputs = config.samples_input[ args.year ][ "DATA" ], output = args.name + "_" + args.year + "_data_p" + args.pEvents, trans_var = args.variables )
+  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables, doMCdata = "CLOSURE" )
+elif args.doData:
+  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_data_p" + args.pEvents, trans_var = args.variables, doMCdata = "DATA" )
