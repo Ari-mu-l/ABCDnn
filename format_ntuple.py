@@ -30,16 +30,16 @@ args = parser.parse_args()
 if args.location not in [ "LPC", "BRUX" ]: quit( "[ERR] Invalid -l (--location) argument used. Quitting..." )
 
 ROOT.gInterpreter.Declare("""
-    float compute_weight( float genWeight, float lumi, float xsec, float nRun, float PileupWeights, float leptonRecoSF, float leptonIDSF, float leptonIsoSF, float leptonHLTSF, float btagWeights ){
-    return PileupWeights * leptonRecoSF * leptonIDSF * leptonIsoSF * leptonHLTSF * btagWeights * genWeight * lumi * xsec / (nRun * abs(genWeight));
+    float compute_weight( float optionalWeights, float genWeight, float lumi, float xsec, float nRun, float PileupWeights, float leptonRecoSF, float leptonIDSF, float leptonIsoSF, float leptonHLTSF, float btagWeights ){
+    return optionalWeights * PileupWeights * leptonRecoSF * leptonIDSF * leptonIsoSF * leptonHLTSF * btagWeights * genWeight * lumi * xsec / (nRun * abs(genWeight));
     }
 """)
 
-ROOT.gInterpreter.Declare("""                                                                                                
-    float compute_weight_noSF( float genWeight, float lumi, float xsec, float nRun ){                                  
-    return genWeight * lumi * xsec / (nRun * abs(genWeight));
-    }
-""")
+#ROOT.gInterpreter.Declare("""                                                                                                
+#    float compute_weight_noSF( float genWeight, float lumi, float xsec, float nRun ){                                  
+#    return genWeight * lumi * xsec / (nRun * abs(genWeight));
+#    }
+#""")
 
 class ToyTree:
   def __init__( self, name, trans_var ):
@@ -120,13 +120,13 @@ def format_ntuple( inputs, output, trans_var, doMCdata):
       rDF_filter = rDF.Filter( filter_string )
       
       if "WJets"  in samplename:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "gcHTCorr_WjetLHE[0] * compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", "genWeight", sample.tagetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
       elif "TTToSemiLeptonic" in samplename:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "gcHTCorr_top[0] * compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", "genWeight", sample.tagetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
       elif args.doData:
         rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")
       else:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", "genWeight", sample.tagetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
 
       sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
       dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) ) # useful rdf branches to numpy
