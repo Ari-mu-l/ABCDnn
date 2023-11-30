@@ -2,6 +2,8 @@
 # formats three types of samples: data (no weights), major MC background (no weights), and minor MC backgrounds (weights)
 # last modified April 11, 2023 by Daniel Li
 
+#python format_ntuple.py -y 2018 -n OctMajor2018 -p 100 --doMajorMC
+
 import os, sys, ROOT
 from array import array
 from argparse import ArgumentParser
@@ -91,44 +93,54 @@ def getfChain( samplename, year ):
 def format_ntuple( inputs, output, trans_var, doMCdata):
   ntuple = ToyTree( output, trans_var )
 
-  for sample in inputs["2018"][doMCdata]:
-    samplename = sample.samplename.split('/')[1]
-    print( ">> Processing {}".format( samplename ) )
-    fChain = getfChain( samplename, "2018" )
-    rDF = ROOT.RDataFrame(fChain)
-    sample_total = rDF.Count().GetValue()
-    filter_string = "" 
-    scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset # COMMENT: What is isTraining? # what is scale used for?
-    for variable in ntuple.selection: 
-      for i in range( len( ntuple.selection[ variable ]["CONDITION"] ) ):
-        if filter_string == "": 
-          filter_string += "( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
-        else:
-          filter_string += "|| ( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
-    rDF_filter = rDF.Filter( filter_string )
+  if (args.year == "all"):
+    years = ["2016APV", "2016", "2017", "2018"]
+  else:
+    years = [args.year]
 
-    if "WJets"  in samplename:
-      rDF_weight = rDF_filter.Define( "xsecWeight", "gcHTCorr_WjetLHE[0] * compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
-    elif "TTToSemiLeptonic" in samplename:
-      rDF_weight = rDF_filter.Define( "xsecWeight", "gcHTCorr_top[0] * compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
-    elif args.doData:
-      rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")
-    else:
-      rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[args.year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+  for year in years:
+    print("Year {}".format(year))
+    for sample in inputs[year][doMCdata]:
+      if (args.doData):
+        samplename = sample.samplename.split('/')[1]+sample.samplename.split('-')[0][-1]
+      else:
+        samplename = sample.samplename.split('/')[1]
+      print( ">> Processing {}".format( samplename ) )
+      fChain = getfChain( samplename, year )
+      rDF = ROOT.RDataFrame(fChain)
+      sample_total = rDF.Count().GetValue()
+      filter_string = "" 
+      scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset # COMMENT: What is isTraining? # what is scale used for?
+      for variable in ntuple.selection: 
+        for i in range( len( ntuple.selection[ variable ]["CONDITION"] ) ):
+          if filter_string == "": 
+            filter_string += "( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
+          else:
+            filter_string += "|| ( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
+      rDF_filter = rDF.Filter( filter_string )
+      
+      if "WJets"  in samplename:
+        rDF_weight = rDF_filter.Define( "xsecWeight", "gcHTCorr_WjetLHE[0] * compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+      elif "TTToSemiLeptonic" in samplename:
+        rDF_weight = rDF_filter.Define( "xsecWeight", "gcHTCorr_top[0] * compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+      elif args.doData:
+        rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")
+      else:
+        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format(scale, xsec.lumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
 
-    sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
-    dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) ) # useful rdf branches to numpy
-    del rDF, rDF_filter, rDF_weight
-    n_inc = int( sample_pass * float( args.pEvents ) / 100. ) # get a specified portion of the passed events
+      sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
+      dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) ) # useful rdf branches to numpy
+      del rDF, rDF_filter, rDF_weight
+      n_inc = int( sample_pass * float( args.pEvents ) / 100. ) # get a specified portion of the passed events
  
-    for n in tqdm.tqdm( range( n_inc ) ):
-      event_data = {}
-      for variable in dict_filter:
-        event_data[ variable ] = dict_filter[ variable ][n] 
+      for n in tqdm.tqdm( range( n_inc ) ):
+        event_data = {}
+        for variable in dict_filter:
+          event_data[ variable ] = dict_filter[ variable ][n] 
 
-      ntuple.Fill( event_data )
+        ntuple.Fill( event_data )
 
-    print( ">> {}/{} events saved...".format( n_inc, sample_total ) )
+      print( ">> {}/{} events saved...".format( n_inc, sample_total ) )
   ntuple.Write()
   
 if args.doMajorMC:

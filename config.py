@@ -203,7 +203,7 @@ samples_input = {
       WJetsHT6002016APV,
       WJetsHT8002016APV,
     ],
-    "MINOR": [
+    "MINOR MC": [
       DYMHT12002016APV,
       DYMHT2002016APV,
       DYMHT25002016APV,
@@ -260,7 +260,7 @@ samples_input = {
       WJetsHT6002016,
       WJetsHT8002016,
     ],
-    "MINOR": [
+    "MINOR MC": [
       DYMHT12002016,
       DYMHT2002016,
       DYMHT25002016,
@@ -318,7 +318,7 @@ samples_input = {
       WJetsHT6002017,
       WJetsHT8002017,
     ],
-    "MINOR": [
+    "MINOR MC": [
       DYMHT12002017,
       DYMHT2002017,
       DYMHT25002017,
@@ -377,7 +377,7 @@ samples_input = {
       WJetsHT6002018,
       WJetsHT8002018,
     ],
-    "MINOR": [
+    "MINOR MC": [
       DYMHT12002018,
       DYMHT2002018,
       DYMHT25002018,
