@@ -31,18 +31,18 @@ variables = {
     "LIMIT": [0., 5000.], # may be set to None?
     "LATEX": "M_{reco}"
   },
-  "gcJet_ST": {
-    "CATEGORICAL": False,
-    "TRANSFORM": True,
-    "LIMIT": [0.,6000.], 
-    "LATEX": "ST_{gcJet}"
-  },
-  #"gcOSFatJet_pNetJ[0]":{
+  #"gcJet_ST": {
   #  "CATEGORICAL": False,
   #  "TRANSFORM": True,
-  #  "LIMIT": [0,1],
-  #  "LATEX": "gcOSFatJet pNetQCD"
+  #  "LIMIT": [0.,6000.], 
+  #  "LATEX": "ST_{gcJet}"
   #},
+  "gcLeadingOSFatJet_pNetJ":{
+    "CATEGORICAL": False,
+    "TRANSFORM": True,
+    "LIMIT": [0,1],
+    "LATEX": "gcOSFatJet pNetQCD"
+  },
   "NJets_forward": {
     "CATEGORICAL": True,
     "TRANSFORM": False,
@@ -384,10 +384,10 @@ samples_input = {
       DYMHT4002018,
       DYMHT6002018,
       DYMHT8002018,
-      JetHTRun2018A,
-      JetHTRun2018B,
-      JetHTRun2018C,
-      JetHTRun2018D,
+      #JetHTRun2018A,
+      #JetHTRun2018B,
+      #JetHTRun2018C,
+      #JetHTRun2018D,
       STs2018,
       STt2018,
       STtb2018,

@@ -16,7 +16,7 @@ from samples import *
 parser = ArgumentParser()
 parser.add_argument( "-y",  "--year", default = "2018", help = "Year for sample" )
 parser.add_argument( "-n", "--name", required = True, help = "Output name of ROOT file" )
-parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcJet_ST" ], help = "Variables to transform" )
+parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcLeadingOSFatJet_pNetJ" ], help = "Variables to transform" ) # change for new variables
 parser.add_argument( "-p",  "--pEvents", default = 100, help = "Percent of events (0 to 100) to include from each file." )
 parser.add_argument( "-l",  "--location", default = "LPC", help = "Location of input ROOT files: LPC,BRUX" )
 parser.add_argument( "--doMajorMC", action = "store_true", help = "Major MC background to be weighted using ABCDnn" )
@@ -123,14 +123,18 @@ def format_ntuple( inputs, output, trans_var, doMCdata):
       
       if args.doData:
         rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")
-      elif "WJetsToLNu"  in samplename:
+      elif "_WJetsToLNu"  in samplename:
         rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
       elif "TTToSemiLeptonic" in samplename:
         rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
       else:
         rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
 
+      if "gcLeadingOSFatJet_pNetJ" in config.variables.keys():
+        rDF_weight = rDF_weight.Define("gcLeadingOSFatJet_pNetJ", "gcOSFatJet_pNetJ[0]")
+
       sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
+
       dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) ) # useful rdf branches to numpy
       del rDF, rDF_filter, rDF_weight
       n_inc = int( sample_pass * float( args.pEvents ) / 100. ) # get a specified portion of the passed events
