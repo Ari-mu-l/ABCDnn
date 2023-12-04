@@ -103,7 +103,7 @@ inputs_tgt_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" 
 print( ">> Found {} total target entries".format( inputs_tgt.shape[0] ) )
 
 #inputs_mnr = mTree.pandas.df( variables + [ "xsecWeight" ] ) # uproot3 
-inputs_mnr = mTree.arrays( variables, library="pd" ) # uproot4
+inputs_mnr = mTree.arrays( variables + [ "xsecWeight" ], library="pd" ) # uproot4
 inputs_mnr_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
 print( ">> Found {} total minor background entries".format( inputs_mnr.shape[0] ) )
 
@@ -279,14 +279,14 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   mc_true_hist = np.histogram( mc_true, bins = bins, density = False )
   mc_true_scale = float( np.sum( mc_true_hist[0] ) )
 
-  #mc_minor_hist = np.histogram( mc_minor, bins = bins, weights = weights_minor, density = False )
-  #mc_minor_hist = np.histogram( mc_minor, bins = bins, density = False )
-  #mc_minor_scale = len(mc_minor)
+  mc_minor_hist = np.histogram( mc_minor, bins = bins, weights = weights_minor, density = False )
+  mc_minor_hist = np.histogram( mc_minor, bins = bins, density = False )
+  mc_minor_scale = len(mc_minor)
 
   data_hist = np.histogram( data, bins = bins, density = False )
   if useMinor:
-    #data_mod = data_hist[0] - mc_minor_hist[0]
-    data_mod = data_hist[0]
+    data_mod = data_hist[0] - mc_minor_hist[0]
+    #data_mod = data_hist[0]
   else:
     data_mod = data_hist[0]
   for i in range( len( data_mod ) ):
@@ -364,14 +364,14 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
   mc_true_hist = np.histogram( mc_true, bins = bins, density = False )
   mc_true_scale = float( len(mc_true) )
 
-  #mc_minor_hist = np.histogram( mc_minor, bins = bins, weights = weights_minor, density = False )
-  #mc_minor_hist = np.histogram( mc_minor, bins = bins, density = False )
-  #mc_minor_scale = float( len(mc_minor) )
+  mc_minor_hist = np.histogram( mc_minor, bins = bins, weights = weights_minor, density = False )
+  mc_minor_hist = np.histogram( mc_minor, bins = bins, density = False )
+  mc_minor_scale = float( len(mc_minor) )
 
   data_hist = np.histogram( data, bins = bins, density = False )
   if useMinor:
-    #data_mod = data_hist[0] - mc_minor_hist[0]
-    data_mod = data_hist[0]
+    data_mod = data_hist[0] - mc_minor_hist[0]
+    #data_mod = data_hist[0]
   else:
     data_mod = data_hist[0]
   data_mod_scale = np.sum(data_mod)
@@ -437,8 +437,8 @@ for i, variable in enumerate( variables_transform ):
           mc_pred = np.asarray( predictions_best[ region_key[ int(x/2) ][y] ] )[:,i],
           mc_true = inputs_src_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
           mc_minor = inputs_mnr_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
-          weights_minor= np.zeros(np.shape(inputs_mnr_region[ region_key[int(x/2)][y] ][["Bprime_mass"]])),
-          #weights_minor = inputs_mnr_region[ region_key[int(x/2)][y] ][ [ "xsecWeight" ] ].to_numpy()[:,0],
+          #weights_minor= np.zeros(np.shape(inputs_mnr_region[ region_key[int(x/2)][y] ][["Bprime_mass"]])),
+          weights_minor = inputs_mnr_region[ region_key[int(x/2)][y] ][ [ "xsecWeight" ] ].to_numpy()[:,0],
           data = inputs_tgt_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
           bins = bins,
           useMinor = args.useMinor,
@@ -452,8 +452,8 @@ for i, variable in enumerate( variables_transform ):
           mc_pred = np.asarray( predictions_best[ region_key[ int((x-1)/2) ][y] ] )[:,i],
           mc_true = inputs_src_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
           mc_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
-          weights_minor= np.zeros(np.shape(inputs_mnr_region[ region_key[int(x/2)][y] ][["Bprime_mass"]])),
-          #weights_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ [ "xsecWeight" ] ].to_numpy()[:,0],
+          #weights_minor= np.zeros(np.shape(inputs_mnr_region[ region_key[int(x/2)][y] ][["Bprime_mass"]])),
+          weights_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ [ "xsecWeight" ] ].to_numpy()[:,0],
           data = inputs_tgt_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
           bins = bins,
           useMinor = args.useMinor,
