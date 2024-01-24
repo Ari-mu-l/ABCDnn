@@ -27,37 +27,43 @@ args = parser.parse_args()
 
 if args.randomize: config.params["MODEL"]["SEED"] = np.random.randint( 100000 )
 
-hp = { key: config.params["MODEL"][key] for key in config.params[ "MODEL" ]  }
-hp = { # parameters for setting up the NAF model
-    "NODES_COND": int(np.random.randint(1,16, size=1)[0]),
-    "HIDDEN_COND": int(np.random.randint(1,4, size=1)[0]),
-    "NODES_TRANS": int(np.random.randint(1,16, size=1)[0]),
-    "LRATE": float(np.random.choice([1e-2, 1e-3], 1)[0]),
-    #"LRATE": float(np.random.choice([1e-2, 1e-3, 1e-4, 1e-5, 1e-6], 1)[0]),
-    "DECAY": float(np.random.choice([1, 1e-1, 1e-2], 1)[0]),
-    "GAP": int(np.random.choice([100, 200, 300, 400, 500, 600, 1000], 1)[0]),
-    "DEPTH": int(np.random.randint(1, 4, size=1)[0]),
-    "REGULARIZER": (np.random.choice(["L1","L2","L1+L2","None"], 1).tolist()[0]), # DROPOUT, BATCHNORM, ALL, NONE
-    "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": (np.random.choice(["swish", "relu", "elu", "softplus"], 1)).tolist()[0], # softplus, relu, swish
-    "BETA1": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
-    "BETA2": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
-    "MMD SIGMAS": (np.random.choice([0.05, 0.1, 0.5, 1.0, 1.5], 3)).tolist(),
-    "MMD WEIGHTS": None,
-    "MINIBATCH": 256,
-    #"MINIBATCH": int(np.random.choice([64, 128, 256, 512], 1)[0]),
-    "RETRAIN": True,
-    "PERMUTE": False,
-    "SEED": 101, # this can be overridden when running train_abcdnn.py 
-    "SAVEDIR": "./Results/",
-    "CLOSURE": 0.03,
-    "VERBOSE": True
-  }
+#hp = { # parameters for setting up the NAF model
+#    "NODES_COND": int(np.random.randint(2,15, size=1)[0]),
+#    "HIDDEN_COND": int(np.random.randint(1,8, size=1)[0]),
+#    "NODES_TRANS": int(np.random.randint(2,15, size=1)[0]),
+#    "LRATE": float(np.random.choice([1e-2, 1e-3], 1)[0]),
+#    #"LRATE": float(np.random.choice([1e-2, 1e-3, 1e-4, 1e-5, 1e-6], 1)[0]),
+#    "DECAY": float(np.random.choice([1, 1e-1, 1e-2], 1)[0]),
+#    "GAP": int(np.random.choice([100, 200, 300, 400, 500, 600, 1000], 1)[0]),
+#    "DEPTH": int(np.random.randint(1, 8, size=1)[0]),
+#    "REGULARIZER": (np.random.choice(["L1","L2","L1+L2","None"], 1).tolist()[0]), # DROPOUT, BATCHNORM, ALL, NONE
+#    "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
+#    "ACTIVATION": (np.random.choice(["swish", "relu", "elu", "softplus"], 1)).tolist()[0], # softplus, relu, swish
+#    "BETA1": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
+#    "BETA2": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
+#    "MMD SIGMAS": (np.random.uniform(0.01, 1, 3)).tolist(),
+#    #"MMD SIGMAS": (np.random.choice(, size = 3, replace = False)).tolist(),
+#    "MMD WEIGHTS": None,
+#    "MINIBATCH": 256,
+#    #"MINIBATCH": int(np.random.choice([64, 128, 256, 512], 1)[0]),
+#    "RETRAIN": True,
+#    "PERMUTE": False,
+#    "SEED": 101, # this can be overridden when running train_abcdnn.py 
+#    "SAVEDIR": "./Results/",
+#    "CLOSURE": 0.03,
+#    "VERBOSE": True
+#  }
 
+#with open('{}/hp_{}.txt'.format('Results', args.modeltag), 'w') as hp_file:
+#  hp_file.write(str(hp))
+
+
+#hp = { key: config.params["MODEL"][key] for key in config.params[ "MODEL" ]  }
 #hp["NODES_COND"] = int(args.modeltag.split('_')[2])
 #hp["HIDDEN_COND"] = int(args.modeltag.split('_')[3])
 #hp["NODES_TRANS"] = int(args.modeltag.split('_')[4])
-#hp["MMD SIGMAS"] = [float(args.modeltag.split('_')[5]), float(args.modeltag.split('_')[6]), float(args.modeltag.split('_')[7])]
+#hp["DEPTH"] = int(args.modeltag.split('_')[5])
+#hp["MMD SIGMAS"] = [float(args.modeltag.split('_')[6]), float(args.modeltag.split('_')[7]), float(args.modeltag.split('_')[8])]
 #hp["MINIBATCH"] = int(args.modeltag.split('_')[8]) 
 #hp["LRATE"] = float(args.modeltag.split('_')[9])
 #hp["DECAY"] = float(args.modeltag.split('_')[10])
@@ -65,10 +71,7 @@ hp = { # parameters for setting up the NAF model
 #print(type(hp["MINIBATCH"]))
 #for param in hp:
 #	print("{}: {}, type: {}".format(param, hp[param], type(hp[param])))
-#exit()
 
-with open('{}/hp_{}.txt'.format('Results', args.modeltag), 'w') as hp_file:
-  hp_file.write(str(hp))
 
 
 print( "[START] Training ABCDnn model {} iwth discriminator: {}".format( args.modeltag, args.disc_tag ) )

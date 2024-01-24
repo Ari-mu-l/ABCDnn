@@ -46,7 +46,19 @@ with open( os.path.join( folder, args.tag + ".json" ), "r" ) as f:
 print( ">> Setting up NAF model..." )
 
 print( ">> Loading checkpoint weights from {} with tag: {}".format( folder, args.tag ) )
-checkpoints = [ name.split( "." )[0] for name in folder_contents if ( "EPOCH" in name and args.tag in name and name.endswith( "index" ) ) ]
+#for name in folder_contents:
+#  if ( "EPOCH" in name and args.tag in name and name.endswith( "index" ) ) :
+#    print( name.split( ".index" ) )
+#exit()
+checkpoints = [ name.split( ".index" )[0] for name in folder_contents if ( "EPOCH" in name and args.tag in name and name.endswith( "index" ) ) ]
+
+for checkpoint in checkpoints:
+  if "300" in checkpoint:
+    checkpoints = [ checkpoint ]
+    break
+#checkpoints = [ "best_model_0.1_1.0_0.5_EPOCH300" ]
+#print(checkpoints)
+#exit()
 
 print( ">> Load the data" )
 sFile = uproot.open( args.source )
@@ -80,20 +92,8 @@ X_MAX = inputs_src[ variables[3] ].max()
 Y_MIN = inputs_src[ variables[2] ].min()
 Y_MAX = inputs_src[ variables[2] ].max()
 
-#print("X_VAR: {}".format(variables[3]))
-#print("X_MIN: {}".format(X_MIN))
-#print("X_MAX: {}".format(X_MAX))
-#print("Y_VAR: {}".format(variables[2]))
-#print("Y_MIN: {}".format(Y_MIN))
-#print("Y_MAX: {}".format(Y_MAX))
-#exit()
-
 x_region = np.linspace( X_MIN, X_MAX, X_MAX - X_MIN + 1 )
 y_region = np.linspace( Y_MIN, Y_MAX, Y_MAX - Y_MIN + 1 )
-
-#print("x_region: {}".format(x_region))
-#print("y_region: {}".format(y_region))
-#exit()
 
 inputs_src_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
 print( ">> Found {} total source entries".format( inputs_src.shape[0] ) )
@@ -141,21 +141,10 @@ for region in [ "X", "Y", "A", "B", "C", "D" ]:
   inputs_tgt_region[region] = inputs_tgt.loc[select_tgt]
   inputs_mnr_region[region] = inputs_mnr.loc[select_mnr]
   
-  #print("region {}".format(region))
-  #print("{} min: {}".format(config.regions["X"]["VARIABLE"], inputs_src_region[region][config.regions["X"]["VARIABLE"]].min()))
-  #print("{} max: {}".format(config.regions["X"]["VARIABLE"], inputs_src_region[region][config.regions["X"]["VARIABLE"]].max()))
-  #print("{} min: {}".format(config.regions["Y"]["VARIABLE"], inputs_src_region[region][config.regions["Y"]["VARIABLE"]].min()))
-  #print("{} max: {}".format(config.regions["Y"]["VARIABLE"], inputs_src_region[region][config.regions["Y"]["VARIABLE"]].max()))
-
-#print("inputs_src_region in region A:")
-#print(inputs_src_region["A"])
-#exit()
 
 print( ">> Yields in each region:" )
 for region in inputs_src_region:
   print( "  + Region {}: Source = {}, Target = {}".format( region, inputs_src_region[region].shape[0], inputs_tgt_region[region].shape[0] ) )
-
-#exit()
 
 print( ">> Encoding and normalizing source inputs" )
 inputs_enc_region = {}
@@ -168,22 +157,6 @@ for region in inputs_src_region:
   encoder[region] = abcdnn.OneHotEncoder_int( categorical, lowerlimit = lowerlimit, upperlimit = upperlimit )
   inputs_enc_region[ region ] = encoder[region].encode( inputs_src_region[ region ].to_numpy( dtype = np.float32 ) )
   inputs_nrm_region[ region ] = ( inputs_enc_region[ region ] - inputmeans ) / inputsigmas
-
-#print("inputmeans: {}".format(inputmeans))
-#print("inputsigmas: {}".format(inputsigmas))
-#print("encoder:")
-#print(encoder)
-#print("inputs_enc_region length: ")
-#print(len(inputs_enc_region))
-#print("inputs_enc_region type: ")
-#print(type(inputs_enc_region))
-#print("inputs_enc_region first three in region A: ")
-#print(inputs_enc_region['A'][:3])
-#print("inputs_nrm_region length: ")
-#print(len(inputs_nrm_region))
-#print("inputs_nrm_region first three: ")
-#print(inputs_nrm_region[:3])
-#exit()
 
 print( ">> Processing checkpoints" )
 predictions = {}
@@ -215,23 +188,23 @@ del NAF
 #print("predicionts_best region A first three: {}".format(predictions_best["A"][:3]))
 #print("predicionts_best region A shape: {}".format(len(predictions_best["A"])))
 
-#for i, checkpoint in enumerate( sorted( checkpoints ) ):
-#  epoch = checkpoint.split( "EPOCH" )[1]
-#  NAF = abcdnn.NAF( 
-#    inputdim = params["INPUTDIM"],
-#    conddim = params["CONDDIM"],
-#    activation = params["ACTIVATION"], 
-#    regularizer = params["REGULARIZER"],
-#    initializer = params["INITIALIZER"],
-#    nodes_cond = params["NODES_COND"],
-#    hidden_cond = params["HIDDEN_COND"],
-#    nodes_trans = params["NODES_TRANS"],
-#    depth = params["DEPTH"],
-#    permute = bool( params["PERMUTE"] )
-#  )
-#  NAF.load_weights( os.path.join( folder, checkpoint ) )
+for i, checkpoint in enumerate( sorted( checkpoints ) ):
+  epoch = checkpoint.split( "EPOCH" )[1]
+  NAF = abcdnn.NAF( 
+    inputdim = params["INPUTDIM"],
+    conddim = params["CONDDIM"],
+    activation = params["ACTIVATION"], 
+    regularizer = params["REGULARIZER"],
+    initializer = params["INITIALIZER"],
+    nodes_cond = params["NODES_COND"],
+    hidden_cond = params["HIDDEN_COND"],
+    nodes_trans = params["NODES_TRANS"],
+    depth = params["DEPTH"],
+    permute = bool( params["PERMUTE"] )
+  )
+  NAF.load_weights( os.path.join( folder, checkpoint ) )
   
-#  predictions[ int( epoch ) ] = { region: [] for region in [ "X", "Y", "A", "B", "C", "D" ] }
+  predictions[ int( epoch ) ] = { region: [] for region in [ "X", "Y", "A", "B", "C", "D" ] }
 
 #  print("predictions: {}".format(predictions))
 #  print("predictions length: {}".format(len(predictions)))
@@ -420,6 +393,11 @@ os.system( "mkdir -vp {}/{}".format( folder, args.tag ) )
 print( "Plotting best trained model" )
 for i, variable in enumerate( variables_transform ):
   bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
+  #if(variable == "Bprime_mass"):
+  #  bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], 5000, config.params[ "PLOT" ][ "NBINS" ] )
+  #  bins = np.concatenate((bins[bins<2500], np.array([2750, 3750, 5000])), axis=0)
+  #else:
+  #  bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
   fig, axs = plt.subplots( 6, 2, figsize = (9,12), gridspec_kw = { "height_ratios": [3,1,3,1,3,1] } )
   
   for x in range(6):
@@ -476,7 +454,13 @@ print( "Plotting models per epoch:" )
 for epoch in sorted( predictions.keys() ):
   print( "  + Generating image for epoch {}".format( epoch ) )
   for i, variable in enumerate( variables_transform ): 
-    bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
+    #bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
+    if(variable == "Bprime_mass"):
+      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], 3000, config.params[ "PLOT" ][ "NBINS" ] )
+      #db = np.zeros(len(bins))
+      
+    else:
+      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
     fig, axs = plt.subplots( 6, 2, figsize = (9,12), gridspec_kw = { "height_ratios": [3,1,3,1,3,1] } )
     for x in range( 6 ):
       for y in range( 2 ):

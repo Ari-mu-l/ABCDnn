@@ -4,19 +4,19 @@ from samples import *
 
 data_path = os.path.join( os.getcwd() )
 results_path = os.path.join( os.getcwd(), "Results" )
-eosUserName = "jmanagan"
+eosUserName = "xshen"
 #postfix = "hadd"
 
 condorDir = "root://cmseos.fnal.gov//store/user/xshen/"
 
 sourceDir = {
-  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Sep2023_fullRun2/".format( eosUserName ),
-  "BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
+  "LPC": "root://cmseos.fnal.gov//store/user/jmanagan/BtoTW_Oct2023_fullRun2/",
+  #"BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
 targetDir = {
-  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Sep2023_fullRun2/".format( eosUserName ),
-  "BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
+  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Oct2023_fullRun2/".format( eosUserName ),
+  #"BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
 sampleDir = {
@@ -31,18 +31,18 @@ variables = {
     "LIMIT": [0., 5000.], # may be set to None?
     "LATEX": "M_{reco}"
   },
-  #"gcJet_ST": {
-  #  "CATEGORICAL": False,
-  #  "TRANSFORM": True,
-  #  "LIMIT": [0.,6000.], 
-  #  "LATEX": "ST_{gcJet}"
-  #},
-  "gcLeadingOSFatJet_pNetJ":{
+  "gcJet_ST": {
     "CATEGORICAL": False,
     "TRANSFORM": True,
-    "LIMIT": [0,1],
-    "LATEX": "gcOSFatJet pNetQCD"
+    "LIMIT": [0.,6000.], 
+    "LATEX": "ST_{gcJet}"
   },
+  #"gcLeadingOSFatJet_pNetJ":{
+  #  "CATEGORICAL": False,
+  #  "TRANSFORM": True,
+  #  "LIMIT": [0,1],
+  #  "LATEX": "gcOSFatJet pNetQCD"
+  #},
   "NJets_forward": {
     "CATEGORICAL": True,
     "TRANSFORM": False,
@@ -58,7 +58,8 @@ variables = {
 }
 
 selection = { # edit these accordingly
-  "Bdecay_obs":{ "VALUE": [ 1, 4 ], "CONDITION": [ "==", "==" ] },
+  "Bdecay_obs":{ "VALUE": [ 1, 4 ], "CONDITION": [ "==", "==" ] }, # case14
+  #"Bdecay_obs":{ "VALUE": [ 2, 3 ], "CONDITION": [ "==", "==" ] }, # case23
   "W_MT":{ "VALUE": [ 200 ], "CONDITION": [ "<=" ] },
 }
 
@@ -95,21 +96,21 @@ regions = {
 
 params = {
   "MODEL": { # parameters for setting up the NAF model
-    "NODES_COND": 8,
-    "HIDDEN_COND": 1,
-    "NODES_TRANS": 1,
-    "LRATE": 1e-2,
-    "DECAY": 0.1,
+    "NODES_COND": 3,
+    "HIDDEN_COND": 2,
+    "NODES_TRANS": 9,
+    "LRATE": 1e-3,
+    "DECAY": 1.0,
     "GAP": 200,
-    "DEPTH": 1,
+    "DEPTH": 2,
     "REGULARIZER": "NONE", # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": "swish", # softplus, relu, swish
+    "ACTIVATION": "softplus", # softplus, relu, swish
     "BETA1": 0.9,
-    "BETA2": 0.999,
-    "MMD SIGMAS": [0.05,0.1,0.2],
+    "BETA2": 0.9,
+    "MMD SIGMAS": [0.898,0.119,0.687],
     "MMD WEIGHTS": None,
-    "MINIBATCH": 2**6,
+    "MINIBATCH": 1024,
     "RETRAIN": True,
     "PERMUTE": False,
     "SEED": 101, # this can be overridden when running train_abcdnn.py
@@ -118,7 +119,7 @@ params = {
     "VERBOSE": True  
   },
   "TRAIN": {
-    "EPOCHS": 2000,
+    "EPOCHS": 500,
     "PATIENCE": 0,
     "MONITOR": 100,
     "MONITOR THRESHOLD": 0,  # only save model past this epoch
@@ -210,11 +211,11 @@ samples_input = {
       DYMHT4002016APV,
       DYMHT6002016APV,
       DYMHT8002016APV,
-      JetHTRun2016APVB,
-      JetHTRun2016APVC,
-      JetHTRun2016APVD,
-      JetHTRun2016APVE,
-      JetHTRun2016APVF,
+      #JetHTRun2016APVB,
+      #JetHTRun2016APVC,
+      #JetHTRun2016APVD,
+      #JetHTRun2016APVE,
+      #JetHTRun2016APVF,
       STs2016APV,
       STt2016APV,
       STtb2016APV,
@@ -234,7 +235,9 @@ samples_input = {
       WZ2016APV,
       ZZ2016APV
     ],
-    "CLOSURE": []
+    "CLOSURE": [
+      
+    ]
   },
   "2016": {
     "DATA": [
@@ -267,9 +270,9 @@ samples_input = {
       DYMHT4002016,
       DYMHT6002016,
       DYMHT8002016,
-      JetHTRun2016F,
-      JetHTRun2016G,
-      JetHTRun2016H,
+      #JetHTRun2016F,
+      #JetHTRun2016G,
+      #JetHTRun2016H,
       STs2016,
       STt2016,
       STtb2016,
@@ -325,11 +328,11 @@ samples_input = {
       DYMHT4002017,
       DYMHT6002017,
       DYMHT8002017,
-      JetHTRun2017B,
-      JetHTRun2017C,
-      JetHTRun2017D,
-      JetHTRun2017E,
-      JetHTRun2017F,
+      #JetHTRun2017B,
+      #JetHTRun2017C,
+      #JetHTRun2017D,
+      #JetHTRun2017E,
+      #JetHTRun2017F,
       STs2017,
       STt2017,
       STtb2017,

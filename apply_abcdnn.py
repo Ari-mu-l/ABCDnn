@@ -75,30 +75,42 @@ print( "[START] Loading checkpoints to NAF models:" )
 for checkpoint in checkpoints:
   with open( "Results/" + checkpoint + ".json", "r" ) as f:
     params  = load_json( f.read() )
+    #print(params)
+    #exit()
     if params[ "DISC TAG" ][0] in track_tags:
       print( "[WARN] Found redundant discriminator tag. Replacing {} --> {}".format( params[ "DISC TAG" ], checkpoint ) )
       disc_tags[ checkpoint ] = checkpoint
     else:
       disc_tags[ checkpoint ] = params["DISC TAG"][0]
       track_tags.append( params[ "DISC TAG" ][0] )
+      #print(track_tags)
+      #exit()
     if checkpoint in closure_checkpoints:
       try:
         closure[ checkpoint ] = float( params["CLOSURE"] )
       except:
         sys.exit( "[WARNING] {0}.json missing CLOSURE entry necessary for --closure arugment. Calculate using evaluate_model.py --closure and then add to {0}.json.".format( checkpoint ) )
     regions[ checkpoint ] = params[ "REGIONS" ]
-    transfers[ checkpoint ] = float( params[ "TRANSFER" ] )
+    #print( regions[ checkpoint ] )
+    transfers[ checkpoint ] = float( params[ "TRANSFER" ] ) # what is this?
     variables[ checkpoint ] = [ str( key ) for key in sorted( params[ "VARIABLES" ] ) if params[ "VARIABLES" ][ key ][ "TRANSFORM" ] ]
     variables_transform[ checkpoint ] = [ str( key ) for key in sorted( params[ "VARIABLES" ] ) if params[ "VARIABLES" ][ key ][ "TRANSFORM" ] ]
     variables[ checkpoint ].append( params[ "REGIONS" ][ "Y" ][ "VARIABLE" ] )
     variables[ checkpoint ].append( params[ "REGIONS" ][ "X" ][ "VARIABLE" ] )
+    #print(variables[ checkpoint ])
     categoricals[ checkpoint ] = [ params[ "VARIABLES" ][ key ][ "CATEGORICAL" ] for key in variables[ checkpoint ] ]
     lowerlimits[ checkpoint ] = [ params[ "VARIABLES" ][ key ][ "LIMIT" ][0] for key in variables[ checkpoint ] ]
     upperlimits[ checkpoint ] = [ params[ "VARIABLES" ][ key ][ "LIMIT" ][1] for key in variables[ checkpoint ] ]
     means[ checkpoint ] = params[ "INPUTMEANS" ]
     sigmas[ checkpoint ] = params[ "INPUTSIGMAS" ]    
-    means_pred[ checkpoint ] = params[ "SIGNAL_MEAN" ] 
-    sigmas_pred[ checkpoint ] = params[ "SIGNAL_SIGMA" ] 
+    #means_pred[ checkpoint ] = params[ "SIGNAL_MEAN" ] # not used in the script
+    #sigmas_pred[ checkpoint ] = params[ "SIGNAL_SIGMA" ] 
+    print('categoricals[ checkpoint ]: {}'.format(categoricals[ checkpoint ]))
+    print('lowerlimits[ checkpoint ]: {}'.format(lowerlimits[ checkpoint ]))
+    print('upperlimits[ checkpoint ]: {}'.format(upperlimits[ checkpoint ]))
+    print('means[ checkpoint ]: {}'.format(means[ checkpoint ]))
+    print('sigmas[ checkpoint ]: {}'.format(sigmas[ checkpoint ]))
+    exit()
 
     models[ checkpoint ] = abcdnn.NAF(
       inputdim    = params["INPUTDIM"],

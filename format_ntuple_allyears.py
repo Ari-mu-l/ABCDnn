@@ -2,7 +2,7 @@
 # formats three types of samples: data (no weights), major MC background (no weights), and minor MC backgrounds (weights)
 # last modified April 11, 2023 by Daniel Li
 
-#python format_ntuple.py -y 2018 -n OctMajor -p 100 --doMajorMC
+#python format_ntuple.py -y all -n OctMajor -p 100 --doMajorMC
 
 import os, sys, ROOT
 from array import array
@@ -14,10 +14,11 @@ from utils import *
 from samples import *
 
 parser = ArgumentParser()
-parser.add_argument( "-y",  "--year", default = "2018", help = "Year for sample" )
+parser.add_argument( "-y",  "--year", default = "all", help = "Year for sample" )
 parser.add_argument( "-n", "--name", required = True, help = "Output name of ROOT file" )
 #parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcLeadingOSFatJet_pNetJ" ], help = "Variables to transform" ) # change for new variables
 parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcJet_ST" ], help = "Variables to transform" )
+parser.add_argument( "-r",  "--nRuns", default = 10000, help = "Number of events to include in the output file" )
 parser.add_argument( "-p",  "--pEvents", default = 100, help = "Percent of events (0 to 100) to include from each file." )
 parser.add_argument( "-l",  "--location", default = "LPC", help = "Location of input ROOT files: LPC,BRUX" )
 parser.add_argument( "--doMajorMC", action = "store_true", help = "Major MC background to be weighted using ABCDnn" )
@@ -73,7 +74,7 @@ class ToyTree:
       self.rFile.Write()
       self.rFile.Close()
 
-def getfChain( output, samplename, year ):
+def getfChain( samplename, year ):
   if ( args.JECup or args.JECdown ) and "data" in output:
     print( "[WARNING] Ignoring JECup and/or JECdown arguments for data" )
     fChain = readTreeNominal( samplename, year, config.sourceDir["LPC"],"Events_Nominal" ) # read rdf for processing
@@ -109,7 +110,7 @@ def format_ntuple( inputs, output, trans_var, doMCdata):
         if "JetHT" in samplename:
           samplename += sample.samplename.split('-')[0][-1]
       print( ">> Processing {}".format( samplename ) )
-      fChain = getfChain( output, samplename, year )
+      fChain = getfChain( samplename, year )
       rDF = ROOT.RDataFrame(fChain)
       sample_total = rDF.Count().GetValue()
       filter_string = "" 
@@ -121,7 +122,9 @@ def format_ntuple( inputs, output, trans_var, doMCdata):
           else:
             filter_string += "|| ( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
       rDF_filter = rDF.Filter( filter_string )
+    
       
+
       if args.doData:
         rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")
       elif "_WJetsToLNu"  in samplename:

@@ -137,8 +137,8 @@ class OneHotEncoder_int( object ):
     if self.upperlimit is None:
       self.upperlimit = np.max( categoricalinputdata, axis = 0 )
 
-    lowerlimitapp = np.maximum( categoricalinputdata, self.lowerlimit )
-    limitapp = np.minimum( lowerlimitapp, self.upperlimit )
+    lowerlimitapp = np.maximum( categoricalinputdata, self.lowerlimit, dtype=np.float32 )
+    limitapp = np.minimum( lowerlimitapp, self.upperlimit, dtype=np.float32 )
 
     #print("given lowerlimit: {}".format(self.lowerlimit))
     #print("given upperlimit: {}".format(self.upperlimit))
@@ -188,7 +188,7 @@ class OneHotEncoder_int( object ):
     ndebug = 0
     for icol, ncat_feat in zip( range( self.ncolumns ), self.categories_per_feature ):
       if ncat_feat > 0:
-        res = np.eye( ncat_feat )[ cat_limited[ :,icol ].astype(int) ]
+        res = np.eye( ncat_feat, float32 )[ cat_limited[ :,icol ].astype(int) ]
         arraylist.append( res )
         #print("cat_limited[ :,icol ].astype(int): {}".format(cat_limited[ :,icol ].astype(int)))
         #print("res: {}".format(res))
@@ -298,10 +298,20 @@ def prepdata( rSource, rMinor, rTarget, variables, regions, closure):
   #dfMinor = tMinor.pandas.df( vNames + [ "xsecWeight" ] )
   #dfTarget = tTarget.pandas.df( vNames )
 
-  dfMajor = tMajor.arrays(vNames, library="pd")
-  dfMinor = tMinor.arrays(vNames + [ "xsecWeight" ], library="pd")
-  dfTarget = tTarget.arrays(vNames, library="pd")
+  #dfMajor = (tMajor.arrays(vNames, library="pd", dtype=float32)).sample(frac=0.001, random_state=1)
+  #dfMinor = (tMinor.arrays(vNames + [ "xsecWeight" ], library="pd", dtype=float32)).sample(frac=0.001, random_state=1)
+  #dfTarget = (tTarget.arrays(vNames, library="pd", dtype=float32)).sample(frac=0.01, random_state=1)
 
+  dfMajor = (tMajor.arrays(vNames, library="pd"))
+  dfMinor = (tMinor.arrays(vNames + [ "xsecWeight" ], library="pd"))
+  dfTarget = (tTarget.arrays(vNames, library="pd"))
+
+  dfMajor.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
+  dfMinor.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
+  dfTarget.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
+
+  #print(dfMajor.dtypes)
+  #exit()
   #print("dfMajor shape: {}".format(dfMajor.shape))
   #exit()
 
@@ -1043,7 +1053,10 @@ class ABCDnn_training(object):
   def extended_ABCD( self ):
     # compute the norm of the raw data
     dA, dB, dC, dD, dX, dY = self.count[ "DATA" ][ "A" ], self.count[ "DATA" ][ "B" ], self.count[ "DATA" ][ "C" ], self.count[ "DATA" ][ "D" ], self.count[ "DATA" ][ "X" ], self.count[ "DATA" ][ "Y" ]
-    mA, mB, mC, mD, mX, mY = self.count[ "MINOR" ][ "A" ], self.count[ "MINOR" ][ "B" ], self.count[ "MINOR" ][ "C" ], self.count[ "MINOR" ][ "D" ], self.count[ "MINOR" ][ "X" ], self.count[ "MINOR" ][ "D" ]
+    mA, mB, mC, mD, mX, mY = self.count[ "MINOR" ][ "A" ], self.count[ "MINOR" ][ "B" ], self.count[ "MINOR" ][ "C" ], self.count[ "MINOR" ][ "D" ], self.count[ "MINOR" ][ "X" ], self.count[ "MINOR" ][ "Y" ]
+
+    #print("minorSF: {}".format(self.minorSF))
+    #exit()
 
     cA = dA * self.targetSF - mA * self.minorSF
     cB = dB * self.targetSF - mB * self.minorSF
