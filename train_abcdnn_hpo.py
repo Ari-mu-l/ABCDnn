@@ -27,32 +27,32 @@ args = parser.parse_args()
 
 if args.randomize: config.params["MODEL"]["SEED"] = np.random.randint( 100000 )
 
-#hp = { # parameters for setting up the NAF model
-#    "NODES_COND": int(np.random.randint(2,15, size=1)[0]),
-#    "HIDDEN_COND": int(np.random.randint(1,8, size=1)[0]),
-#    "NODES_TRANS": int(np.random.randint(2,15, size=1)[0]),
-#    "LRATE": float(np.random.choice([1e-2, 1e-3], 1)[0]),
-#    #"LRATE": float(np.random.choice([1e-2, 1e-3, 1e-4, 1e-5, 1e-6], 1)[0]),
-#    "DECAY": float(np.random.choice([1, 1e-1, 1e-2], 1)[0]),
-#    "GAP": int(np.random.choice([100, 200, 300, 400, 500, 600, 1000], 1)[0]),
-#    "DEPTH": int(np.random.randint(1, 8, size=1)[0]),
-#    "REGULARIZER": (np.random.choice(["L1","L2","L1+L2","None"], 1).tolist()[0]), # DROPOUT, BATCHNORM, ALL, NONE
-#    "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-#    "ACTIVATION": (np.random.choice(["swish", "relu", "elu", "softplus"], 1)).tolist()[0], # softplus, relu, swish
-#    "BETA1": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
-#    "BETA2": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
-#    "MMD SIGMAS": (np.random.uniform(0.01, 1, 3)).tolist(),
-#    #"MMD SIGMAS": (np.random.choice(, size = 3, replace = False)).tolist(),
-#    "MMD WEIGHTS": None,
-#    "MINIBATCH": 256,
-#    #"MINIBATCH": int(np.random.choice([64, 128, 256, 512], 1)[0]),
-#    "RETRAIN": True,
-#    "PERMUTE": False,
-#    "SEED": 101, # this can be overridden when running train_abcdnn.py 
-#    "SAVEDIR": "./Results/",
-#    "CLOSURE": 0.03,
-#    "VERBOSE": True
-#  }
+hp = { # parameters for setting up the NAF model
+    "NODES_COND": int(np.random.randint(2,15, size=1)[0]),
+    "HIDDEN_COND": int(np.random.randint(1,8, size=1)[0]),
+    "NODES_TRANS": int(np.random.randint(2,15, size=1)[0]),
+    "LRATE": float(np.random.choice([1e-2, 1e-3], 1)[0]),
+    #"LRATE": float(np.random.choice([1e-2, 1e-3, 1e-4, 1e-5, 1e-6], 1)[0]),
+    "DECAY": float(np.random.choice([1, 1e-1, 1e-2], 1)[0]),
+    "GAP": int(np.random.choice([100, 200, 300, 400, 500, 600, 1000], 1)[0]),
+    "DEPTH": int(np.random.randint(1, 8, size=1)[0]),
+    "REGULARIZER": (np.random.choice(["L1","L2","L1+L2","None"], 1).tolist()[0]), # DROPOUT, BATCHNORM, ALL, NONE
+    "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
+    "ACTIVATION": (np.random.choice(["swish", "relu", "elu", "softplus"], 1)).tolist()[0], # softplus, relu, swish
+    "BETA1": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
+    "BETA2": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
+    "MMD SIGMAS": (np.random.uniform(0.01, 1, 3)).tolist(),
+    #"MMD SIGMAS": (np.random.choice(, size = 3, replace = False)).tolist(),
+    "MMD WEIGHTS": None,
+    "MINIBATCH": 256,
+    #"MINIBATCH": int(np.random.choice([64, 128, 256, 512], 1)[0]),
+    "RETRAIN": True,
+    "PERMUTE": False,
+    "SEED": 101, # this can be overridden when running train_abcdnn.py 
+    "SAVEDIR": "./Results/",
+    "CLOSURE": 0.03,
+    "VERBOSE": True
+  }
 
 #with open('{}/hp_{}.txt'.format('Results', args.modeltag), 'w') as hp_file:
 #  hp_file.write(str(hp))

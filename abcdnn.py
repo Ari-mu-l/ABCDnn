@@ -137,8 +137,8 @@ class OneHotEncoder_int( object ):
     if self.upperlimit is None:
       self.upperlimit = np.max( categoricalinputdata, axis = 0 )
 
-    lowerlimitapp = np.maximum( categoricalinputdata, self.lowerlimit, dtype=np.float32 )
-    limitapp = np.minimum( lowerlimitapp, self.upperlimit, dtype=np.float32 )
+    lowerlimitapp = np.maximum( categoricalinputdata, self.lowerlimit )
+    limitapp = np.minimum( lowerlimitapp, self.upperlimit )
 
     #print("given lowerlimit: {}".format(self.lowerlimit))
     #print("given upperlimit: {}".format(self.upperlimit))
@@ -188,7 +188,7 @@ class OneHotEncoder_int( object ):
     ndebug = 0
     for icol, ncat_feat in zip( range( self.ncolumns ), self.categories_per_feature ):
       if ncat_feat > 0:
-        res = np.eye( ncat_feat, float32 )[ cat_limited[ :,icol ].astype(int) ]
+        res = np.eye( ncat_feat )[ cat_limited[ :,icol ].astype(int) ]
         arraylist.append( res )
         #print("cat_limited[ :,icol ].astype(int): {}".format(cat_limited[ :,icol ].astype(int)))
         #print("res: {}".format(res))
@@ -306,9 +306,9 @@ def prepdata( rSource, rMinor, rTarget, variables, regions, closure):
   dfMinor = (tMinor.arrays(vNames + [ "xsecWeight" ], library="pd"))
   dfTarget = (tTarget.arrays(vNames, library="pd"))
 
-  dfMajor.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
-  dfMinor.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
-  dfTarget.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
+  #dfMajor.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
+  #dfMinor.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
+  #dfTarget.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
 
   #print(dfMajor.dtypes)
   #exit()
