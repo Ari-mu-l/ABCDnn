@@ -2,6 +2,7 @@
 
 import os,sys,math,string
 from ROOT import *
+from ROOT import Math
 
 def isEqual(a, b):
     try:
@@ -17,9 +18,9 @@ def contains(a, b):
 
 def cleanEOSpath(path): 
     #if path starts with /eos/uscms remove it. 
-    if string.find(path,'/eos/uscms',0,10) == 0:
+    if path.find('/eos/uscms',0,10) == 0:
         return path[10:]
-    elif string.find(path,'root://cmseos.fnal.gov/',0,23) == 0:
+    elif path.find('root://cmseos.fnal.gov/',0,23) == 0:
         return path[23:]
     else:
         return path
@@ -46,7 +47,7 @@ def EOSlist_root_files(Dir):
     items2 = striplist(items)
     rootlist = []
     for item in items2:
-        if string.rfind(item,'root',-4) != -1:
+        if item.rfind('root',-4) != -1:
             rootlist.append(item)
     return rootlist
 
@@ -55,28 +56,28 @@ def readTreeNominal(sample,year,step1Dir,treename = 'Events_Nominal'):
     #RDF_TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8_2016APV_0.root
     pathstring0 = 'RDF_'+sample+'_'+year+'_0.root'
     if not EOSpathExists(step1Dir[23:]+'/',pathstring0): #and not EOSpathExists(step1Dir[23:]+'/',pathstring1): 
-        print "Error: path does not exist! Aborting ... no",pathstring0 #,"nor",pathstring1
+        print("Error: path does not exist! Aborting ... no "+pathstring0) #,"nor",pathstring1
         os._exit(1)
     rootfiles = EOSlist_root_files(step1Dir[23:])	
         
     tChain = TChain(treename)
     for i in range(0,len(rootfiles)):
-        if sample not in rootfiles[i]: continue
+        if sample+'_'+year+'_' not in rootfiles[i]: continue # avoid 2016 and 2016APV doubling with extra _
         tChain.Add(rootfiles[i])
     return tChain 
 
 def readTreeShift(sample,year,shift,step1Dir):	
-	pathstring0 = 'RDF_'+sample+'_'+year+'_0.root'
-        if not EOSpathExists(step1Dir[23:]+'/',pathstring0): #and not EOSpathExists(step1Dir[23:]+'/',pathstring1):
-		print "Error: path does not exist! Aborting ... no",pathstring0 #,"nor",pathstring1
-		os._exit(1)
-	rootfiles = EOSlist_root_files(step1Dir[23:])	
+    pathstring0 = 'RDF_'+sample+'_'+year+'_0.root'
+    if not EOSpathExists(step1Dir[23:]+'/',pathstring0): #and not EOSpathExists(step1Dir[23:]+'/',pathstring1):
+        print("Error: path does not exist! Aborting ... no "+pathstring0) #,"nor",pathstring1
+        os._exit(1)
+    rootfiles = EOSlist_root_files(step1Dir[23:])	
 
-	tChain = TChain('Events_'+shift)
-	for i in range(0,len(rootfiles)):
-		if sample not in rootfiles[i]: continue
-		tChain.Add(rootfiles[i])
-	return tChain 
+    tChain = TChain('Events_'+shift)
+    for i in range(0,len(rootfiles)):
+        if sample+'_'+year+'_' not in rootfiles[i]: continue # avoid 2016 and 2016APV doubling with extra _
+        tChain.Add(rootfiles[i])
+    return tChain 
 
 ##############################################################################
 
@@ -162,29 +163,33 @@ def getMaxWidth(table, index):
         except: pass
     return max
 
-def printTable(table,out=sys.stdout):
-    """Prints out a table of data, padded for alignment
-    @param out: Output stream (file-like object)
-    @param table: The table to print. A list of lists.
-    Each row must have the same number of columns. """
-    col_paddings = []
+#def printTable(table,out=sys.stdout):
+#    """Prints out a table of data, padded for alignment
+#    @param out: Output stream (file-like object)
+#    @param table: The table to print. A list of lists.
+#    Each row must have the same number of columns. """
+#    col_paddings = []
 
-    maxColumns=0
-    for row in table:
-        if len(row)>maxColumns: maxColumns=len(row)
+#    maxColumns=0
+#    for row in table:
+#        if len(row)>maxColumns: maxColumns=len(row)
 
-    for i in range(maxColumns):
-        col_paddings.append(getMaxWidth(table, i))
-        
-    for row in table:
-        # left col
-        if row[0]=='break': row[0]='-'*(sum(col_paddings)+(2*len(col_paddings)))
-        print >> out, format(row[0]).ljust(col_paddings[0] + 1),
-        # rest of the cols
-        for i in range(1, len(row)):
-            col = format(row[i]).ljust(col_paddings[i] + 2)
-            print >> out, col,
-        print >> out
+#    for i in range(maxColumns):
+#        col_paddings.append(getMaxWidth(table, i))
+#        
+#    for row in table:
+#        # left col
+#        if row[0]=='break': row[0]='-'*80 #(sum(col_paddings))+(2*len(col_paddings)))
+#        #print >> out, format(row[0]).ljust(col_paddings[0] + 1),
+#        print(format(row[0]).ljust(col_paddings[0] + 1), end="", file=out)
+#        # rest of the cols
+#        for i in range(1, len(row)):
+#            col = format(row[i]).ljust(col_paddings[i] + 2)
+#            #print >> out, col,
+#            print(col, end="", file=out)
+#        #print >> out
+#        print('',file=out)
+
 
 ##############################################################################
 

@@ -1,3 +1,4 @@
+
 # this script is run on the condor node for applying gthe trained ABCDnn model to ttbar samples
 # last updated 11/15/2021 by Daniel Li
 
@@ -46,19 +47,7 @@ with open( os.path.join( folder, args.tag + ".json" ), "r" ) as f:
 print( ">> Setting up NAF model..." )
 
 print( ">> Loading checkpoint weights from {} with tag: {}".format( folder, args.tag ) )
-#for name in folder_contents:
-#  if ( "EPOCH" in name and args.tag in name and name.endswith( "index" ) ) :
-#    print( name.split( ".index" ) )
-#exit()
 checkpoints = [ name.split( ".index" )[0] for name in folder_contents if ( "EPOCH" in name and args.tag in name and name.endswith( "index" ) ) ]
-
-for checkpoint in checkpoints:
-  if "300" in checkpoint:
-    checkpoints = [ checkpoint ]
-    break
-#checkpoints = [ "best_model_0.1_1.0_0.5_EPOCH300" ]
-#print(checkpoints)
-#exit()
 
 print( ">> Load the data" )
 sFile = uproot.open( args.source )
@@ -87,10 +76,10 @@ for i, variable in enumerate( variables ):
 #inputs_src = sTree.pandas.df( variables ) # uproot3
 inputs_src = sTree.arrays( variables, library="pd" ) # uproot4
 
-X_MIN = inputs_src[ variables[3] ].min()
-X_MAX = inputs_src[ variables[3] ].max()
-Y_MIN = inputs_src[ variables[2] ].min()
-Y_MAX = inputs_src[ variables[2] ].max()
+X_MIN = inputs_src[ variables[-1] ].min()
+X_MAX = inputs_src[ variables[-1] ].max()
+Y_MIN = inputs_src[ variables[-2] ].min()
+Y_MAX = inputs_src[ variables[-2] ].max()
 
 x_region = np.linspace( X_MIN, X_MAX, X_MAX - X_MIN + 1 )
 y_region = np.linspace( Y_MIN, Y_MAX, Y_MAX - Y_MIN + 1 )
@@ -188,26 +177,26 @@ del NAF
 #print("predicionts_best region A first three: {}".format(predictions_best["A"][:3]))
 #print("predicionts_best region A shape: {}".format(len(predictions_best["A"])))
 
-for i, checkpoint in enumerate( sorted( checkpoints ) ):
-  epoch = checkpoint.split( "EPOCH" )[1]
-  NAF = abcdnn.NAF( 
-    inputdim = params["INPUTDIM"],
-    conddim = params["CONDDIM"],
-    activation = params["ACTIVATION"], 
-    regularizer = params["REGULARIZER"],
-    initializer = params["INITIALIZER"],
-    nodes_cond = params["NODES_COND"],
-    hidden_cond = params["HIDDEN_COND"],
-    nodes_trans = params["NODES_TRANS"],
-    depth = params["DEPTH"],
-    permute = bool( params["PERMUTE"] )
-  )
-  NAF.load_weights( os.path.join( folder, checkpoint ) )
+#for i, checkpoint in enumerate( sorted( checkpoints ) ):
+#  epoch = checkpoint.split( "EPOCH" )[1]
+#  NAF = abcdnn.NAF( 
+#    inputdim = params["INPUTDIM"],
+#    conddim = params["CONDDIM"],
+#    activation = params["ACTIVATION"], 
+#    regularizer = params["REGULARIZER"],
+#    initializer = params["INITIALIZER"],
+#    nodes_cond = params["NODES_COND"],
+#    hidden_cond = params["HIDDEN_COND"],
+#    nodes_trans = params["NODES_TRANS"],
+#    depth = params["DEPTH"],
+#    permute = bool( params["PERMUTE"] )
+#  )
+#  NAF.load_weights( os.path.join( folder, checkpoint ) )
   
-  predictions[ int( epoch ) ] = { region: [] for region in [ "X", "Y", "A", "B", "C", "D" ] }
+#  predictions[ int( epoch ) ] = { region: [] for region in [ "X", "Y", "A", "B", "C", "D" ] }
 
-#  print("predictions: {}".format(predictions))
-#  print("predictions length: {}".format(len(predictions)))
+  #print("predictions: {}".format(predictions))
+  #print("predictions length: {}".format(len(predictions)))
 
 #  for region in predictions[ int( epoch ) ]:
 #    NAF_predict = np.asarray( NAF.predict( np.asarray( inputs_nrm_region[ region ] )[::2] ) )
@@ -454,17 +443,14 @@ print( "Plotting models per epoch:" )
 for epoch in sorted( predictions.keys() ):
   print( "  + Generating image for epoch {}".format( epoch ) )
   for i, variable in enumerate( variables_transform ): 
-    #bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
-    if(variable == "Bprime_mass"):
-      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], 3000, config.params[ "PLOT" ][ "NBINS" ] )
-      #db = np.zeros(len(bins))
-      
-    else:
-      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
+    bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
     fig, axs = plt.subplots( 6, 2, figsize = (9,12), gridspec_kw = { "height_ratios": [3,1,3,1,3,1] } )
     for x in range( 6 ):
       for y in range( 2 ):
-        blind = True if ( x >= 4 and y == 1 and not args.unblind ) else False
+        blind = False
+        if ( not args.unblind and y==1 ):
+          if ( x == 4 or x == 5 ):
+            blind = True
         if x % 2 == 0: 
           plot_hist( 
             ax = axs[x,y], 
@@ -505,6 +491,8 @@ for epoch in sorted( predictions.keys() ):
     plt.savefig( "{}/{}/{}_{}_EPOCH{}.png".format( folder, args.tag, args.tag, variable, epoch ) )
     images[ variable ].append( imageio.imread( "{}/{}/{}_{}_EPOCH{}.png".format( folder, args.tag, args.tag, variable, epoch ) ) )
     plt.close()
+
+exit()
 
 try:
   print( "[DONE] {} training GIF completed: {}_{}.gif, {}_{}.gif".format( args.tag, args.tag, variables_transform[0], args.tag, variables_transform[1] ) )

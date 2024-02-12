@@ -6,6 +6,7 @@
 # are added as branches to the ABCDnn ntuple
 #
 # last updated by daniel_li2@brown.edu on 08-17-2022
+# python evaluate_model.py -s rootFiles_BprimeST/Case23/OctMajor_all_mc_p100.root -t rootFiles_BprimeST/Case23/OctData_all_data_p100.root -m case14_mST_all_random26_ep3000_2048_0.01_0.1_400 --stats
 
 import os
 import numpy as np
@@ -56,50 +57,54 @@ def prepare_data( fSource, fTarget, cVariables, cRegions, params ):
   lowerlimit =  [ cVariables[ vName ][ "LIMIT" ][0] for vName in variables ]
   upperlimit =  [ cVariables[ vName ][ "LIMIT" ][1] for vName in variables ]
   
-  inputs_src = sTree.pandas.df( variables )
-  x_region = np.linspace( cRegions[ "X" ][ "MIN" ], cRegions[ "X" ][ "MAX" ], cRegions[ "X" ][ "MAX" ] - cRegions[ "X" ][ "MIN" ] + 1 )
-  y_region = np.linspace( cRegions[ "Y" ][ "MIN" ], cRegions[ "Y" ][ "MAX" ], cRegions[ "Y" ][ "MAX" ] - cRegions[ "Y" ][ "MIN" ] + 1 )
+  inputs_src = sTree.arrays( variables, library="pd" )
+  if cRegions[ "X" ][ "MIN" ] is not None:
+    x_region = np.linspace( cRegions[ "X" ][ "MIN" ], cRegions[ "X" ][ "MAX" ], cRegions[ "X" ][ "MAX" ] - cRegions[ "X" ][ "MIN" ] + 1 )
+    y_region = np.linspace( cRegions[ "Y" ][ "MIN" ], cRegions[ "Y" ][ "MAX" ], cRegions[ "Y" ][ "MAX" ] - cRegions[ "Y" ][ "MIN" ] + 1 )
+  else:
+    x_region = np.linspace( 0, inputs_src[cRegions[ "X" ][ "VARIABLE" ]].max(), inputs_src[cRegions[ "X" ][ "VARIABLE" ]].max() - 0 + 1 )
+    y_region = np.linspace( 0, inputs_src[cRegions[ "Y" ][ "VARIABLE" ]].max(), inputs_src[cRegions[ "Y" ][ "VARIABLE" ]].max() - 0 + 1 )
+    #print(inputs_src[cRegions[ "X" ]["VARIABLE" ]].min(), inputs_src[cRegions[ "X" ]["VARIABLE" ]].max())
+    #print(x_region)
+    #print(inputs_src[cRegions[ "Y" ]["VARIABLE" ]].min(), inputs_src[cRegions[ "Y" ]["VARIABLE" ]].max())
+    #print(y_region)
+
   inputs_src_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
   print( ">> Found {} total source entries".format( inputs_src.shape[0] ) )
-  inputs_tgt = tTree.pandas.df( variables ) 
+  inputs_tgt = tTree.arrays( variables, library="pd" ) 
   inputs_tgt_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
   print( ">> Found {} total target entries".format( inputs_tgt.shape[0] ) )
 
-  inputs_src_region["X"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-  inputs_tgt_region["X"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-  inputs_src_region["A"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-  inputs_tgt_region["A"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] == y_region[0] ) ]
+  for region in inputs_src_region:
+    if cRegions[ "X" ][ region ][0] == ">=":
+      select_X_src = inputs_src[ cRegions[ "X" ][ "VARIABLE" ] ] >= cRegions[ "X" ][ region ][1]
+      select_X_tgt = inputs_tgt[ cRegions[ "X" ][ "VARIABLE" ] ] >= cRegions[ "X" ][ region ][1]
+    elif cRegions[ "X" ][ region ][0] == "==":
+      select_X_src = inputs_src[ cRegions[ "X" ][ "VARIABLE" ] ] == cRegions[ "X" ][ region ][1]
+      select_X_tgt = inputs_tgt[ cRegions[ "X" ][ "VARIABLE" ] ] == cRegions[ "X" ][ region ][1]
+    elif cRegions[ "X" ][ region ][0] == "<=":
+      select_X_src = inputs_src[ cRegions[ "X" ][ "VARIABLE" ] ] <= cRegions[ "X" ][ region ][1]
+      select_X_tgt = inputs_tgt[ cRegions[ "X" ][ "VARIABLE" ] ] <= cRegions[ "X" ][ region ][1]
+    else:
+      sys.exit( "[ERROR] Invalid region condition. Exiting..." )
 
-  if cRegions["Y"]["INCLUSIVE"]:
-    inputs_src_region["Y"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-    inputs_tgt_region["Y"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-    inputs_src_region["C"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-    inputs_tgt_region["C"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  else:
-    inputs_src_region["Y"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-    inputs_tgt_region["Y"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] == x_region[0] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-    inputs_src_region["C"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-    inputs_tgt_region["C"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] == x_region[1] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] == y_region[1] ) ]
+    if cRegions[ "Y" ][ region ][0] == ">=":
+      select_Y_src = inputs_src[ cRegions[ "Y" ][ "VARIABLE" ] ] >= cRegions[ "Y" ][ region ][1]
+      select_Y_tgt = inputs_tgt[ cRegions[ "Y" ][ "VARIABLE" ] ] >= cRegions[ "Y" ][ region ][1]
+    elif cRegions[ "Y" ][ region ][0] == "==":
+      select_Y_src = inputs_src[ cRegions[ "Y" ][ "VARIABLE" ] ] == cRegions[ "Y" ][ region ][1]
+      select_Y_tgt = inputs_tgt[ cRegions[ "Y" ][ "VARIABLE" ] ] == cRegions[ "Y" ][ region ][1]
+    elif cRegions[ "Y" ][ region ][0] == "<=":
+      select_Y_src = inputs_src[ cRegions[ "Y" ][ "VARIABLE" ] ] <= cRegions[ "Y" ][ region ][1]
+      select_Y_tgt = inputs_tgt[ cRegions[ "Y" ][ "VARIABLE" ] ] <= cRegions[ "Y" ][ region ][1]
+    else:
+      sys.exit( "[ERROR] Invalid region condition. Exiting..." )
 
-  if cRegions["X"]["INCLUSIVE"]:
-    inputs_src_region["B"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-    inputs_tgt_region["B"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-  else:
-    inputs_src_region["B"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] == y_region[0] ) ]
-    inputs_tgt_region["B"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] == y_region[0] ) ]
+    inputs_src_region[ region ] = inputs_src.loc[ select_X_src & select_Y_src ]
+    inputs_tgt_region[ region ] = inputs_tgt.loc[ select_X_tgt & select_Y_tgt ]
 
-  if cRegions["X"]["INCLUSIVE"] and cRegions["Y"]["INCLUSIVE"]:
-    inputs_src_region["D"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-    inputs_tgt_region["D"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  elif config.regions["X"]["INCLUSIVE"] and not config.regions["Y"]["INCLUSIVE"]:
-    inputs_src_region["D"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-    inputs_tgt_region["D"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] >= x_region[2] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-  elif not config.regions["X"]["INCLUSIVE"] and config.regions["Y"]["INCLUSIVE"]:
-    inputs_src_region["D"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-    inputs_tgt_region["D"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] >= y_region[1] ) ]
-  else:
-    inputs_src_region["D"] = inputs_src.loc[ ( inputs_src[ cRegions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_src[ cRegions["Y"]["VARIABLE"] ] == y_region[1] ) ]
-    inputs_tgt_region["D"] = inputs_tgt.loc[ ( inputs_tgt[ cRegions["X"]["VARIABLE"] ] == x_region[2] ) & ( inputs_tgt[ cRegions["Y"]["VARIABLE"] ] == y_region[1] ) ]
+  #print(inputs_src_region)
+  #print(inputs_tgt_region)
 
   print( ">> Yields in each region:" )
   for region in inputs_src_region:
@@ -113,6 +118,7 @@ def prepare_data( fSource, fTarget, cVariables, cRegions, params ):
   target_nrm_region = {}
   inputmeans = np.hstack( [ float( mean ) for mean in params[ "INPUTMEANS" ] ] )
   inputsigmas = np.hstack( [ float( sigma ) for sigma in params[ "INPUTSIGMAS" ] ] )
+
   for region in inputs_src_region:
     encoder[region] = abcdnn.OneHotEncoder_int( categorical, lowerlimit = lowerlimit, upperlimit = upperlimit )
     source_enc_region[ region ] = encoder[region].encode( inputs_src_region[ region ].to_numpy( dtype = np.float32 ) )
@@ -197,7 +203,8 @@ def non_closure_eABCD( source_data, target_data ):
   return syst
 
 def get_stats( model, source, region, bSize, tag ):
-  sBatch, tbatch = get_batch( source, source, bSize, region ) 
+  #sBatch, tbatch = get_batch( source, source, bSize, region ) 
+  sBatch = source[region]
   sPred = model( sBatch.astype( "float32" ) )
   with open( os.path.join( "Results/", tag + ".json" ), "r+" ) as f:
     params = load_json( f.read() )

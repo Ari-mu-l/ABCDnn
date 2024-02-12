@@ -2,7 +2,7 @@
 # formats three types of samples: data (no weights), major MC background (no weights), and minor MC backgrounds (weights)
 # last modified April 11, 2023 by Daniel Li
 
-#python format_ntuple.py -y 2018 -n OctMajor -p 100 --doMajorMC
+#python format_ntuple.py -y 2018 -n OctMajor -p 100 -c case1 --doMajorMC
 
 import os, sys, ROOT
 from array import array
@@ -17,10 +17,11 @@ parser = ArgumentParser()
 parser.add_argument( "-y",  "--year", default = "2018", help = "Year for sample" )
 parser.add_argument( "-n", "--name", required = True, help = "Output name of ROOT file" )
 #parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcLeadingOSFatJet_pNetJ" ], help = "Variables to transform" ) # change for new variables
-#parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcJet_ST" ], help = "Variables to transform" )
-parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass" ], help = "Variables to transform" )
+parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcJet_ST" ], help = "Variables to transform" )
+#parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass" ], help = "Variables to transform" )
 parser.add_argument( "-p",  "--pEvents", default = 100, help = "Percent of events (0 to 100) to include from each file." )
 parser.add_argument( "-l",  "--location", default = "LPC", help = "Location of input ROOT files: LPC,BRUX" )
+parser.add_argument( "-c", "--case", required = True, help = "decay mode")
 parser.add_argument( "--doMajorMC", action = "store_true", help = "Major MC background to be weighted using ABCDnn" )
 parser.add_argument( "--doMinorMC", action = "store_true", help = "Minor MC background to be weighted using traditional SF" )
 parser.add_argument( "--doClosureMC", action = "store_true", help = "Closure MC background weighted using traditional SF" )
@@ -38,7 +39,7 @@ ROOT.gInterpreter.Declare("""
 """)
 
 #ROOT.gInterpreter.Declare("""                                                                                                
-#    float compute_weight_noSF( float genWeight, float lumi, float xsec, float nRun ){                                  
+#    float compute_weight( float genWeight, float lumi, float xsec, float nRun ){
 #    return genWeight * lumi * xsec / (nRun * abs(genWeight));
 #    }
 #""")
@@ -92,7 +93,7 @@ def getfChain( output, samplename, year ):
     fChain = readTreeNominal( samplename, year, config.sourceDir["LPC"],"Events_Nominal" )
   return fChain
 
-def format_ntuple( inputs, output, trans_var, doMCdata):
+def format_ntuple( inputs, output, trans_var, doMCdata ):
   ntuple = ToyTree( output, trans_var )
 
   if (args.year == "all"):
@@ -113,14 +114,15 @@ def format_ntuple( inputs, output, trans_var, doMCdata):
       fChain = getfChain( output, samplename, year )
       rDF = ROOT.RDataFrame(fChain)
       sample_total = rDF.Count().GetValue()
-      filter_string = "" 
+      filter_string = "(W_MT <= 200)" 
       scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset # COMMENT: What is isTraining? # what is scale used for?
-      for variable in ntuple.selection: 
-        for i in range( len( ntuple.selection[ variable ]["CONDITION"] ) ):
-          if filter_string == "": 
-            filter_string += "( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
-          else:
-            filter_string += "|| ( {} {} {} ) ".format( variable, ntuple.selection[ variable ][ "CONDITION" ][i], ntuple.selection[ variable ][ "VALUE" ][i] )
+      filter_string += " && ( {} ) ".format( ntuple.selection[ args.case ] )
+      #for variable in ntuple.selection:
+      #    if filter_string == "":
+      #      filter_string += "( {} ) ".format( ntuple.selection[ variable ] )
+      #    else:
+      #      filter_string += "&& ( {} ) ".format( ntuple.selection[ variable ] )
+      print('filter_string: {}'.format(filter_string))
       rDF_filter = rDF.Filter( filter_string )
       
       if args.doData:
@@ -152,10 +154,10 @@ def format_ntuple( inputs, output, trans_var, doMCdata):
   ntuple.Write()
   
 if args.doMajorMC:
-  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables, doMCdata = "MAJOR MC" )
+  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_mc_p" + args.pEvents + "_" + args.case, trans_var = args.variables, doMCdata = "MAJOR MC" )
 elif args.doMinorMC:
-  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables, doMCdata = "MINOR MC" )
+  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_mc_p" + args.pEvents + "_" + args.case, trans_var = args.variables, doMCdata = "MINOR MC" )
 elif args.doClosureMC:
-  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_mc_p" + args.pEvents, trans_var = args.variables, doMCdata = "CLOSURE" )
+  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_mc_p" + args.pEvents + "_" + args.case, trans_var = args.variables, doMCdata = "CLOSURE" )
 elif args.doData:
-  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_data_p" + args.pEvents, trans_var = args.variables, doMCdata = "DATA" )
+  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_data_p" + args.pEvents + "_" + args.case, trans_var = args.variables, doMCdata = "DATA" )

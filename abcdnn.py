@@ -154,7 +154,6 @@ class OneHotEncoder_int( object ):
     #print(regionC)
     #print("categoricalinputdata NJets_forward>=1 and NJets_DeepFlavorL==3: {}".format(categoricalinputdata[regionC]))
     #print("limitapp NJets_forward>=1: {}".format(limitapp[regionC]))
-    #exit()
     
     return limitapp
 
@@ -167,7 +166,6 @@ class OneHotEncoder_int( object ):
     #print("made into cat_limited: {}".format(cat_limited))
     #print("cat_limited max and min: {}, {}".format(np.max(cat_limited, axis=0), np.min(cat_limited, axis=0)))
     #print("cat_limited NJets_forward: {}".format(cat_limited[:,2]))
-    #exit()
 
     # one hot encoding information
     if not self.categories_fixed:
@@ -181,7 +179,6 @@ class OneHotEncoder_int( object ):
  
     #print("categories_per_feature: {}".format(self.categories_per_feature)) # [0,0,2,3]
     #print(self.ncolumns)
-    #exit()
     
     # the encoding part
     arraylist = []
@@ -197,7 +194,7 @@ class OneHotEncoder_int( object ):
           #exit()
       else:
         arraylist.append( inputdata[:,icol].reshape( ( inputdata.shape[0], 1 ) ) )
-    #exit()
+
     #print("arraylist length: {}".format(len(arraylist)))
     #print("arraylist 0th element: {}".format(arraylist[0]))
     #print("arraylist 0th element length: {}".format(len(arraylist[0])))
@@ -208,14 +205,12 @@ class OneHotEncoder_int( object ):
     #print("arraylist 3th element: {}".format(arraylist[3]))
     #print("arraylist 3th element length: {}".format(len(arraylist[3][0])))
     #print("arraylist 3th element's per event length: {}".format(len(arraylist[3][0])))
-    #exit()
 
     encoded = np.concatenate( tuple( arraylist ), axis = 1 ).astype( np.float32 )
     
     #print("encoded data shape: {}".format(np.shape(encoded)))
     #print("encoded data first three elements: {}".format(encoded[:3]))
     #print("encoded data first element shape: {}".format(np.shape(encoded[0])))
-    #exit()
 
     return encoded
 
@@ -261,7 +256,7 @@ class SawtoothSchedule( LearningRateSchedule ):
         "name": self.name
     }
 
-def prepdata( rSource, rMinor, rTarget, variables, regions, closure):
+def prepdata( rSource, rMinor, rTarget, variables, regions, closure, frac):
 # mc_weight(str) = option for weighting MC by the xsec
 # rSource (str) = source ROOT file
 # rTarget (str) = target ROOT file
@@ -282,7 +277,6 @@ def prepdata( rSource, rMinor, rTarget, variables, regions, closure):
   #print("vNames: {}".format(vNames))
   #print("categorical: {}".format(categorical))
   #print("upperlimit: {}, lowerlimit: {}".format(upperlimit, lowerlimit))
-  #exit()
 
   _onehotencoder = OneHotEncoder_int( categorical, lowerlimit = lowerlimit, upperlimit = upperlimit )
 
@@ -298,22 +292,20 @@ def prepdata( rSource, rMinor, rTarget, variables, regions, closure):
   #dfMinor = tMinor.pandas.df( vNames + [ "xsecWeight" ] )
   #dfTarget = tTarget.pandas.df( vNames )
 
-  #dfMajor = (tMajor.arrays(vNames, library="pd", dtype=float32)).sample(frac=0.001, random_state=1)
-  #dfMinor = (tMinor.arrays(vNames + [ "xsecWeight" ], library="pd", dtype=float32)).sample(frac=0.001, random_state=1)
-  #dfTarget = (tTarget.arrays(vNames, library="pd", dtype=float32)).sample(frac=0.01, random_state=1)
-
-  dfMajor = (tMajor.arrays(vNames, library="pd"))
+  dfMajor = (tMajor.arrays(vNames, library="pd")).sample(frac=frac, random_state=1)
   dfMinor = (tMinor.arrays(vNames + [ "xsecWeight" ], library="pd"))
   dfTarget = (tTarget.arrays(vNames, library="pd"))
+
+  #dfMajor = (tMajor.arrays(vNames, library="pd"))
+  #dfMinor = (tMinor.arrays(vNames + [ "xsecWeight" ], library="pd"))
+  #dfTarget = (tTarget.arrays(vNames, library="pd"))
 
   #dfMajor.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
   #dfMinor.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
   #dfTarget.astype({vNames[0]: 'int32'}, {vNames[1]: 'int32'})
 
   #print(dfMajor.dtypes)
-  #exit()
   #print("dfMajor shape: {}".format(dfMajor.shape))
-  #exit()
 
   if(regions[ "X" ][ "MIN" ] is not None):
     dfMajor = dfMajor.loc[ ( dfMajor[ regions[ "X" ][ "VARIABLE" ] ] >= regions[ "X" ][ "MIN" ] ) & ( dfMajor[ regions[ "Y" ][ "VARIABLE" ] ] >= regions[ "Y" ][ "MIN" ] ) ]
@@ -321,7 +313,6 @@ def prepdata( rSource, rMinor, rTarget, variables, regions, closure):
     dfTarget = dfTarget.loc[ ( dfTarget[ regions[ "X" ][ "VARIABLE" ] ] >= regions[ "X" ][ "MIN" ] ) & ( dfTarget[ regions[ "Y" ][ "VARIABLE" ] ] >= regions[ "Y" ][ "MIN" ] ) ]
 
   #print("dfMajor shape: {}".format(dfMajor.shape))
-  #exit() 
 
   inputRawMajor = dfMajor
   inputEncMajor = _onehotencoder.encode( inputRawMajor.to_numpy( dtype=np.float32 ) )
@@ -805,7 +796,7 @@ class ABCDnn_training(object):
   def __init__( self ):
     pass
 
-  def setup_events( self, rSource, rMinor, rTarget, selection, variables, regions, closure ):
+  def setup_events( self, rSource, rMinor, rTarget, selection, variables, regions, closure, frac ):
     # obtain the normalized data (plus others)
     self.rSource = rSource        # (str) path to source ROOT file
     self.rMinor = rMinor          # (str) path to minor ROOT file
@@ -820,7 +811,7 @@ class ABCDnn_training(object):
     #print("sourceSF: {}".format(self.sourceSF))
     #exit()
 
-    rawinputs, rawinputsmc, rawinputsminor, normedinputs, normedinputsmc, inputMean, inputSigma, inputnames, ncat_per_feature = prepdata( rSource, rMinor, rTarget, variables, regions, closure)
+    rawinputs, rawinputsmc, rawinputsminor, normedinputs, normedinputsmc, inputMean, inputSigma, inputnames, ncat_per_feature = prepdata( rSource, rMinor, rTarget, variables, regions, closure, frac)
 
     #print("Shapes of rawinputs, rawinputsmc, rawinputsminor, normedinputs, normedinputsmc: ".format(rawinputs.shape, rawinputsmc.shape, rawinputsminor.shape, normedinputs.shape, normedinputsmc.shape))
     #print("inputMean: {}".format(inputMean))
@@ -838,7 +829,7 @@ class ABCDnn_training(object):
     self.inputSigma = inputSigma              # rms of unnormalized data
 
     self.inputdim = len( list( variables.keys() ) ) - 2 # the total number of transformed variables
-    self.ncat_per_feature = ncat_per_feature[0:self.inputdim] # number of categories per categorical feature # FIXME. still think its wrong
+    self.ncat_per_feature = ncat_per_feature[0:self.inputdim] # number of categories per categorical feature
     self.conddim = self.normedinputs.shape[1] - self.inputdim # ?
 
     #print("inputdim: {}".format(self.inputdim))
