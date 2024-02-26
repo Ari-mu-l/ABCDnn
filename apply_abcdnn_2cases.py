@@ -309,7 +309,7 @@ def fill_tree( sample, dLocal ):
     loop_tree( rTree_in, rTree_out, i )    
   
   rTree_out.Write()
-  rFile_out.Write()
+  #rFile_out.Write()
   rFile_out.Close()
 
   #if args.storage == "EOS":
