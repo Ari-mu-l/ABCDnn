@@ -17,6 +17,7 @@ parser = ArgumentParser()
 parser.add_argument( "-s", "--source", required = True )
 parser.add_argument( "-b", "--minor",  required = True )
 parser.add_argument( "-t", "--target", required = True )
+parser.add_argument( "-f", "--fraction", required = True )
 parser.add_argument( "--hpo", action = "store_true" )
 parser.add_argument( "--randomize", action = "store_true" )
 parser.add_argument( "--verbose", action = "store_true" )
@@ -51,7 +52,8 @@ abcdnn_.setup_events(
   selection = config.selection,
   variables = config.variables,
   regions = config.regions,
-  closure = args.closure
+  closure = args.closure,
+  frac = float(args.fraction)
 )
 
 abcdnn_.setup_model(

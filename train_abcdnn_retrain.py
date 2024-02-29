@@ -1,5 +1,5 @@
 # updated 10/25 by Daniel Li
-# python train_abcdnn_hpo.py -s rootFiles_BprimeSTCase14/OctMajor_2018_mc_p100.root -b rootFiles_BprimeST/Case14/OctMinor_2018_mc_p100.root -t rootFiles_BprimeST/Case14/OctData_2018_data_p100.root -f 0.6 -m random1
+# python train_abcdnn_hpo.py -s rootFiles_BprimeSTCase14/OctMajor_all_mc_p100.root -b rootFiles_BprimeST/Case14/OctMinor_all_mc_p100.root -t rootFiles_BprimeST/Case14/OctData_all_data_p100.root -f 0.6 -m random3
 
 import numpy as np
 import os
@@ -30,53 +30,31 @@ args = parser.parse_args()
 
 if args.randomize: config.params["MODEL"]["SEED"] = np.random.randint( 100000 )
 
-hp = { # parameters for setting up the NAF model
-    "NODES_COND": int(np.random.randint(2,15, size=1)[0]),
-    #"NODES_COND": int(np.random.randint(1,3, size=1)[0]),
-    "HIDDEN_COND": int(np.random.randint(1,8, size=1)[0]),
-    #HIDDEN_COND": int(np.random.randint(3,7, size=1)[0]),
-    "NODES_TRANS": int(np.random.randint(2,15, size=1)[0]),
-    "LRATE": float(np.random.choice([1e-2, 1e-3], 1)[0]),
-    #"LRATE": float(np.random.choice([1e-2, 1e-3, 1e-4, 1e-5, 1e-6], 1)[0]),
-    "DECAY": float(np.random.choice([1, 1e-1, 1e-2], 1)[0]),
-    "GAP": int(np.random.choice([100, 200, 300, 400, 500, 600, 1000], 1)[0]),
-    "DEPTH": int(np.random.randint(1, 8, size=1)[0]),
-    "REGULARIZER": (np.random.choice(["L1","L2","L1+L2","None"], 1).tolist()[0]), # DROPOUT, BATCHNORM, ALL, NONE
-    "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": (np.random.choice(["swish", "relu", "elu", "softplus"], 1)).tolist()[0], # softplus, relu, swish
-    "BETA1": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
-    "BETA2": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
-    "MMD SIGMAS": (np.random.uniform(0.01, 1, 3)).tolist(),
-    #"MMD SIGMAS": (np.random.choice(, size = 3, replace = False)).tolist(),
-    "MMD WEIGHTS": None,
-    "MINIBATCH": 512,
-    #"MINIBATCH": int(np.random.choice([64, 128, 256, 512], 1)[0]),
-    "RETRAIN": True,
-    "PERMUTE": False,
-    "SEED": 101, # this can be overridden when running train_abcdnn.py 
-    "SAVEDIR": "./Results/",
-    "CLOSURE": 0.03,
-    "VERBOSE": True
-  }
+with open('{}/hp_{}.txt'.format('Results', args.modeltag), 'r') as hp_file:
+  content = hp_file.read().split(', ')
+  print(content)
+  #print(content[0].split(': ')[-1])
+exit()
 
-with open('{}/hp_{}.txt'.format('Results', args.modeltag), 'w') as hp_file:
-  hp_file.write(str(hp))
-
-
-#hp = { key: config.params["MODEL"][key] for key in config.params[ "MODEL" ]  }
-#print(args.modeltag.split('_'))
-
-#hp["NODES_COND"] = int(args.modeltag.split('_')[2])
-#hp["HIDDEN_COND"] = int(args.modeltag.split('_')[3])
-#hp["NODES_TRANS"] = int(args.modeltag.split('_')[4])
-#hp["DEPTH"] = int(args.modeltag.split('_')[5])
-#hp["MMD SIGMAS"] = [float(args.modeltag.split('_')[6]), float(args.modeltag.split('_')[7]), float(args.modeltag.split('_')[8])]
-#hp["MINIBATCH"] = int(args.modeltag.split('_')[-4]) 
-#hp["LRATE"] = float(args.modeltag.split('_')[-3])
-#hp["DECAY"] = float(args.modeltag.split('_')[-2])
-#hp["GAP"] = int(args.modeltag.split('_')[-1])
-#hp["REGULARIZER"] = args.modeltag.split('_')[-2]
-#hp["ACTIVATION"] = args.modeltag.split('_')[-1]
+hp["NODES_COND"] = content[0].split(': ')[-1]
+hp["HIDDEN_COND"] = content[1].split(': ')[-1]
+hp["NODES_TRANS"] = content[2].split(': ')[-1]
+hp["LRATE"] = content[3].split(': ')[-1]
+hp["DECAY"] = content[4].split(': ')[-1]
+hp["GAP"] = content[5].split(': ')[-1]
+hp["DEPTH"] = content[6].split(': ')[-1]
+hp["REGULARIZER"] =
+hp["BETA1"] = content[7].split(': ')[-1]
+hp["BETA2"] = content[8].split(': ')[-1]
+hp_MMD_SIGMAS = (content[9].split(': ')[-1]).split(', ')
+hp["MMD SIGMAS"] = [hp_MMD_SIGMAS[-3], hp_MMD_SIGMAS[-2],hp_MMD_SIGMAS[-1]]
+hp["MMD WEIGHTS"] = content[10].split(': ')[-1]
+hp["MINIBATCH"] = 2048
+hp["LRATE"] = float(args.modeltag.split('_')[-3])
+hp["DECAY"] = float(args.modeltag.split('_')[-2])
+hp["GAP"] = int(args.modeltag.split('_')[-1])
+hp["REGULARIZER"] = args.modeltag.split('_')[-2]
+hp["ACTIVATION"] = args.modeltag.split('_')[-1]
 #print("hp: {}".format(hp))
 #with open('{}/hp_{}.txt'.format('Results', args.modeltag), 'w') as hp_file:
 #  hp_file.write(str(hp))    
