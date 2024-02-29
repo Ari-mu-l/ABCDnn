@@ -2,7 +2,7 @@
 # formats three types of samples: data (no weights), major MC background (no weights), and minor MC backgrounds (weights)
 # last modified April 11, 2023 by Daniel Li
 
-#python format_ntuple.py -y 2018 -n OctMajor -p 100 -c case1 --doMajorMC
+# python format_ntuple.py -y 2018 -n OctMajor -p 100 -c case1 --doMajorMC
 
 import os, sys, ROOT
 from array import array
@@ -129,7 +129,7 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
         rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")
       elif "_WJetsToLNu"  in samplename:
         rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
-      elif "TTToSemiLeptonic" in samplename:
+      elif "TTTo" in samplename:
         rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
       else:
         rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
@@ -138,8 +138,7 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
         rDF_weight = rDF_weight.Define("gcLeadingOSFatJet_pNetJ", "gcOSFatJet_pNetJ[0]")
 
       sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
-
-      dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) ) # useful rdf branches to numpy
+      dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) )
       del rDF, rDF_filter, rDF_weight
       n_inc = int( sample_pass * float( args.pEvents ) / 100. ) # get a specified portion of the passed events
  
