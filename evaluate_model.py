@@ -18,6 +18,7 @@ from json import dumps as dump_json
 from array import array
 import ROOT
 
+#os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 os.environ["KERAS_BACKEND"] = "tensorflow"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
@@ -30,7 +31,7 @@ parser.add_argument( "-s", "--source", required = True )
 parser.add_argument( "-t", "--target", required = True )
 parser.add_argument( "-m", "--tag", required = True )
 parser.add_argument( "-b", "--batch", default = "10", help = "Number of batches to compute over" )
-parser.add_argument( "-n", "--size", default = "1028", help = "Size of each batch for computing MMD loss" )
+parser.add_argument( "-n", "--size", default = "2048", help = "Size of each batch for computing MMD loss" )
 parser.add_argument( "-r", "--region", default = "D", help = "Region to evaluate (X,Y,A,B,C,D)" )
 parser.add_argument( "--bayesian", action = "store_true", help = "Run Bayesian approximation to estimate model uncertainty" )
 parser.add_argument( "--loss", action = "store_true", help = "Calculate the MMD loss" )

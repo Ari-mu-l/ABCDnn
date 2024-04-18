@@ -13,7 +13,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 # import custom methods
 import config
-import abcdnn
+import abcdnn_noMin as abcdnn
 
 parser = ArgumentParser()
 parser.add_argument( "-s", "--source", required = True )
@@ -35,13 +35,12 @@ hp = { # parameters for setting up the NAF model
     "HIDDEN_COND": int(np.random.randint(1,8, size=1)[0]),
     "NODES_TRANS": int(np.random.randint(2,15, size=1)[0]),
     "LRATE": float(np.random.choice([1e-2, 1e-3], 1)[0]),
-    #"LRATE": float(np.random.choice([1e-2, 1e-3, 1e-4, 1e-5, 1e-6], 1)[0]),
     "DECAY": float(np.random.choice([1, 1e-1, 1e-2], 1)[0]),
     "GAP": int(np.random.choice([100, 200, 300, 400, 500, 600, 1000], 1)[0]),
     "DEPTH": int(np.random.randint(1, 8, size=1)[0]),
     "REGULARIZER": (np.random.choice(["L1","L2","L1+L2","None"], 1).tolist()[0]), # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": (np.random.choice(["swish", "relu", "elu", "softplus", "tanh"], 1)).tolist()[0], # softplus, relu, swish
+    "ACTIVATION": (np.random.choice(["swish", "relu", "elu", "softplus"], 1)).tolist()[0], # softplus, relu, swish
     "BETA1": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
     "BETA2": float(np.random.choice([0.90, 0.99, 0.999], 1)[0]),
     "MMD SIGMAS": (np.random.uniform(0.01, 1, 3)).tolist(),

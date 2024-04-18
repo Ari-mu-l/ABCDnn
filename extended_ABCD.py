@@ -43,10 +43,10 @@ with open( os.path.join( "Results/", args.modeltag + ".json" ), "r+" ) as f:
     params = load_json( f.read() )
 
 #print(params)
-params[ "TRANSFER" ] = abcdnn_.transfer
+#params[ "TRANSFER" ] = abcdnn_.transfer
 #print(params)
 
-with open( os.path.join( "Results/", args.modeltag + ".json" ), "w" ) as f:
-    f.write( dump_json( params, indent=2 ) )
+#with open( os.path.join( "Results/", args.modeltag + ".json" ), "w" ) as f:
+#    f.write( dump_json( params, indent=2 ) )
 
 

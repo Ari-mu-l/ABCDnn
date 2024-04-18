@@ -2,23 +2,21 @@
 # formats three types of samples: data (no weights), major MC background (no weights), and minor MC backgrounds (weights)
 # last modified April 11, 2023 by Daniel Li
 
-# python format_ntuple.py -y 2018 -n OctMajor -p 100 -c case1 --doMajorMC
+# python format_ntuple.py -y all -n OctMajor -p 100 -c case14 --doMajorMC
 
 import os, sys, ROOT
 from array import array
 from argparse import ArgumentParser
 import config
 import tqdm
-#import xsec
 from utils import *
 from samples import *
 
 parser = ArgumentParser()
 parser.add_argument( "-y",  "--year", default = "2018", help = "Year for sample" )
 parser.add_argument( "-n", "--name", required = True, help = "Output name of ROOT file" )
-#parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcLeadingOSFatJet_pNetJ" ], help = "Variables to transform" ) # change for new variables
-parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcJet_ST" ], help = "Variables to transform" )
-#parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass" ], help = "Variables to transform" )
+parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcLeadingOSFatJet_pNetJ" ], help = "Variables to transform" ) # change for new variables
+#parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcJet_ST" ], help = "Variables to transform" )
 parser.add_argument( "-p",  "--pEvents", default = 100, help = "Percent of events (0 to 100) to include from each file." )
 parser.add_argument( "-l",  "--location", default = "LPC", help = "Location of input ROOT files: LPC,BRUX" )
 parser.add_argument( "-c", "--case", required = True, help = "decay mode")
@@ -38,12 +36,6 @@ ROOT.gInterpreter.Declare("""
     }
 """)
 
-#ROOT.gInterpreter.Declare("""                                                                                                
-#    float compute_weight( float genWeight, float lumi, float xsec, float nRun ){
-#    return genWeight * lumi * xsec / (nRun * abs(genWeight));
-#    }
-#""")
-
 class ToyTree:
   def __init__( self, name, trans_var ):
     # trans_var is transforming variables
@@ -51,7 +43,7 @@ class ToyTree:
     self.rFile = ROOT.TFile.Open( "{}.root".format( name ), "RECREATE" )
     self.rTree = ROOT.TTree( "Events", name )
     self.variables = { # variables that are used regardless of the transformation variables
-      "xsecWeight": { "ARRAY": array( "f", [0] ), "STRING": "xsecWeight/F" } # might not needed. # CHECK
+      "xsecWeight": { "ARRAY": array( "f", [0] ), "STRING": "xsecWeight/F" },
     }
     for variable in config.variables.keys():
       if not config.variables[ variable ][ "TRANSFORM" ]:
@@ -117,19 +109,14 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
       filter_string = "(W_MT <= 200)" 
       scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset # COMMENT: What is isTraining? # what is scale used for?
       filter_string += " && ( {} ) ".format( ntuple.selection[ args.case ] )
-      #for variable in ntuple.selection:
-      #    if filter_string == "":
-      #      filter_string += "( {} ) ".format( ntuple.selection[ variable ] )
-      #    else:
-      #      filter_string += "&& ( {} ) ".format( ntuple.selection[ variable ] )
       print('filter_string: {}'.format(filter_string))
       rDF_filter = rDF.Filter( filter_string )
       
       if args.doData:
         rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")
-      elif "_WJetsToLNu"  in samplename:
+      elif "_WJetsHT"  in samplename:
         rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
-      elif "TTTo" in samplename:
+      elif "TTTo" in samplename or 'TTMT' in sample.prefix:
         rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
       else:
         rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
@@ -138,7 +125,7 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
         rDF_weight = rDF_weight.Define("gcLeadingOSFatJet_pNetJ", "gcOSFatJet_pNetJ[0]")
 
       sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
-      dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() + [ "xsecWeight" ] ) )
+      dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() ) + [ "xsecWeight" ] )
       del rDF, rDF_filter, rDF_weight
       n_inc = int( sample_pass * float( args.pEvents ) / 100. ) # get a specified portion of the passed events
  

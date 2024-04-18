@@ -29,23 +29,23 @@ variables = {
   "Bprime_mass": {
     "CATEGORICAL": False,
     "TRANSFORM": True,
-    "LIMIT": [0., 2500.], # was 5000
+    "LIMIT": [0., 5000.], # was 5000
     "MIN": 400,
     "LATEX": "M_{reco}"
   },
-  # "gcJet_ST": {
-  #   "CATEGORICAL": False,
-  #   "TRANSFORM": True,
-  #   "LIMIT": [0.,1500.], # was 6000
-  #   "MIN": 400,
-  #   "LATEX": "ST_{gcJet}"
-  # },
-  "gcLeadingOSFatJet_pNetJ":{
-   "CATEGORICAL": False,
-   "TRANSFORM": True,
-   "LIMIT": [0,1],
-   "LATEX": "gcOSFatJet pNetQCD"
+  "gcJet_ST": {
+    "CATEGORICAL": False,
+    "TRANSFORM": True,
+    "LIMIT": [0.,6000.], # was 6000
+    "MIN": 400,
+    "LATEX": "ST_{gcJet}"
   },
+  #"gcLeadingOSFatJet_pNetJ":{
+  #  "CATEGORICAL": False,
+  #  "TRANSFORM": True,
+  #  "LIMIT": [0,1],
+  #  "LATEX": "gcOSFatJet pNetQCD"
+  #},
   "NJets_forward": {
     "CATEGORICAL": True,
     "TRANSFORM": False,
@@ -126,7 +126,7 @@ params = {
     "VERBOSE": True  
   },
   "TRAIN": {
-    "EPOCHS": 3500,
+    "EPOCHS": 2000,
     "PATIENCE": 0,
     "MONITOR": 100,
     "MONITOR THRESHOLD": 0,  # only save model past this epoch

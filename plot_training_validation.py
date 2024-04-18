@@ -77,7 +77,8 @@ for i, variable in enumerate( variables ):
   print( "  + {}: [{},{}], Categorical = {}".format( variable, lowerlimit[i], upperlimit[i], categorical[i] ) )
 
 #inputs_src = sTree.pandas.df( variables ) # uproot3
-inputs_src = sTree.arrays( variables, library="pd" ) # uproot4
+#inputs_src = sTree.arrays( variables + [ "Bprime_chi2" ], library="pd" ) # uproot4
+inputs_src = sTree.arrays( variables + [ "gcLeadingOSFatJet_pNetJ" ], library="pd" )
 
 X_MIN = inputs_src[ variables[-1] ].min()
 X_MAX = inputs_src[ variables[-1] ].max()
@@ -90,30 +91,28 @@ y_region = np.linspace( Y_MIN, Y_MAX, Y_MAX - Y_MIN + 1 )
 inputs_src_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
 print( ">> Found {} total source entries".format( inputs_src.shape[0] ) )
 #inputs_tgt = tTree.pandas.df( variables ) # uproot3
-inputs_tgt = tTree.arrays( variables, library="pd" ) # uproot4 
+inputs_tgt = tTree.arrays( variables + [ "gcLeadingOSFatJet_pNetJ" ], library="pd" ) # uproot4 
 inputs_tgt_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
 print( ">> Found {} total target entries".format( inputs_tgt.shape[0] ) )
 
 #inputs_mnr = mTree.pandas.df( variables + [ "xsecWeight" ] ) # uproot3 
-inputs_mnr = mTree.arrays( variables + [ "xsecWeight" ], library="pd" ) # uproot4
+inputs_mnr = mTree.arrays( variables + [ "gcLeadingOSFatJet_pNetJ", "xsecWeight" ], library="pd" ) # uproot4
 inputs_mnr_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
 print( ">> Found {} total minor background entries".format( inputs_mnr.shape[0] ) )
 
-# if(variables[ variables[0] ][ "MIN" ] is not None):
-#   dfMajor = dfMajor.loc[ dfMajar[ variables[0] ] >= variables[ vName[0] ][ "MIN" ] ]
-#   dfMinor = dfMinor.loc[ dfMinor[ variables[0] ] >= variables[ vName[0] ][ "MIN" ] ]
-#   dfTarget = dfTarget.loc[ dfTarget[ variables[0] ] >= variables[ vName[0] ][ "MIN" ] ]
+# inputs_src = (inputs_src.loc[inputs_src["Bprime_chi2"]>25]).drop(columns=["Bprime_chi2"])
+# inputs_tgt = (inputs_tgt.loc[inputs_tgt["Bprime_chi2"]>25]).drop(columns=["Bprime_chi2"])
+# inputs_mnr = (inputs_mnr.loc[inputs_mnr["Bprime_chi2"]>25]).drop(columns=["Bprime_chi2"])
 
-# if(variables[ vName[1] ][ "MIN" ] is not None):
-#   dfMajor = dfMajor.loc[ dfMajor[ vName[1] ] >= variables[ vName[1] ][ "MIN" ] ]
-#   dfMinor = dfMinor.loc[ dfMinor[ vName[1] ] >= variables[ vName[1] ][ "MIN" ] ]
-#   dfTarget = dfTarget.loc[ dfTarget[ vName[1] ] >= variables[ vName[1] ][ "MIN" ] ]
+inputs_src = (inputs_src.loc[inputs_src["gcLeadingOSFatJet_pNetJ"]>0.8]).drop(columns=["gcLeadingOSFatJet_pNetJ"])
+inputs_tgt = (inputs_tgt.loc[inputs_tgt["gcLeadingOSFatJet_pNetJ"]>0.8]).drop(columns=["gcLeadingOSFatJet_pNetJ"])
+inputs_mnr = (inputs_mnr.loc[inputs_mnr["gcLeadingOSFatJet_pNetJ"]>0.8]).drop(columns=["gcLeadingOSFatJet_pNetJ"])
 
 for variable in variables:
   inputs_tgt[variable] = inputs_tgt[variable].clip(upper = config.variables[variable]["LIMIT"][1])
   inputs_mnr[variable] = inputs_mnr[variable].clip(upper = config.variables[variable]["LIMIT"][1])
 #print(inputs_mnr["Bprime_mass"].min()
-
+  
 for region in [ "X", "Y", "A", "B", "C", "D" ]:
   if config.regions["X"][region][0] == ">=":
     select_src = inputs_src[ config.regions["X"]["VARIABLE"] ] >= config.regions[ "X" ][ region ][1]
@@ -144,9 +143,9 @@ for region in [ "X", "Y", "A", "B", "C", "D" ]:
   inputs_src_region[region] = inputs_src.loc[select_src]
   inputs_tgt_region[region] = inputs_tgt.loc[select_tgt]
   inputs_mnr_region[region] = inputs_mnr.loc[select_mnr]
-  
-inputs_tgt_region["D"] = inputs_tgt_region["D"].where(inputs_tgt_region["D"] <= 1000, 0)
-inputs_mnr_region["D"] = inputs_mnr_region["D"].where(inputs_tgt_region["D"] <= 1000, 0)
+
+# inputs_tgt_region["D"] = inputs_tgt_region["D"].where(inputs_tgt_region["D"] <= 1000, 0)
+# inputs_mnr_region["D"] = inputs_mnr_region["D"].where(inputs_tgt_region["D"] <= 1000, 0)
 
 print( ">> Yields in each region:" )
 for region in inputs_src_region:
@@ -418,16 +417,12 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
   # print(data_mod[i] / float( data_mod_scale ))
   # print( mc_pred_hist[0][i] / float( mc_pred_scale ) )
   print(ratio)
-  
 
 if plotBest:
   os.system( "mkdir -vp {}/{}".format( folder, args.tag ) )
   print( "Plotting best trained model" )
   for i, variable in enumerate( variables_transform ):
-    if variable == "gcLeadingOSFatJet_pNetJ":
-      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 11 )
-    else:
-      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
+    bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
     #if(variable == "Bprime_mass"):
     #  bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], 5000, config.params[ "PLOT" ][ "NBINS" ] )
     #  bins = np.concatenate((bins[bins<2500], np.array([2750, 3750, 5000])), axis=0)

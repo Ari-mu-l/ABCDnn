@@ -95,6 +95,11 @@ for checkpoint in checkpoints:
     sigmas[ checkpoint ] = params[ "INPUTSIGMAS" ]    
     means_pred[ checkpoint ] = params[ "SIGNAL_MEAN" ] # not used in the script
     sigmas_pred[ checkpoint ] = params[ "SIGNAL_SIGMA" ] 
+    #print('categoricals[ checkpoint ]: {}'.format(categoricals[ checkpoint ]))
+    #print('lowerlimits[ checkpoint ]: {}'.format(lowerlimits[ checkpoint ]))
+    #print('upperlimits[ checkpoint ]: {}'.format(upperlimits[ checkpoint ]))
+    #print('means[ checkpoint ]: {}'.format(means[ checkpoint ]))
+    #print('sigmas[ checkpoint ]: {}'.format(sigmas[ checkpoint ]))
 
     models[ checkpoint ] = abcdnn.NAF(
       inputdim    = params["INPUTDIM"],
@@ -110,6 +115,13 @@ for checkpoint in checkpoints:
     ) 
   models[ checkpoint ].load_weights( "Results/" + checkpoint )
   print( "  + {} --> {}".format( checkpoint, disc_tag ) )
+
+#print("regions: {}".format(regions))
+#print("variables: {}".format(variables))
+#print("variables_transform: {}".format(variables_transform))
+#print("transfers: {}".format(transfers))
+#print("disc_tags: {}".format(disc_tag))
+#print("models: {}".format(models))
 
 # populate the step 3
 def fill_tree( sample, dLocal ):

@@ -245,15 +245,15 @@ def prepdata( rSource, rMinor, rTarget, variables, regions, closure, frac):
   dfMinor = (tMinor.arrays(vNames + [ "xsecWeight" ], library="pd"))
   dfTarget = (tTarget.arrays(vNames, library="pd"))
 
-  # if(variables[ vNames[0] ][ "MIN" ] is not None):
-  #   dfMajor = dfMajor.loc[ dfMajor[ vNames[0] ] >= variables[ vNames[0] ][ "MIN" ] ]
-  #   dfMinor = dfMinor.loc[ dfMinor[ vNames[0] ] >= variables[ vNames[0] ][ "MIN" ] ]
-  #   dfTarget = dfTarget.loc[ dfTarget[ vNames[0] ] >= variables[ vNames[0] ][ "MIN" ] ]
+  if(variables[ vNames[0] ][ "MIN" ] is not None):
+    dfMajor = dfMajor.loc[ dfMajor[ vNames[0] ] >= variables[ vNames[0] ][ "MIN" ] ]
+    dfMinor = dfMinor.loc[ dfMinor[ vNames[0] ] >= variables[ vNames[0] ][ "MIN" ] ]
+    dfTarget = dfTarget.loc[ dfTarget[ vNames[0] ] >= variables[ vNames[0] ][ "MIN" ] ]
 
-  # if(variables[ vNames[1] ][ "MIN" ] is not None):
-  #   dfMajor = dfMajor.loc[ dfMajor[ vNames[1] ] >= variables[ vNames[1] ][ "MIN" ] ]
-  #   dfMinor = dfMinor.loc[ dfMinor[ vNames[1] ] >= variables[ vNames[1] ][ "MIN" ] ]
-  #   dfTarget = dfTarget.loc[ dfTarget[ vNames[1] ] >= variables[ vNames[1] ][ "MIN" ] ]
+  if(variables[ vNames[1] ][ "MIN" ] is not None):
+    dfMajor = dfMajor.loc[ dfMajor[ vNames[1] ] >= variables[ vNames[1] ][ "MIN" ] ]
+    dfMinor = dfMinor.loc[ dfMinor[ vNames[1] ] >= variables[ vNames[1] ][ "MIN" ] ]
+    dfTarget = dfTarget.loc[ dfTarget[ vNames[1] ] >= variables[ vNames[1] ][ "MIN" ] ]
 
   inputRawMajor = dfMajor
   inputEncMajor = _onehotencoder.encode( inputRawMajor.to_numpy( dtype=np.float32 ) )

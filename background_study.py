@@ -267,9 +267,9 @@ for f in fDATA:
         outFile.cd()
     for region in regions:
         rDF_region = rDF_.Filter(regions[region])
-        yields["DATA"][f] = rDF_region.Count().GetValue()
+        #yields["DATA"][f] = rDF_region.Count().GetValue()
         if (getHistos):
-            hist_Bp = rDF_region.Histo1D((f, "Bprime_mass", 51, 0, 5000), "weight")
+            hist_Bp = rDF_region.Histo1D((f, "Bprime_mass", 51, 0, 5000), "Bprime_mass", "weight")
             hist_Bp.Write()
 
 print( "Loading signal:" )
@@ -285,9 +285,9 @@ for f in fSIG:
         outFile.cd()
     for region in regions:
         rDF_region = rDF_.Filter(regions[region])
-        yields["SIG"][f] = rDF_region.Count().GetValue()
+        #yields["SIG"][f] = rDF_region.Count().GetValue()
         if (getHistos):
-            hist_Bp = rDF_region.Histo1D((f, "Bprime_mass", 51, 0, 5000), "weight")
+            hist_Bp = rDF_region.Histo1D((f, "Bprime_mass", 51, 0, 5000), "Bprime_mass", "weight")
             hist_Bp.Write()
 
 if getHistos:
@@ -313,9 +313,9 @@ for g in fBKG:
             outFile.cd()
         for region in regions:
             rDF_region = rDF_.Filter(regions[region])
-            yields["BKG"][g][f] = rDF_region.Count().GetValue()
+            #yields["BKG"][g][f] = rDF_region.Count().GetValue()
             if (getHistos):
-                hist_Bp = rDF_region.Histo1D((f, "Bprime_mass", 51, 0, 5000), "weight")
+                hist_Bp = rDF_region.Histo1D((f, "Bprime_mass", 51, 0, 5000), "Bprime_mass", "weight")
                 hist_Bp.Write()
 
 # Get yields
@@ -347,8 +347,8 @@ for region in regions:
     for g in fBKG:
         yields_bkg_group = 0
         for f in fBKG[g]:
-            print("  -{}: {.2}%".format(f, 100*yields["BKG"][g][f]/yields_bkg_region[region]))
+            print("  -{}: {}%".format(f, 100*yields["BKG"][g][f]/yields_bkg_region[region]))
             yields_bkg_group += yields["BKG"][g][f]
-        print("Background group {}: {:.2}%".format(g, 100*yields_bkg_group/yields_bkg_region[region]))
+        print("Background group {}: {:}%".format(g, 100*yields_bkg_group/yields_bkg_region[region]))
     print(" ")
 
