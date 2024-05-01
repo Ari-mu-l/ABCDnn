@@ -78,13 +78,14 @@ for checkpoint in checkpoints:
     # UPDATE for closure
     if checkpoint in closure_checkpoints:
       try:
-        closure[ checkpoint ] = float( params["CLOSURE"] )
+        closure[ checkpoint ] = params["CLOSURE"]
       except:
         sys.exit( "[WARNING] {0}.json missing CLOSURE entry necessary for --closure arugment. Calculate using evaluate_model.py --closure and then add to {0}.json.".format( checkpoint ) )
 
     regions = params[ "REGIONS" ]
     transfers[ checkpoint ] = float( params[ "TRANSFER" ] ) # transfer factor from extended ABCD
     variables = [ str( key ) for key in sorted( params[ "VARIABLES" ] ) if params[ "VARIABLES" ][ key ][ "TRANSFORM" ] ]
+    #variables = [variables[0], "gcOSFatJet_pNetJ[0]"] #TEMP. edit for efficiency
     variables_transform = [ str( key ) for key in sorted( params[ "VARIABLES" ] ) if params[ "VARIABLES" ][ key ][ "TRANSFORM" ] ]
     variables.append( params[ "REGIONS" ][ "Y" ][ "VARIABLE" ] )
     variables.append( params[ "REGIONS" ][ "X" ][ "VARIABLE" ] )
@@ -149,20 +150,20 @@ def fill_tree( sample, dLocal ):
   def shift_encode( input_, mean_, sigma_, const_, shift_ ): 
     input_scale = input_.copy()
     if shift_ == "UP":
-      input_scale[0] = input_[0] + const_ * np.exp( - ( ( input_[0] - mean_[0] ) / sigma_[0] )**2 )
-      input_scale[1] = input_[1] + const_ * np.exp( - ( ( input_[1] - mean_[1] ) / sigma_[1] )**2 )
+      input_scale[0] = input_[0] + input_[0] * const_ * np.exp( - ( ( input_[0] - mean_[0] ) / sigma_[0] )**2 )
+      input_scale[1] = input_[1] + input_[1] * const_ * np.exp( - ( ( input_[1] - mean_[1] ) / sigma_[1] )**2 )
     if shift_ == "DN":
-      input_scale[0] = input_[0] - const_ * np.exp( - ( ( input_[0] - mean_[0] ) / sigma_[0] )**2 )
-      input_scale[1] = input_[1] - const_ * np.exp( - ( ( input_[1] - mean_[1] ) / sigma_[1] )**2 )
+      input_scale[0] = input_[0] - input_[0] * const_ * np.exp( - ( ( input_[0] - mean_[0] ) / sigma_[0] )**2 )
+      input_scale[1] = input_[1] - input_[1] * const_ * np.exp( - ( ( input_[1] - mean_[1] ) / sigma_[1] )**2 )
     return input_scale
 
   # this should run on the predicted ABCDnn output to vary the peak location while fixing the tails to prescribe an uncertainty to the peak shape
   def shift_peak( input_, mean_, sigma_, const_, shift_ ): 
     # const_ represents the maximum value the peak can shift
     if shift_ == "UP":
-      return input_ + const_ * np.exp( -( ( input_ - mean_ ) / sigma_ )**2 )
+      return input_ + input_ * const_ * np.exp( -( ( input_ - mean_ ) / sigma_ )**2 )
     elif shift_ == "DN":
-      return input_ - const_ * np.exp( -( ( input_ - mean_ ) / sigma_ )**2 )
+      return input_ - input_ * const_ * np.exp( -( ( input_ - mean_ ) / sigma_ )**2 )
     else:
       quit( "[WARN] Invalid shift used, quitting..." )
 
@@ -171,19 +172,19 @@ def fill_tree( sample, dLocal ):
     # NOTE: shifts two sides simultaneously
     # Probably NEED to think more about how to shift it for distributions that do not have two tails
     if shift_ == "UP":
-      return input_ + const_ * ( 1 - np.exp( -( ( input_ - mean_ ) / sigma_ )**2 ) ) 
+      return input_ + input_ * const_ * ( 1 - np.exp( -( ( input_ - mean_ ) / sigma_ )**2 ) )
     elif shift_ == "DN":
-      return input_ - const_ * ( 1 - np.exp( -( ( input_ - mean_ ) / sigma_ )**2 ) )
+      return input_ - input_ * const_ * ( 1 - np.exp( -( ( input_ - mean_ ) / sigma_ )**2 ) )
     else:
       quit( "[WARN] Invalid shift used, quitting..." )
 
   def predict( checkpoint ):
     
     encoders = abcdnn.OneHotEncoder_int( categoricals[ checkpoint ], lowerlimit = lowerlimits[ checkpoint ], upperlimit = upperlimits[ checkpoint ] )
-    inputs_mc =  upTree.arrays(variables, library="pd")
+    #inputs_mc =  upTree.arrays(variables, library = "pd")
+    inputs_mc =  upTree.arrays([variables[0], "gcOSFatJet_pNetJ", variables[2], variables[3]], library="pd") #TEMP
     inputmean   = np.hstack( [ float( mean ) for mean in means[ checkpoint ] ] )
     inputsigma  = np.hstack( [ float( sigma ) for sigma in sigmas[ checkpoint ] ] )
-    #print(inputsigma)
 
     # CASE SPECIFIC. EDIT IF NEEDED
 
@@ -206,8 +207,8 @@ def fill_tree( sample, dLocal ):
 
     for input_ in inputs_enc[ "NOM" ]:
       if checkpoint in closure:
-        inputs_enc[ "CLOSUREUP" ].append( shift_encode( input_, inputmean, inputsigma, closure[ checkpoint ], "UP" ) )
-        inputs_enc[ "CLOSUREDN" ].append( shift_encode( input_, inputmean, inputsigma, closure[ checkpoint ], "DN" ) )
+        inputs_enc[ "CLOSUREUP" ].append( shift_encode( input_, inputmean, inputsigma, closure[ checkpoint ]["Bprime_mass"][0], "UP" ) )
+        inputs_enc[ "CLOSUREDN" ].append( shift_encode( input_, inputmean, inputsigma, closure[ checkpoint ]["Bprime_mass"][0], "DN" ) )
 
     inputs_norm = {}
     predictions[ checkpoint ] = {}
@@ -298,10 +299,11 @@ def fill_tree( sample, dLocal ):
       #print("arrays: {}".format(arrays))
 
       for shift_ in [ "UP", "DN" ]:
-        arrays[variable + "_PEAK" + shift_][0] = shift_peak( predictions[checkpoint]["NOM"][i][j], float( means_pred[checkpoint][j] ), float( sigmas_pred[checkpoint][j] ), closure[checkpoint], shift_ )
-        arrays[variable + "_TAIL" + shift_][0] = shift_tail( predictions[checkpoint]["NOM"][i][j], float( means_pred[checkpoint][j] ), float( sigmas_pred[checkpoint][j] ), closure[checkpoint], shift_ )
+        arrays[variable + "_PEAK" + shift_][0] = shift_peak( predictions[checkpoint]["NOM"][i][j], float( means_pred[checkpoint][j] ), float( sigmas_pred[checkpoint][j] ), closure[checkpoint][variable][1], shift_ )
+        arrays[variable + "_TAIL" + shift_][0] = shift_tail( predictions[checkpoint]["NOM"][i][j], float( means_pred[checkpoint][j] ), float( sigmas_pred[checkpoint][j] ), closure[checkpoint][variable][2], shift_ )
         if checkpoint in closure:
-          arrays[variable + "_CLOSURE" + shift_][0] = predictions[checkpoint]["CLOSURE" + shift_][i][j]    
+          arrays[variable + "_CLOSURE" + shift_][0] = predictions[checkpoint]["CLOSURE" + shift_][i][j]
+
     rTree_out.Fill()
     #print("arrays: {}".format(arrays))
     
