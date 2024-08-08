@@ -15,7 +15,7 @@ from samples import *
 parser = ArgumentParser()
 parser.add_argument( "-y",  "--year", default = "2018", help = "Year for sample" )
 parser.add_argument( "-n", "--name", required = True, help = "Output name of ROOT file" )
-parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcLeadingOSFatJet_pNetJ" ], help = "Variables to transform" ) # change for new variables
+parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "OS1FatJetProbJ", "gcJet_ST" ], help = "Variables to transform" ) # change for new variables
 #parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcJet_ST" ], help = "Variables to transform" )
 parser.add_argument( "-p",  "--pEvents", default = 100, help = "Percent of events (0 to 100) to include from each file." )
 parser.add_argument( "-l",  "--location", default = "LPC", help = "Location of input ROOT files: LPC,BRUX" )
@@ -31,8 +31,8 @@ args = parser.parse_args()
 if args.location not in [ "LPC", "BRUX" ]: quit( "[ERR] Invalid -l (--location) argument used. Quitting..." )
 
 ROOT.gInterpreter.Declare("""
-    float compute_weight( float optionalWeights, float genWeight, float lumi, float xsec, float nRun, float PileupWeights, float leptonRecoSF, float leptonIDSF, float leptonIsoSF, float leptonHLTSF, float btagWeights ){
-    return optionalWeights * PileupWeights * leptonRecoSF * leptonIDSF * leptonIsoSF * leptonHLTSF * btagWeights * genWeight * lumi * xsec / (nRun * abs(genWeight));
+    float compute_weight( float optionalWeight, float L1PreFiringWeight_Nom, float genWeight, float lumi, float xsec, float nRun, float PileupWeights, float leptonRecoSF, float leptonIDSF, float leptonIsoSF, float leptonHLTSF, float btagWeights ){
+    return optionalWeight * PileupWeights * L1PreFiringWeight_Nom * leptonIDSF * leptonRecoSF * leptonIsoSF * leptonHLTSF * btagWeights * genWeight * lumi * xsec / (nRun * abs(genWeight));
     }
 """)
 
@@ -44,6 +44,7 @@ class ToyTree:
     self.rTree = ROOT.TTree( "Events", name )
     self.variables = { # variables that are used regardless of the transformation variables
       "xsecWeight": { "ARRAY": array( "f", [0] ), "STRING": "xsecWeight/F" },
+      "Bdecay_obs": { "ARRAY": array( "f", [0] ), "STRING": "Bdecay_obs/F" }
     }
     for variable in config.variables.keys():
       if not config.variables[ variable ][ "TRANSFORM" ]:
@@ -100,13 +101,15 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
         samplename = sample.samplename.split('/')[1]+sample.samplename.split('-')[0][-1]
       else:
         samplename = sample.samplename.split('/')[1]
-        if "JetHT" in samplename:
-          samplename += sample.samplename.split('-')[0][-1]
+        #if "JetHT" in samplename:  # not using JetHT in ABCDnn
+        #  samplename += sample.samplename.split('-')[0][-1]
       print( ">> Processing {}".format( samplename ) )
       fChain = getfChain( output, samplename, year )
-      rDF = ROOT.RDataFrame(fChain)
+      rDF = ROOT.RDataFrame(fChain)\
+                .Define("NJets_forward_subtract", "(int) Sum((run>=319077 || (run==1 && event%100 >= 35) ) && ((gcforwJet_phi>-1.57 && gcforwJet_phi<-0.87 && gcforwJet_eta>-2.5 && gcforwJet_eta<-1.3) || (gcforwJet_phi>-1.57 && gcforwJet_phi<-0.87 && gcforwJet_eta>-3.0 && gcforwJet_eta<-2.5)))")\
+                .Redefine("NJets_forward", "NJets_forward-NJets_forward_subtract") # fix forwardJets. TODO: might not needed later
       sample_total = rDF.Count().GetValue()
-      filter_string = "(W_MT <= 200)" 
+      #filter_string = "(W_MT <= 200)" # TODO: might no longer needed
       scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset # COMMENT: What is isTraining? # what is scale used for?
       filter_string += " && ( {} ) ".format( ntuple.selection[ args.case ] )
       print('filter_string: {}'.format(filter_string))
@@ -115,17 +118,18 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
       if args.doData:
         rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")
       elif "_WJetsHT"  in samplename:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
       elif "TTTo" in samplename or 'TTMT' in sample.prefix:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
       else:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
 
-      if "gcLeadingOSFatJet_pNetJ" in config.variables.keys():
-        rDF_weight = rDF_weight.Define("gcLeadingOSFatJet_pNetJ", "gcOSFatJet_pNetJ[0]")
+      if "OS1FatJetProbJ" in config.variables.keys():
+        rDF_weight = rDF_weight.Define("OS1FatJetProbJ", "gcOSFatJet_pNetJ[0]")
 
       sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
-      dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() ) + [ "xsecWeight" ] )
+      dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() ) + [ "xsecWeight", "Bdecay_obs" ] )
+      #dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() ) + [ "xsecWeight" ])
       del rDF, rDF_filter, rDF_weight
       n_inc = int( sample_pass * float( args.pEvents ) / 100. ) # get a specified portion of the passed events
  
