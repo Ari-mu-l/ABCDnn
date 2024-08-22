@@ -3,7 +3,7 @@
 
 import numpy as np
 import os
-#import imageio
+import imageio
 import uproot
 import abcdnn
 import tqdm
@@ -25,14 +25,14 @@ parser = ArgumentParser()
 parser.add_argument( "-s", "--source", required = True )
 parser.add_argument( "-t", "--target", required = True )
 parser.add_argument( "-b", "--minor", required = True, help = "Minor background to subtract from data. Include with --useMinor" )
-parser.add_argument( "--unblind", action = "store_false" )
+parser.add_argument( "--unblind", action = "store_true" ) # store_false # TEMP
 parser.add_argument( "--useMinor", action = "store_true" )
 parser.add_argument( "--transfer", action = "store_true" )
 parser.add_argument( "-m", "--tag", required = True )
 
 args = parser.parse_args()
 
-plotBest = True
+plotBest = True # TEMP
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]
 folder_contents = os.listdir( folder )
@@ -48,7 +48,7 @@ with open( os.path.join( folder, args.tag + ".json" ), "r" ) as f:
 print( ">> Setting up NAF model..." )
 
 print( ">> Loading checkpoint weights from {} with tag: {}".format( folder, args.tag ) )
-checkpoints = [ name.split( ".index" )[0] for name in folder_contents if ( "EPOCH" in name and args.tag in name and name.endswith( "index" ) ) ][-2:] # TEMP
+checkpoints = [ name.split( ".index" )[0] for name in folder_contents if ( "EPOCH" in name and args.tag in name and name.endswith( "index" ) ) ][:10] # TEMP
 
 #print(checkpoints[-14:])
 
@@ -145,38 +145,15 @@ for region in [ "X", "Y", "A", "B", "C", "D" ]:
   inputs_tgt_region[region] = inputs_tgt.loc[select_tgt]
   inputs_mnr_region[region] = inputs_mnr.loc[select_mnr]
   
-inputs_tgt_region["D"] = inputs_tgt_region["D"].where(inputs_tgt_region["D"] <= 1000, 0)
-inputs_mnr_region["D"] = inputs_mnr_region["D"].where(inputs_tgt_region["D"] <= 1000, 0)
+#inputs_tgt_region["D"] = inputs_tgt_region["D"].where(inputs_tgt_region["D"] <= 1000, 0) # TODO
+#inputs_mnr_region["D"] = inputs_mnr_region["D"].where(inputs_tgt_region["D"] <= 1000, 0)
+#inputs_tgt_region["D"] = inputs_tgt_region["D"].loc[inputs_tgt_region["D"]['Bprime_mass']<=1000]
+#inputs_mnr_region["D"] = inputs_mnr_region["D"].loc[inputs_mnr_region["D"]['Bprime_mass']<=1000]
+#inputs_src_region["D"] = 
 
 print( ">> Yields in each region:" )
 for region in inputs_src_region:
   print( "  + Region {}: Source = {}, Target = {}".format( region, inputs_src_region[region].shape[0], inputs_tgt_region[region].shape[0] ) )
-
-# region_key = { # the row and column of ABCDXY
-#   0: {
-#     0: "X",
-#     1: "Y"
-#   },
-#   1: {
-#     0: "A",
-#     1: "C"
-#   },
-#   2:{
-#     0: "B",
-#     1: "D"
-#   }
-# }
-# bins = np.linspace( config.variables[ "Bprime_mass" ][ "LIMIT" ][0], config.variables[ "Bprime_mass" ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
-# for x in range(6):
-#       for y in range(2):
-#         blind = False
-#         if ( not args.unblind and y==1 ):
-#           if ( x == 4 or x == 5 ):
-#             blind = True
-#         if x % 2 == 0:
-#           data_hist = np.histogram( inputs_tgt_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,0], bins = bins, density = False )
-#           print(data_hist)
-# exit()
   
 print( ">> Encoding and normalizing source inputs" )
 inputs_enc_region = {}
@@ -218,9 +195,6 @@ if plotBest:
 
   del NAF
 
-    #print("predicionts_best: {}".format(predictions_best))
-    #print("predicionts_best region A first three: {}".format(predictions_best["A"][:3]))
-    #print("predicionts_best region A shape: {}".format(len(predictions_best["A"])))
 else:
   for i, checkpoint in enumerate( sorted( checkpoints ) ):
     epoch = checkpoint.split( "EPOCH" )[1]
@@ -292,12 +266,17 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   for i in range( len( data_mod ) ):
     if data_mod[i] < 0: data_mod[i] = 0
   data_mod_scale = float( np.sum(data_mod) )
+  if region_key[x][y]=="D" and variable=="Bprime_mass":
+    data_hist1 = data_hist[1][:21]
+    data_mod = data_mod[:20]
+  else:
+    data_hist1 = data_hist[1]
 
   # plot the data first
   print("region: {}, blind: {}".format(region_key[x][y], blind))
   if not blind:
     ax.errorbar(
-      0.5 * ( data_hist[1][1:] + data_hist[1][:-1] ),
+      0.5 * ( data_hist1[1:] + data_hist1[:-1] ),
       data_mod / data_mod_scale, yerr = np.sqrt( data_mod ) / data_mod_scale,
       label = "Target - Minor" if args.useMinor else "Target",
       marker = "o", markersize = 3, markerfacecolor = "black", markeredgecolor = "black",
@@ -374,10 +353,10 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
   else:
     data_mod = data_hist[0]
   data_mod_scale = np.sum(data_mod)
-  
+    
   ratio = []
   ratio_std = []
-  for i in range( len( data_hist[0] ) ):
+  for i in range( len( data_mod ) ):
     if data_mod[i] == 0 or mc_pred_hist[0][i] == 0: 
       ratio.append(0)
       ratio_std.append(0)
@@ -389,15 +368,24 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
         data_mod[i],
         np.sqrt( data_mod[i] )
       ) * ( data_mod_scale / mc_pred_scale ) )
+
+  if region_key[x][y]=="D" and variable=="Bprime_mass":
+    data_hist1 = data_hist[1][:21]
+    data_mod = data_mod[:20]
+    ratio = ratio[:20]
+    ratio_std = ratio_std[:20]
+  else:
+    data_hist1 = data_hist[1]
+    
   if not blind:
     ax.scatter(
-        0.5 * ( data_hist[1][1:] + data_hist[1][:-1] ),
+      0.5 * ( data_hist1[1:] + data_hist1[:-1] ),
       ratio, 
       linewidth = 0, marker = "o", 
       color = "black", zorder = 3
     )
     ax.fill_between(
-      0.5 * ( data_hist[1][1:] + data_hist[1][:-1] ),
+      0.5 * ( data_hist1[1:] + data_hist1[:-1] ),
       y1 = np.array( ratio ) + np.array( ratio_std ),
       y2 = np.array( ratio ) - np.array( ratio_std ),
       interpolate = False, step = "mid",
@@ -415,17 +403,12 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
   ax.tick_params( axis = "both", labelsize = 8 )
   if x != 2: ax.axes.xaxis.set_visible(False)
 
-  # print(data_mod[i] / float( data_mod_scale ))
-  # print( mc_pred_hist[0][i] / float( mc_pred_scale ) )
-  print(ratio)
-  
-
 if plotBest:
   os.system( "mkdir -vp {}/{}".format( folder, args.tag ) )
   print( "Plotting best trained model" )
   for i, variable in enumerate( variables_transform ):
-    if variable == "gcLeadingOSFatJet_pNetJ":
-      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 11 )
+    if variable == "OS1FatJetProbJ":
+      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 3 )
     else:
       bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
     #if(variable == "Bprime_mass"):
@@ -487,8 +470,12 @@ else:
   print( "Plotting models per epoch:" )
   for epoch in sorted( predictions.keys() ):
     print( "  + Generating image for epoch {}".format( epoch ) )
-    for i, variable in enumerate( variables_transform ): 
-      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
+    variables_transform = ["Bprime_mass"] # TEMP
+    for i, variable in enumerate( variables_transform ):
+      if variable == "OS1FatJetProbJ":
+        bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 3 )
+      else:
+        bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
       fig, axs = plt.subplots( 6, 2, figsize = (9,12), gridspec_kw = { "height_ratios": [3,1,3,1,3,1] } )
       for x in range( 6 ):
         for y in range( 2 ):
@@ -534,16 +521,16 @@ else:
             position_old.set_points( points_old )
             axs[x,y].set_position( position_old )
 
-    plt.savefig( "{}/{}/{}_{}_EPOCH{}.png".format( folder, args.tag, args.tag, variable, epoch ) )
-    #images[ variable ].append( imageio.imread( "{}/{}/{}_{}_EPOCH{}.png".format( folder, args.tag, args.tag, variable, epoch ) ) )
-    plt.close()
-exit()
+      plt.savefig( "{}/{}/{}_{}_EPOCH{}.png".format( folder, args.tag, args.tag, variable, epoch ) )
+      images[ variable ].append( imageio.imread( "{}/{}/{}_{}_EPOCH{}.png".format( folder, args.tag, args.tag, variable, epoch ) ) )
+      plt.close()
 
-try:
-  print( "[DONE] {} training GIF completed: {}_{}.gif, {}_{}.gif".format( args.tag, args.tag, variables_transform[0], args.tag, variables_transform[1] ) )
-except:
-  print( "[DONE] {} training GIF completed: {}_{}.gif".format( args.tag, args.tag, variables_transform[0] ) )
-for variable in variables_transform:
-  imageio.mimsave( "{}/{}/{}_{}.gif".format( folder, args.tag, args.tag, variable ), images[ variable ], duration = 1 )
-  if args.transfer:
-    os.system( "xrdcp -rfp {}/{}/ {}/{}/".format( folder, args.tag, config.targetDir[ "LPC" ], args.tag ) )
+if not plotBest:
+  try:
+    print( "[DONE] {} training GIF completed: {}_{}.gif, {}_{}.gif".format( args.tag, args.tag, variables_transform[0], args.tag, variables_transform[1] ) )
+  except:
+    print( "[DONE] {} training GIF completed: {}_{}.gif".format( args.tag, args.tag, variables_transform[0] ) )
+    for variable in variables_transform:
+      imageio.mimsave( "{}/{}/{}_{}.gif".format( folder, args.tag, args.tag, variable ), images[ variable ], duration = 2 )
+      if args.transfer:
+        os.system( "xrdcp -rfp {}/{}/ {}/{}/".format( folder, args.tag, config.targetDir[ "LPC" ], args.tag ) )

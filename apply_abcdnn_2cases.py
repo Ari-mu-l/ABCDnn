@@ -78,7 +78,9 @@ for checkpoint in checkpoints:
     # UPDATE for closure
     if checkpoint in closure_checkpoints:
       try:
-        closure[ checkpoint ] = float( params["CLOSURE"] )
+        closure[ checkpoint ] = params["CLOSURE"]
+        print(closure[ checkpoint ])
+        exit()
       except:
         sys.exit( "[WARNING] {0}.json missing CLOSURE entry necessary for --closure arugment. Calculate using evaluate_model.py --closure and then add to {0}.json.".format( checkpoint ) )
 

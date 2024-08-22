@@ -79,7 +79,7 @@ for i, variable in enumerate( variables ):
 #inputs_src = sTree.pandas.df( variables ) # uproot3
 #inputs_src = sTree.arrays( variables + [ "Bprime_chi2" ], library="pd" ) # uproot4
 #inputs_src = sTree.arrays( variables + [ "gcLeadingOSFatJet_pNetJ" ], library="pd" )
-inputs_src = sTree.arrays( variables, library="pd" )
+inputs_src = sTree.arrays( variables + [ "Bdecay_obs" ], library="pd" )
 
 X_MIN = inputs_src[ variables[-1] ].min()
 X_MAX = inputs_src[ variables[-1] ].max()
@@ -92,22 +92,22 @@ y_region = np.linspace( Y_MIN, Y_MAX, Y_MAX - Y_MIN + 1 )
 inputs_src_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
 print( ">> Found {} total source entries".format( inputs_src.shape[0] ) )
 #inputs_tgt = tTree.pandas.df( variables ) # uproot3
-inputs_tgt = tTree.arrays( variables, library="pd" ) # uproot4 
+inputs_tgt = tTree.arrays( variables + [ "Bdecay_obs" ], library="pd" ) # uproot4 
 inputs_tgt_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
 print( ">> Found {} total target entries".format( inputs_tgt.shape[0] ) )
 
 #inputs_mnr = mTree.pandas.df( variables + [ "xsecWeight" ] ) # uproot3 
-inputs_mnr = mTree.arrays( variables + [ "xsecWeight" ], library="pd" ) # uproot4
+inputs_mnr = mTree.arrays( variables + [ "xsecWeight", "Bdecay_obs" ], library="pd" ) # uproot4
 inputs_mnr_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
 print( ">> Found {} total minor background entries".format( inputs_mnr.shape[0] ) )
 
-# inputs_src = (inputs_src.loc[inputs_src["Bprime_chi2"]>25]).drop(columns=["Bprime_chi2"])
-# inputs_tgt = (inputs_tgt.loc[inputs_tgt["Bprime_chi2"]>25]).drop(columns=["Bprime_chi2"])
-# inputs_mnr = (inputs_mnr.loc[inputs_mnr["Bprime_chi2"]>25]).drop(columns=["Bprime_chi2"])
+inputs_src = (inputs_src.loc[inputs_src["Bdecay_obs"]==2]).drop(columns=["Bdecay_obs"])
+inputs_tgt = (inputs_tgt.loc[inputs_tgt["Bdecay_obs"]==2]).drop(columns=["Bdecay_obs"])
+inputs_mnr = (inputs_mnr.loc[inputs_mnr["Bdecay_obs"]==2]).drop(columns=["Bdecay_obs"])
 
 #inputs_src = inputs_src.loc[inputs_src["gcLeadingOSFatJet_pNetJ"]>0.5]
-inputs_tgt = inputs_tgt.loc[inputs_tgt["OS1FatJetProbJ"]>0.9]
-inputs_mnr = inputs_mnr.loc[inputs_mnr["OS1FatJetProbJ"]>0.9]
+# inputs_tgt = inputs_tgt.loc[inputs_tgt["gcLeadingOSFatJet_pNetJ"]<0.9]
+# inputs_mnr = inputs_mnr.loc[inputs_mnr["gcLeadingOSFatJet_pNetJ"]<0.9]
 
 for variable in variables:
   inputs_tgt[variable] = inputs_tgt[variable].clip(upper = config.variables[variable]["LIMIT"][1])
@@ -215,7 +215,7 @@ if plotBest:
     NAF_predict = np.asarray( NAF.predict( np.asarray( inputs_nrm_region[ region ] )[::2] ) )
     #print("NAF_predict shape: {}".format(NAF_predict.shape))
     predictions_best[ region ] = NAF_predict * inputsigmas[0:2] + inputmeans[0:2]
-    predictions_best[ region ] = predictions_best[ region ][predictions_best[ region ][:,1]>0.9] # validation cut
+    # predictions_best[ region ] = predictions_best[ region ][predictions_best[ region ][:,1]<0.9] # validation cut
 
   del NAF
   
@@ -422,8 +422,8 @@ if plotBest:
   print( "Plotting best trained model" )
   for i, variable in enumerate( variables_transform ):
     #bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
-    if(variable == "OS1FatJetProbJ"):
-      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 3 )
+    if(variable == "gcLeadingOSFatJet_pNetJ"):
+      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 11 )
     else:
       bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 26)
     #  bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], 5000, config.params[ "PLOT" ][ "NBINS" ] )
@@ -437,7 +437,7 @@ if plotBest:
         blind = False
         if ( not args.unblind and y==1 ):
           if ( x == 4 or x == 5 ):
-            blind = False
+            blind = True
         if x % 2 == 0:
           plot_hist(
             ax = axs[x,y],
@@ -492,7 +492,7 @@ else:
           blind = False
           if ( not args.unblind and y==1 ):
             if ( x == 4 or x == 5 ):
-              blind = False
+              blind = True
           if x % 2 == 0: 
             plot_hist( 
               ax = axs[x,y], 

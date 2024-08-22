@@ -6,7 +6,7 @@
 import numpy as np
 import subprocess
 import os
-import uproot
+#import uproot
 import abcdnn
 import sys
 from argparse import ArgumentParser
@@ -14,6 +14,8 @@ from json import loads as load_json
 from array import array
 import multiprocessing
 from tqdm.auto import tqdm
+import samples
+from utils import *
 
 os.environ["KERAS_BACKEND"] = "tensorflow"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -65,8 +67,13 @@ categoricals = {}
 transfers = {}
 means = {}
 sigmas = {}
-means_pred = {}
-sigmas_pred = {}
+modes_input = {}
+peaksigmas_input = {}
+tails_input = {}
+modes_pred = {}
+peaksigmas_pred = {}
+tailsigmas_pred = {}
+tails_pred = {}
 
 print( "[START] Loading checkpoints to NAF models:" )
 for checkpoint in checkpoints:
@@ -93,9 +100,13 @@ for checkpoint in checkpoints:
     lowerlimits[ checkpoint ] = [ params[ "VARIABLES" ][ key ][ "LIMIT" ][0] for key in variables ]
     upperlimits[ checkpoint ] = [ params[ "VARIABLES" ][ key ][ "LIMIT" ][1] for key in variables ]
     means[ checkpoint ] = params[ "INPUTMEANS" ]
-    sigmas[ checkpoint ] = params[ "INPUTSIGMAS" ]    
-    means_pred[ checkpoint ] = params[ "SIGNAL_MEAN" ] # not used in the script
-    sigmas_pred[ checkpoint ] = params[ "SIGNAL_SIGMA" ] 
+    sigmas[ checkpoint ] = params[ "INPUTSIGMAS" ]
+    modes_input[ checkpoint ] = params[ "INPUT_MODE" ]
+    peaksigmas_input[ checkpoint ] = params[ "INPUT_PEAKSIGMA" ]
+    modes_pred[ checkpoint ] = params[ "SIGNAL_MODE" ]
+    peaksigmas_pred[ checkpoint ] = params[ "SIGNAL_PEAKSIGMA" ]
+    tailsigmas_pred[ checkpoint ] = params[ "SIGNAL_TAILSIGMA" ]
+    tails_pred[ checkpoint ] = params[ "SIGNAL_TAIL" ]
     #print('categoricals[ checkpoint ]: {}'.format(categoricals[ checkpoint ]))
     #print('lowerlimits[ checkpoint ]: {}'.format(lowerlimits[ checkpoint ]))
     #print('upperlimits[ checkpoint ]: {}'.format(upperlimits[ checkpoint ]))
@@ -125,7 +136,7 @@ for checkpoint in checkpoints:
 #print("models: {}".format(models))
 
 # populate the step 3
-def fill_tree( sample, dLocal ):
+def fill_tree( sample,  dLocal ):
   sampleDir = config.sampleDir
   #print('sampleDir: {}'.format(sampleDir))
   #if args.storage == "EOS":
@@ -137,10 +148,16 @@ def fill_tree( sample, dLocal ):
     #  print( ">> [WARN] {} already processed".format( sample ) )
     #  return
 
-  print( "[START] Formatting sample: {}".format( sample ) )
   sample = os.path.join( config.sourceDir[ args.location ], sample )
-  upFile = uproot.open( sample )
-  upTree = upFile[ "Events_Nominal" ]
+  #upFile = uproot.open( sample )
+  #upTree = upFile[ "Events_Nominal" ]
+  
+  #samplename = sample.samplename.split('/')[1]
+  
+  print( "[START] Formatting sample: {}".format( sample ) )
+        
+  #fChain = readTreeNominal( samplename, year, config.sourceDir["LPC"],"Events_Nominal" )
+  df = ROOT.RDataFrame("Events_Nominal", sample).Define("OS1FatJetProbJ", "gcOSFatJet_pNetJ[0]").AsNumpy(columns=variables)
 
   predictions = {}
   print( ">> Formatting, encoding and predicting on MC events" )
@@ -151,10 +168,10 @@ def fill_tree( sample, dLocal ):
     input_scale = input_.copy()
     if shift_ == "UP":
       input_scale[0] = input_[0] + input_[0] * const_ * np.exp( - ( ( input_[0] - mean_[0] ) / sigma_[0] )**2 )
-      input_scale[1] = input_[1] + input_[1] * const_ * np.exp( - ( ( input_[1] - mean_[1] ) / sigma_[1] )**2 )
+      input_scale[1] = input_[1] + input_[1] * const_ * np.exp( - ( ( input_[1] - mean_[1] ) / sigma_[1]+1 )**2 ) #+1 dummy
     if shift_ == "DN":
       input_scale[0] = input_[0] - input_[0] * const_ * np.exp( - ( ( input_[0] - mean_[0] ) / sigma_[0] )**2 )
-      input_scale[1] = input_[1] - input_[1] * const_ * np.exp( - ( ( input_[1] - mean_[1] ) / sigma_[1] )**2 )
+      input_scale[1] = input_[1] - input_[1] * const_ * np.exp( - ( ( input_[1] - mean_[1] ) / sigma_[1]+1 )**2 )
     return input_scale
 
   # this should run on the predicted ABCDnn output to vary the peak location while fixing the tails to prescribe an uncertainty to the peak shape
@@ -178,13 +195,36 @@ def fill_tree( sample, dLocal ):
     else:
       quit( "[WARN] Invalid shift used, quitting..." )
 
+  def shift_sigmoid( input_, location_, const_, shift_ ): # can be used for tail/peak/input, just change the tail_ and const_
+    if shift_ == "UP":
+      return input_ + input_ * const_ * 1 / ( 1 + np.exp( -input_ + location_ ) )
+    elif shift_ == "DN":
+      return input_ - input_ * const_ * 1 / ( 1 + np.exp( -input_ + location_ ) )
+    else:
+      quit( "[WARN] Invalid shift used, quitting..." )
+
+  def shift_tanh( input_, location_, const_, shift_ ):
+    if shift_ == "UP":
+      return input_ + input_ * const_ *	(np.tanh( input_ - location_ )+1)
+    elif shift_ == "DN":
+      return input_ - input_ * const_ *  (np.tanh( input_ - location_ )+1)
+    else:
+      quit( "[WARN] Invalid shift used, quitting..." )
+
   def predict( checkpoint ):
     
     encoders = abcdnn.OneHotEncoder_int( categoricals[ checkpoint ], lowerlimit = lowerlimits[ checkpoint ], upperlimit = upperlimits[ checkpoint ] )
     #inputs_mc =  upTree.arrays(variables, library = "pd")
-    inputs_mc =  upTree.arrays([variables[0], "gcOSFatJet_pNetJ", variables[2], variables[3]], library="pd") #TEMP
+    inputs_mc = np.column_stack((df[variables[0]], df[variables[1]], df[variables[2]], df[variables[3]]))
+    #inputs_mc =  upTree.arrays([variables[0], "gcOSFatJet_pNetJ", variables[2], variables[3]], library="pd") #TEMP
     inputmean   = np.hstack( [ float( mean ) for mean in means[ checkpoint ] ] )
     inputsigma  = np.hstack( [ float( sigma ) for sigma in sigmas[ checkpoint ] ] )
+    inputmode   = np.hstack( [ float( mode ) for mode in modes_input[ checkpoint ] ] )
+    inputpeaksigma  = np.hstack( [ float( sigma ) for sigma in peaksigmas_input[ checkpoint ] ] )
+
+    #predtruesigma  = np.hstack( [ float( sigma ) for sigma in truesigmas_pred[ checkpoint ] ] )
+    #predmode       = np.hstack( [ float( mode ) for mode in modes_pred[ checkpoint ] ] )
+    #predtail       = np.hstack( [ float( tail ) for tail in tails_pred[ checkpoint ] ] )
 
     # CASE SPECIFIC. EDIT IF NEEDED
 
@@ -196,19 +236,17 @@ def fill_tree( sample, dLocal ):
     #inputs_mc[ regions[ checkpoint ][ "Y" ][ "VARIABLE" ] ].clip( regions[ checkpoint ][ "Y" ][ "MIN" ], y_upper )
 
     inputs_enc = { 
-      "NOM": encoders.encode( inputs_mc.to_numpy( dtype = np.float32 ) ), 
+      "NOM": encoders.encode( inputs_mc ), 
     }
-
-    #print(inputs_enc["NOM"].shape) # 7
-
+    
     if checkpoint in closure:
       inputs_enc[ "CLOSUREUP" ] = []
       inputs_enc[ "CLOSUREDN" ] = []
 
     for input_ in inputs_enc[ "NOM" ]:
       if checkpoint in closure:
-        inputs_enc[ "CLOSUREUP" ].append( shift_encode( input_, inputmean, inputsigma, closure[ checkpoint ]["Bprime_mass"][0], "UP" ) )
-        inputs_enc[ "CLOSUREDN" ].append( shift_encode( input_, inputmean, inputsigma, closure[ checkpoint ]["Bprime_mass"][0], "DN" ) )
+        inputs_enc[ "CLOSUREUP" ].append( shift_encode( input_, inputmode, inputpeaksigma, closure[ checkpoint ]["Bprime_mass"][0], "UP" ) )
+        inputs_enc[ "CLOSUREDN" ].append( shift_encode( input_, inputmode, inputpeaksigma, closure[ checkpoint ]["Bprime_mass"][0], "DN" ) )
 
     inputs_norm = {}
     predictions[ checkpoint ] = {}
@@ -225,12 +263,13 @@ def fill_tree( sample, dLocal ):
   rTree_in = rFile_in.Get( "Events_Nominal" )
 
   # COMMENT if want to keep original branches
-  #rTree_in.SetBranchStatus( "*", 0 )
-  #for bName in config.branches:
-  #  rTree_in.SetBranchStatus( bName, 1 )
+  # UNCOMMENT if only want ABCDnn related branches
+  rTree_in.SetBranchStatus( "*", 0 )
+  for bName in config.branches:
+    rTree_in.SetBranchStatus( bName, 1 )
 
   #print(sample)
-  rFile_out = ROOT.TFile.Open( sample.replace("jmanagan","xshen"),  "RECREATE" )
+  rFile_out = ROOT.TFile.Open( sample.replace("lpchtop","xshen"),  "RECREATE" )
   rFile_out.cd()
   rTree_out = rTree_in.CloneTree(0)
 
@@ -253,7 +292,11 @@ def fill_tree( sample, dLocal ):
     branches[ variable ] = rTree_out.Branch( "{}_{}".format( str( variable ), disc_tag ) , arrays[ variable ], "{}_{}/F".format( str( variable ), disc_tag ) ); # key does not have _ABCDnn. branch name has _ABCDnn
 
     print( " + {}_{}".format( str( variable ), disc_tag ) )    
-  
+    
+    # TEMP: skip the variation of nonBpM variables to save time
+    if "Bprime_mass" not in variable:
+      continue
+
     for shift_ in [ "UP", "DN" ]:
       # add the output peak and tail shift branches
       arrays[ variable + "_PEAK" + shift_ ] = array( "f", [0.] )
@@ -268,8 +311,27 @@ def fill_tree( sample, dLocal ):
         arrays[ variable + "_TAIL" + shift_ ],
         "{}_{}_TAIL{}/F".format( str(variable), disc_tag, shift_ )
       );
-      print( " + {}_{}_PEAK{}".format( str(variable), disc_tag, shift_ ) )
-      print( " + {}_{}_TAIL{}".format( str(variable), disc_tag, shift_ ) )
+      arrays[ variable + "_TAILmodified" + shift_ ] = array( "f", [0.] )
+      branches[ variable + "_TAILmodified" + shift_ ] = rTree_out.Branch(
+        "{}_{}_TAILmodified{}".format( str(variable), disc_tag, shift_ ),
+        arrays[ variable + "_TAILmodified" + shift_ ],
+	"{}_{}_TAILmodified{}/F".format( str(variable), disc_tag, shift_ )
+      );
+      arrays[ variable + "_TAILtanh" + shift_ ] = array( "f", [0.] )
+      branches[ variable + "_TAILtanh" + shift_ ] = rTree_out.Branch(
+        "{}_{}_TAILtanh{}".format( str(variable), disc_tag, shift_ ),
+        arrays[ variable + "_TAILtanh" + shift_ ],
+        "{}_{}_TAILtanh{}/F".format( str(variable), disc_tag, shift_ )
+      );
+      arrays[ variable + "_TAILsigmoid" + shift_ ] = array( "f", [0.] )
+      branches[ variable + "_TAILsigmoid" + shift_ ] = rTree_out.Branch(
+        "{}_{}_TAILsigmoid{}".format( str(variable), disc_tag, shift_ ),
+        arrays[ variable + "_TAIL" + shift_ ],
+        "{}_{}_TAILsigmoid{}/F".format( str(variable), disc_tag, shift_ )
+      );
+      
+      #print( " + {}_{}_PEAK{}".format( str(variable), disc_tag, shift_ ) )
+      #print( " + {}_{}_TAIL{}".format( str(variable), disc_tag, shift_ ) )
 
       # add the closure branch for varying the input to ABCDnn
       if checkpoint in closure and "transfer" not in variable:
@@ -293,14 +355,23 @@ def fill_tree( sample, dLocal ):
     arrays[ "transfer_{}".format( disc_tag ) ][0] = transfers[ checkpoint ]
 
     for j, variable in enumerate( variables_transform ):
+     
+      
       arrays[variable][0] = predictions[checkpoint]["NOM"][i][j]
 
-      #print("Bdecay_obs: {}".format(rTree_in.Bdecay_obs))
-      #print("arrays: {}".format(arrays))
-
+      # skip pnet to save time
+      if "Bprime_mass" not in variable:
+        continue
+      
       for shift_ in [ "UP", "DN" ]:
-        arrays[variable + "_PEAK" + shift_][0] = shift_peak( predictions[checkpoint]["NOM"][i][j], float( means_pred[checkpoint][j] ), float( sigmas_pred[checkpoint][j] ), closure[checkpoint][variable][1], shift_ )
-        arrays[variable + "_TAIL" + shift_][0] = shift_tail( predictions[checkpoint]["NOM"][i][j], float( means_pred[checkpoint][j] ), float( sigmas_pred[checkpoint][j] ), closure[checkpoint][variable][2], shift_ )
+        arrays[variable + "_PEAK" + shift_][0] = shift_peak( predictions[checkpoint]["NOM"][i][j],float( modes_pred[checkpoint][j] ), float( peaksigmas_pred[checkpoint][j] ), closure[checkpoint][variable][1], shift_ )
+        arrays[variable + "_TAIL" + shift_][0] = shift_tail( predictions[checkpoint]["NOM"][i][j], float( modes_pred[checkpoint][j] ), float( tailsigmas_pred[checkpoint][j] ), closure[checkpoint][variable][2], shift_ )
+        # not a typo. use gaussian shift on tail location
+        arrays[variable + "_TAILmodified" + shift_][0] = shift_peak( predictions[checkpoint]["NOM"][i][j], float( tails_pred[checkpoint][j] ), float( tailsigmas_pred[checkpoint][j] ), closure[checkpoint][variable][2], shift_ )
+        # tanh
+        arrays[variable + "_TAILtanh" + shift_][0] = shift_tanh( predictions[checkpoint]["NOM"][i][j], float( tails_pred[checkpoint][j] ), closure[checkpoint][variable][2], shift_ )
+        # sigmoid
+        arrays[variable + "_TAILsigmoid" + shift_][0] = shift_sigmoid( predictions[checkpoint]["NOM"][i][j], float( tails_pred[checkpoint][j] ), closure[checkpoint][variable][2], shift_ )
         if checkpoint in closure:
           arrays[variable + "_CLOSURE" + shift_][0] = predictions[checkpoint]["CLOSURE" + shift_][i][j]
 

@@ -30,8 +30,8 @@ parser = ArgumentParser()
 parser.add_argument( "-s", "--source", required = True )
 parser.add_argument( "-t", "--target", required = True )
 parser.add_argument( "-m", "--tag", required = True )
-parser.add_argument( "-b", "--batch", default = "10", help = "Number of batches to compute over" )
-parser.add_argument( "-n", "--size", default = "2048", help = "Size of each batch for computing MMD loss" )
+parser.add_argument( "-b", "--batch", default = "1", help = "Number of batches to compute over" ) #TEMP
+parser.add_argument( "-n", "--size", default = "-1", help = "Size of each batch for computing MMD loss" ) #TEMP
 parser.add_argument( "-r", "--region", default = "D", help = "Region to evaluate (X,Y,A,B,C,D)" )
 parser.add_argument( "--bayesian", action = "store_true", help = "Run Bayesian approximation to estimate model uncertainty" )
 parser.add_argument( "--loss", action = "store_true", help = "Calculate the MMD loss" )
@@ -140,16 +140,20 @@ def prepare_model( checkpoint, params ):
     hidden_cond = params[ "HIDDEN_COND" ],
     nodes_trans = params[ "NODES_TRANS" ],
     depth       = params[ "DEPTH" ],
-    permute     = True
+    permute     = False
   )
   model.load_weights( "Results/" + checkpoint )
   return model
 
 def get_batch( X, Y, size, region ):
-  Xmask = np.random.choice( np.shape( X[region] )[0], size = size, replace = False )
-  Ymask = np.random.choice( np.shape( Y[region] )[0], size = size, replace = False )
-  xBatch = X[region][Xmask]
-  yBatch = Y[region][Ymask]
+  if size<0:
+    xBatch = X[region]
+    yBatch = Y[region]
+  else:
+    Xmask = np.random.choice( np.shape( X[region] )[0], size = size, replace = False )
+    Ymask = np.random.choice( np.shape( Y[region] )[0], size = size, replace = False )
+    xBatch = X[region][Xmask]
+    yBatch = Y[region][Ymask]
   return xBatch, yBatch
 
 def get_loss( model, source, target, region, bSize, nBatches, bayesian = False, closure = False ):
@@ -203,22 +207,149 @@ def non_closure_eABCD( source_data, target_data ):
   print( "[Non-Closure ABCD] Observed: {}, Expected: {:.2f}, % Difference: {:.2f}".format( oYield, pYield, syst ) )
   return syst
 
-def get_stats( model, source, region, bSize, tag ):
-  #sBatch, tbatch = get_batch( source, source, bSize, region ) 
-  sBatch = source[region]
-  sPred = model( sBatch.astype( "float32" ) )
-  with open( os.path.join( "Results/", tag + ".json" ), "r+" ) as f:
-    params = load_json( f.read() )
-  means = np.hstack( [ float( mean ) for mean in params[ "INPUTMEANS" ] ] )
-  sigmas = np.hstack( [ float( sigma ) for sigma in params [ "INPUTSIGMAS" ] ] )
-  mean_pred = np.mean( sPred * sigmas[0:2] + means[0:2], axis = 0 )
-  std_pred = np.std( sPred * sigmas[0:2] + means[0:2], axis = 0 )
-  params.update( { "SIGNAL_MEAN": [ str(mean) for mean in mean_pred ] } )
-  params.update( { "SIGNAL_SIGMA":  [ str(std) for std in std_pred ] } )
+def get_stats( model, source, target, bSize, tag ):
+  mode_input     = {}
+  mode_pred      = {}
+  mode_target    = {}
+  
+  tail_pred      = {}
+  tail_target    = {}
+
+  truesigma_input  = {}
+  truesigma_pred   = {}
+  truesigma_target = {}
+
+  tailsigma_pred = {}
+  
+  for region in ["A", "B", "C", "D", "X", "Y"]:
+    sBatch, sTarget = get_batch( source, target, bSize, region )
+    bins = np.linspace( config.variables[ "Bprime_mass" ][ "LIMIT" ][0], config.variables[ "Bprime_mass" ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
+    #bins = np.linspace( config.variables[ "Bprime_mass" ][ "LIMIT" ][0], config.variables[ "Bprime_mass" ][ "LIMIT" ][1], 100 )
+    
+    with open( os.path.join( "Results/", tag + ".json" ), "r+" ) as f:
+      params = load_json( f.read() )
+    means = np.hstack( [ float( mean ) for mean in params[ "INPUTMEANS" ] ] )
+    sigmas = np.hstack( [ float( sigma ) for sigma in params [ "INPUTSIGMAS" ] ] )
+
+    sPred = model( sBatch.astype( "float32" ) ) * sigmas[0:2] + means[0:2]
+
+    #mean_pred[region] = np.mean( sPred , axis = 0 )
+    #std_pred[region] = np.std( sPred , axis = 0 )
+
+    mode_pred[region]        = np.zeros(2)
+    mode_input[region]       = np.zeros(2)
+    mode_target[region]      = np.zeros(2)
+    tail_pred[region]        = np.zeros(2)
+    tail_target[region]      = np.zeros(2)
+    truesigma_target[region] = np.zeros(2)
+    truesigma_pred[region]   = np.zeros(2)
+    truesigma_input[region]  = np.zeros(2)
+    tailsigma_pred[region]   = np.zeros(2)
+  
+    # calculate everything only for BpM (variable 0)
+    hist_input  = np.histogram(np.clip(sBatch[:,0] * sigmas[0] + means[0], bins[0], bins[-1]), bins = bins, density = False)[0]
+    hist_pred   = np.histogram(np.clip(sPred[:,0], bins[0], bins[-1]), bins = bins, density = False)[0]
+    hist_target = np.histogram(np.clip(sTarget[:,0] * sigmas[0] + means[0], bins[0], bins[-1]), bins = bins, density = False)[0]
+
+    mode_input[region][0]  = bins[np.argmax(hist_input)]+(bins[1]-bins[0])/2
+    mode_pred[region][0]   = bins[np.argmax(hist_pred)]+(bins[1]-bins[0])/2
+    mode_target[region][0] = bins[np.argmax(hist_pred)]+(bins[1]-bins[0])/2 # get middle point. bin1-bin0 gives the bin width
+
+    # get tail position (95% of data) from output and input distributions #TEMP: work for BpM only
+    counts = 0
+    nTail = len(sPred[:,0]) * 0.025
+    for i in range(1,len(bins)):
+      counts += hist_pred[-i]
+      if counts>nTail:
+        tail_pred[region][0] = bins[-i]
+        break
+
+    counts = 0
+    nTail = len(sTarget[:,0]) * 0.025
+    for i in range(1,len(bins)):
+      counts += hist_target[-i]
+      if counts>nTail:
+        tail_target[region][0] = bins[-i]
+        break
+
+    # get true sigma for input
+    counts = 0
+    n_1sig = len(sBatch[:,0]) * 0.341
+    for i in range(len(bins)):
+      if(bins[i]>mode_input[region][0]):
+        counts += hist_input[i]
+        if counts>n_1sig:
+          truesigma_input[region][0] = bins[i]-mode_input[region][0]
+          break
+
+    # get true sigma for prediction
+    counts = 0
+    n_1sig = len(sPred[:,0]) * 0.341
+    for i in range(len(bins)):
+      if(bins[i]>mode_pred[region][0]):
+        counts += hist_pred[i]
+        if counts>n_1sig:
+          truesigma_pred[region][0] = bins[i]-mode_pred[region][0]
+          break
+
+    # get true sigma for target
+    counts = 0
+    n_1sig = len(sTarget[:,0]) * 0.341
+    for i in range(len(bins)):
+      if(bins[i]>mode_target[region][0]):
+        counts += hist_target[i]
+        if counts>n_1sig:
+          truesigma_target[region][0] = bins[i]-mode_target[region][0]
+          break
+
+    # get tail sigma for prediction
+    counts = 0
+    nTail = len(sPred[:,0]) * 0.159 # 50%-34.1%
+    for i in range(1,len(bins)):
+      counts += hist_pred[-i]
+      if counts>nTail:
+        tailsigma_pred[region][0] = tail_pred[region][0] - bins[-i]
+        break
+
+  params.update( { "SIGNAL_PEAKSIGMA":  [ str(sig) for sig in truesigma_pred["D"] ] } )
+  params.update( { "SIGNAL_TAILSIGMA":  [ str(sig) for sig in tailsigma_pred["D"] ] } )
+  params.update( { "SIGNAL_MODE": [ str(mode) for mode in mode_pred["D"] ] } )
+  params.update( { "SIGNAL_TAIL":[ str(sig) for sig in tail_pred["D"] ] } ) 
+
+  params.update( { "INPUT_MODE": [ str(mode) for mode in mode_input["D"] ] } )
+  params.update( { "INPUT_PEAKSIGMA":  [ str(sig) for sig in truesigma_input["D"] ] } )
+
+  # get uncertainty shifts. NOTE: work for BpM only
+  modeTrainAvg = (mode_input["A"][0] + mode_input["B"][0] + mode_input["C"][0] + mode_input["X"][0] + mode_input["Y"][0])/5
+  c_inputPeak = abs(modeTrainAvg - mode_input["D"][0])/mode_input["D"][0]
+
+  c_APeak = abs(mode_target["A"][0] - mode_pred["A"][0])/mode_target["A"][0]
+  c_BPeak = abs(mode_target["B"][0] - mode_pred["B"][0])/mode_target["B"][0]
+  c_CPeak = abs(mode_target["C"][0] - mode_pred["C"][0])/mode_target["C"][0]
+  c_XPeak = abs(mode_target["X"][0] - mode_pred["X"][0])/mode_target["X"][0]
+  c_YPeak = abs(mode_target["Y"][0] - mode_pred["Y"][0])/mode_target["Y"][0]
+  c_outputPeak = (c_APeak + c_BPeak + c_CPeak + c_XPeak + c_YPeak)/5
+  if c_outputPeak==0: c_outputPeak = np.max([c_APeak, c_BPeak, c_CPeak, c_XPeak, c_YPeak])
+
+  c_ATail = abs(tail_target["A"][0] - tail_pred["A"][0])/tail_target["A"][0]
+  c_BTail = abs(tail_target["B"][0] - tail_pred["B"][0])/tail_target["B"][0]
+  c_CTail = abs(tail_target["C"][0] - tail_pred["C"][0])/tail_target["C"][0]
+  c_XTail = abs(tail_target["X"][0] - tail_pred["X"][0])/tail_target["X"][0]
+  c_YTail = abs(tail_target["Y"][0] - tail_pred["Y"][0])/tail_target["Y"][0]
+  c_outputTail = (c_ATail + c_BTail + c_CTail + c_XTail + c_YTail)/5
+
+  print(f'c_inputPeak, c_outputPeak, c_outputTail: {c_inputPeak}, {c_outputPeak}, {c_outputTail}')
+
+  # update and store values in json file
+  # TEMP: only works for BpM
+  params['CLOSURE']['Bprime_mass'][0] = round(c_inputPeak,2)
+  params['CLOSURE']['Bprime_mass'][1] = round(c_outputPeak,2)
+  params['CLOSURE']['Bprime_mass'][2] = round(c_outputTail,2)
+  
   with open( "Results/{}.json".format( tag ), "w" ) as f:
-    f.write( dump_json( params, indent = 2 ) ) 
-  print( "[INFO] Mean of {} in region {}: {}".format( tag, region, mean_pred ) )
-  print( "[INFO] RMS of {} in region {}: {}".format( tag, region, std_pred ) )
+    f.write( dump_json( params, indent = 2 ) )
+  #print( "[INFO] Mean of {} in region {}: {}".format( tag, region, mean_pred ) )
+  #print( "[INFO] RMS of {} in region {}: {}".format( tag, region, std_pred ) )
 
 def main():
   print( "[START] Evaluating model {} on {} batches of size {}".format( args.tag, args.batch, args.size ) )
@@ -236,6 +367,6 @@ def main():
   if args.yields: 
     _, _, _ = extended_ABCD( target_data )
   if args.stats:
-    get_stats( NAF, source_data, args.region, int( args.size ), args.tag )
+    get_stats( NAF, source_data, target_data, int( args.size ), args.tag )
 
 main()
