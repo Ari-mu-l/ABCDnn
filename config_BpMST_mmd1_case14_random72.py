@@ -48,13 +48,6 @@ variables = {
   #  "LIMIT": [0,1],
   #  "LATEX": "gcOSFatJet pNetQCD"
   # },
-  # "Bprime_ptbal":{
-  #   "CATEGORICAL": False,
-  #   "TRANSFORM": True,
-  #   "LIMIT": [0, 3],
-  #   #"MIN": 0,
-  #   "LATEX": "p_{Tbal}"
-  # },
   "NJets_forward": {
     "CATEGORICAL": True,
     "TRANSFORM": False,
@@ -112,21 +105,21 @@ regions = {
 
 params = {
   "MODEL": { # parameters for setting up the NAF model
-    "NODES_COND": 6,
-    "HIDDEN_COND": 1,
+    "NODES_COND": 13,
+    "HIDDEN_COND": 5,
     "NODES_TRANS": 6,
     "LRATE": 0.01,
     "DECAY": 0.01,
     "GAP": 300,
     "DEPTH": 4,
-    "REGULARIZER": "L2", # DROPOUT, BATCHNORM, ALL, NONE
+    "REGULARIZER": "None", # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": "softplus", # softplus, relu, swish
-    "BETA1": 0.9,
+    "ACTIVATION": "swish", # softplus, relu, swish
+    "BETA1": 0.99,
     "BETA2": 0.9,
-    "MMD SIGMAS": [0.7622399194545756, 0.579081129757496, 0.3833264874080849],
+    "MMD SIGMAS": [0.10674758518367773, 0.6043943813831741, 0.9852138040725308],
     "MMD WEIGHTS": None,
-    "MINIBATCH": 512,
+    "MINIBATCH": 1024,
     "RETRAIN": True,
     "PERMUTE": False,
     "SEED": 101, # this can be overridden when running train_abcdnn.py

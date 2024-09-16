@@ -48,13 +48,6 @@ variables = {
   #  "LIMIT": [0,1],
   #  "LATEX": "gcOSFatJet pNetQCD"
   # },
-  # "Bprime_ptbal":{
-  #   "CATEGORICAL": False,
-  #   "TRANSFORM": True,
-  #   "LIMIT": [0, 3],
-  #   #"MIN": 0,
-  #   "LATEX": "p_{Tbal}"
-  # },
   "NJets_forward": {
     "CATEGORICAL": True,
     "TRANSFORM": False,
@@ -112,19 +105,19 @@ regions = {
 
 params = {
   "MODEL": { # parameters for setting up the NAF model
-    "NODES_COND": 6,
+    "NODES_COND": 4,
     "HIDDEN_COND": 1,
     "NODES_TRANS": 6,
     "LRATE": 0.01,
-    "DECAY": 0.01,
+    "DECAY": 1.0,
     "GAP": 300,
-    "DEPTH": 4,
-    "REGULARIZER": "L2", # DROPOUT, BATCHNORM, ALL, NONE
+    "DEPTH": 1,
+    "REGULARIZER": "L1", # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": "softplus", # softplus, relu, swish
-    "BETA1": 0.9,
-    "BETA2": 0.9,
-    "MMD SIGMAS": [0.7622399194545756, 0.579081129757496, 0.3833264874080849],
+    "ACTIVATION": "swish", # softplus, relu, swish
+    "BETA1": 0.99,
+    "BETA2": 0.99,
+    "MMD SIGMAS": [0.2957967776310311, 0.9018566349776602, 0.31197508222475673],
     "MMD WEIGHTS": None,
     "MINIBATCH": 512,
     "RETRAIN": True,

@@ -112,19 +112,19 @@ regions = {
 
 params = {
   "MODEL": { # parameters for setting up the NAF model
-    "NODES_COND": 6,
-    "HIDDEN_COND": 1,
-    "NODES_TRANS": 6,
+    "NODES_COND": 3,
+    "HIDDEN_COND": 4,
+    "NODES_TRANS": 10,
     "LRATE": 0.01,
-    "DECAY": 0.01,
-    "GAP": 300,
-    "DEPTH": 4,
-    "REGULARIZER": "L2", # DROPOUT, BATCHNORM, ALL, NONE
+    "DECAY": 1.0,
+    "GAP": 600,
+    "DEPTH": 3,
+    "REGULARIZER": "None", # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
     "ACTIVATION": "softplus", # softplus, relu, swish
     "BETA1": 0.9,
-    "BETA2": 0.9,
-    "MMD SIGMAS": [0.7622399194545756, 0.579081129757496, 0.3833264874080849],
+    "BETA2": 0.99,
+    "MMD SIGMAS": [0.05678260673584392, 0.9510179684691678, 0.5033482471452687],
     "MMD WEIGHTS": None,
     "MINIBATCH": 512,
     "RETRAIN": True,

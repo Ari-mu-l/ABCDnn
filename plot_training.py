@@ -408,7 +408,9 @@ if plotBest:
   print( "Plotting best trained model" )
   for i, variable in enumerate( variables_transform ):
     if variable == "OS1FatJetProbJ":
-      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 3 )
+      bins = np.array([0,0.9,1])
+    elif variable == "gcJet_ST":
+      bins = np.array([config.variables[ variable ][ "LIMIT" ][0],700,config.variables[ variable ][ "LIMIT" ][1]])
     else:
       bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
     #if(variable == "Bprime_mass"):

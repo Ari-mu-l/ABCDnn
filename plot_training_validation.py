@@ -106,10 +106,15 @@ print( ">> Found {} total minor background entries".format( inputs_mnr.shape[0] 
 # inputs_mnr = (inputs_mnr.loc[inputs_mnr["Bprime_chi2"]>25]).drop(columns=["Bprime_chi2"])
 
 #inputs_src = inputs_src.loc[inputs_src["gcLeadingOSFatJet_pNetJ"]>0.5]
-inputs_tgt = inputs_tgt.loc[inputs_tgt["OS1FatJetProbJ"]>0.9]
-inputs_mnr = inputs_mnr.loc[inputs_mnr["OS1FatJetProbJ"]>0.9]
+#inputs_tgt = inputs_tgt.loc[inputs_tgt["OS1FatJetProbJ"]>0.9]
+#inputs_mnr = inputs_mnr.loc[inputs_mnr["OS1FatJetProbJ"]>0.9]
+inputs_tgt = inputs_tgt.loc[inputs_tgt["gcJet_ST"]<850]
+inputs_mnr = inputs_mnr.loc[inputs_mnr["gcJet_ST"]<850]
+#inputs_tgt = inputs_tgt.loc[inputs_tgt["Bprime_ptbal"]<0.85]
+#inputs_mnr = inputs_mnr.loc[inputs_mnr["Bprime_ptbal"]<0.85]
 
 for variable in variables:
+  #if variable=="gcJet_ST": continue # TEMP. for validation only
   inputs_tgt[variable] = inputs_tgt[variable].clip(upper = config.variables[variable]["LIMIT"][1])
   inputs_mnr[variable] = inputs_mnr[variable].clip(upper = config.variables[variable]["LIMIT"][1])
 #print(inputs_mnr["Bprime_mass"].min()
@@ -188,7 +193,7 @@ inputsigmas = np.hstack( [ float( sigma ) for sigma in params[ "INPUTSIGMAS" ] ]
 for region in inputs_src_region:
   encoder[region] = abcdnn.OneHotEncoder_int( categorical, lowerlimit = lowerlimit, upperlimit = upperlimit )
   inputs_enc_region[ region ] = encoder[region].encode( inputs_src_region[ region ].to_numpy( dtype = np.float32 ) )
-  inputs_nrm_region[ region ] = ( inputs_enc_region[ region ] - inputmeans ) / inputsigmas
+  inputs_nrm_region[ region ] = ( inputs_enc_region[ region ] - inputmeans ) / inputsigmas 
   inputs_src_region[ region ][ variables[0] ] = inputs_src_region[ region ][ variables[0] ].clip(upper=config.variables[variables[0]]["LIMIT"][1])
   inputs_src_region[ region ][ variables[1] ] = inputs_src_region[ region ][ variables[1] ].clip(upper=config.variables[variables[1]]["LIMIT"][1])
 
@@ -215,7 +220,7 @@ if plotBest:
     NAF_predict = np.asarray( NAF.predict( np.asarray( inputs_nrm_region[ region ] )[::2] ) )
     #print("NAF_predict shape: {}".format(NAF_predict.shape))
     predictions_best[ region ] = NAF_predict * inputsigmas[0:2] + inputmeans[0:2]
-    predictions_best[ region ] = predictions_best[ region ][predictions_best[ region ][:,1]>0.9] # validation cut
+    predictions_best[ region ] = predictions_best[ region ][predictions_best[ region ][:,1]<850] # TEMP validation cut
 
   del NAF
   
@@ -422,8 +427,13 @@ if plotBest:
   print( "Plotting best trained model" )
   for i, variable in enumerate( variables_transform ):
     #bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
-    if(variable == "OS1FatJetProbJ"):
-      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 3 )
+    if variable == "OS1FatJetProbJ":
+      #bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 3 ) # bug suspected
+      bins = np.array([0,0.9,1])
+    elif variable == "gcJet_ST":
+      bins = np.array([config.variables[ variable ][ "LIMIT" ][0],850,config.variables[ variable ][ "LIMIT" ][1]])
+    elif variable == "Bprime_ptbal":
+      bins = np.array([config.variables[ variable ][ "LIMIT" ][0],0.85,config.variables[ variable ][ "LIMIT" ][1]])
     else:
       bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 26)
     #  bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], 5000, config.params[ "PLOT" ][ "NBINS" ] )

@@ -2,7 +2,7 @@
 # formats three types of samples: data (no weights), major MC background (no weights), and minor MC backgrounds (weights)
 # last modified April 11, 2023 by Daniel Li
 
-# python format_ntuple.py -y all -n OctMajor -p 100 -c case14 --doMajorMC
+# python3 format_ntuple.py -y all -n AugMajor -p 100 -c case14 --doMajorMC
 
 import os, sys, ROOT
 from array import array
@@ -15,8 +15,9 @@ from samples import *
 parser = ArgumentParser()
 parser.add_argument( "-y",  "--year", default = "2018", help = "Year for sample" )
 parser.add_argument( "-n", "--name", required = True, help = "Output name of ROOT file" )
-parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "OS1FatJetProbJ", "gcJet_ST" ], help = "Variables to transform" ) # change for new variables
+#parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "OS1FatJetProbJ", "gcJet_ST" ], help = "Variables to transform" ) # change for new variables
 #parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "gcJet_ST" ], help = "Variables to transform" )
+parser.add_argument( "-v",  "--variables", nargs = "+", default = [ "Bprime_mass", "Bprime_ptbal" ], help = "Variables to transform")
 parser.add_argument( "-p",  "--pEvents", default = 100, help = "Percent of events (0 to 100) to include from each file." )
 parser.add_argument( "-l",  "--location", default = "LPC", help = "Location of input ROOT files: LPC,BRUX" )
 parser.add_argument( "-c", "--case", required = True, help = "decay mode")
