@@ -164,7 +164,8 @@ NAF.load_weights( os.path.join( folder, args.tag ) )
 for region in tqdm.tqdm(predictions):
   NAF_predict = np.asarray( NAF.predict( np.asarray( inputs_nrm_region[ region ] ) ) )
   predictions[ region ] = NAF_predict * inputsigmas[0:2] + inputmeans[0:2]
-  predictions[ region ] = predictions[ region ][:,0]>400 # take only BpM>400
+  predictions[ region ] = predictions[region][predictions[ region ][:,0]>400] # take only BpM>400
+  Bdecay_src_region[region] = Bdecay_src_region[region][predictions[ region ][:,0]>400]
 del NAF
 
 
@@ -191,7 +192,7 @@ def makeHists_plot():
   for i in range(len(inputs_mnr_array)):
     if inputs_mnr_array[i][1]<850:
       hist_minor_val.Fill(inputs_mnr_array[i][0] * weight_mnr_array[i])
-
+      
   #hist_predict.Write()
   hist_predict_val.Write()
   hist_data_val.Write()

@@ -17,7 +17,7 @@ bins = 43
 print(f'Fitting hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root...')
 
 plotDir = f'fit_plots/{case}_{fitType}_{binlo}to{binhi}_{bins}'
-if os.path.exists(f'fit_plots/{case}_{fitType}/'):
+if not os.path.exists(f'fit_plots/{case}_{fitType}/'):
     os.makedirs(plotDir)
 
 if fitType=="skewNorm_quadratic":
