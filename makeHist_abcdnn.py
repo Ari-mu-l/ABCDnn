@@ -127,7 +127,6 @@ for region in [ "X", "Y", "A", "B", "C", "D" ]:
   Bdecay_src_region[region] = Bdecay_src.loc[select_src]
   Bdecay_tgt_region[region] = Bdecay_tgt.loc[select_tgt]
   Bdecay_mnr_region[region] = Bdecay_mnr.loc[select_mnr]
-
   
 print( ">> Encoding and normalizing source inputs" )
 inputs_enc_region = {}
@@ -164,24 +163,22 @@ NAF.load_weights( os.path.join( folder, args.tag ) )
 for region in tqdm.tqdm(predictions):
   NAF_predict = np.asarray( NAF.predict( np.asarray( inputs_nrm_region[ region ] ) ) )
   predictions[ region ] = NAF_predict * inputsigmas[0:2] + inputmeans[0:2]
-  predictions[ region ] = predictions[region][predictions[ region ][:,0]>400] # take only BpM>400
   Bdecay_src_region[region] = Bdecay_src_region[region][predictions[ region ][:,0]>400]
+  predictions[ region ] = predictions[region][predictions[ region ][:,0]>400] # take only BpM>400
 del NAF
 
 
 def makeHists_plot():
   predict_array = predictions["D"]
-  inputs_tgt_array = inputs_tgt_region["D"].to_numpy(dtype='d')[:,0]
-  inputs_mnr_array = inputs_mnr_region["D"].to_numpy(dtype='d')[:,0]
+  inputs_tgt_array = inputs_tgt_region["D"].to_numpy(dtype='d')
+  inputs_mnr_array = inputs_mnr_region["D"].to_numpy(dtype='d')
   weight_mnr_array = inputs_mnr_region["D"]["xsecWeight"].to_numpy(dtype='d')
-  
-  #hist_predict     = ROOT.TH1D(f'Bprime_mass_ABCDnn', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+
   hist_predict_val = ROOT.TH1D(f'Bprime_mass_ABCDnn_val', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-  hist_data_val    = ROOT.TH1D(f'Bprime_mass_data_val', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-  hist_minor_val   = ROOT.TH1D(f'Bprime_mass_minor_val', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi) 
+  hist_data_val    = ROOT.TH1D(f'Bprime_mass_data_val'  , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_minor_val   = ROOT.TH1D(f'Bprime_mass_minor_val' , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
   
   for i in range(len(predict_array)):
-    #hist_predict.Fill(predict_array[i][0])
     if predict_array[i][1]<850:
       hist_predict_val.Fill(predict_array[i][0])
 
@@ -192,8 +189,7 @@ def makeHists_plot():
   for i in range(len(inputs_mnr_array)):
     if inputs_mnr_array[i][1]<850:
       hist_minor_val.Fill(inputs_mnr_array[i][0] * weight_mnr_array[i])
-      
-  #hist_predict.Write()
+  
   hist_predict_val.Write()
   hist_data_val.Write()
   hist_minor_val.Write()
@@ -226,8 +222,8 @@ def makeHists_fit(region, case):
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"].to_numpy(dtype='d')
     prediction_array = np.clip(predictions[region][:,0], 0, 2500)
 
-  hist_tgt = ROOT.TH1D(f'Bprime_mass_tgt_{region}_{case}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-  hist_mnr = ROOT.TH1D(f'Bprime_mass_mnr_{region}_{case}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_tgt = ROOT.TH1D(f'Bprime_mass_tgt_{region}_{case}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
+  hist_mnr = ROOT.TH1D(f'Bprime_mass_mnr_{region}_{case}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
   hist_pre = ROOT.TH1D(f'Bprime_mass_pre_{region}_{case}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
 
   for i in range(len(inputs_tgt_array)):
@@ -290,7 +286,9 @@ else:
   makeHists_fit("X", "case23")
   makeHists_fit("Y", "case23")
 
+  
+makeHists_plot()
 
-makeHists_plot() # TODO: might need to update
+
 
 histFile.Close()
