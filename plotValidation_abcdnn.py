@@ -1,106 +1,129 @@
-import os
+import os, sys
 import numpy as np
 import ROOT
+import json
+
+if len(sys.argv)>1:
+    getAlphaRatio = sys.argv[1]
+else:
+    getAlphaRatio = "True"
 
 if not os.path.exists('validation_plots'):
     os.makedirs('validation_plots')
 
 
-# calculate correction factor
-
-caseName = {"case1" : "tagTjet",
-           "case2" : "tagWjet",
-           "case3" : "untagTlep",
-           "case4" : "untagWlep",
+###############################
+# calculate correction factor #
+###############################
+if getAlphaRatio=="True":
+    # get counts
+    caseName = {"case1" : "tagTjet",
+            "case2" : "tagWjet",
+            "case3" : "untagTlep",
+            "case4" : "untagWlep",
            }
 
-counts = {"case14":{},
-          "case23":{},
-          "case1":{},
-          "case2":{},
-          "case3":{},
-          "case4":{},
-        }
-
-for case in counts:
-    for region in ["A", "B", "C", "D", "X", "Y"]:
-        counts[case][region] = {}
-
-def getCounts(case, region):
-    print(f'Processing {case}')
-    tempFileName  = f'/uscms/home/jmanagan/nobackup/BtoTW/CMSSW_13_0_18/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Aug2024/templates_BpMass_138fbfb_rebinned_stat0p2.root'
-    tFile = ROOT.TFile.Open(tempFileName, 'READ')
-    
-    hist_data  = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__data_obs')
-    hist_major = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__qcd') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__wjets') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__singletop') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ttbar')
-    hist_minor = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ttx') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ewk')
-
-    # integrate from the bin where 400 is in to the last bin
-    counts[case][region]["data"]  = hist_data.Integral(hist_data.FindBin(400), 99)
-    counts[case][region]["major"] = hist_major.Integral(hist_major.FindBin(400), 99)
-    counts[case][region]["minor"] = hist_minor.Integral(hist_minor.FindBin(400), 99)
-
-for region in ["A", "B", "C", "D", "X"]: #, "Y"]: # skip Y for now. problem with root file
-    print(f'Getting counts for region {region}')
-    getCounts("case1", region)
-    getCounts("case4", region)
-    getCounts("case2", region)
-    getCounts("case3", region)
-
-    counts["case14"][region]["data"]  = counts["case1"][region]["data"]  + counts["case4"][region]["data"]
-    counts["case23"][region]["data"]  = counts["case2"][region]["data"]  + counts["case3"][region]["data"]
-    
-    counts["case14"][region]["major"] = counts["case1"][region]["major"] + counts["case4"][region]["major"]
-    counts["case23"][region]["major"] = counts["case2"][region]["major"] + counts["case3"][region]["major"]
-    
-    counts["case14"][region]["minor"] = counts["case1"][region]["minor"] + counts["case4"][region]["minor"]
-    counts["case23"][region]["minor"] = counts["case2"][region]["minor"] + counts["case3"][region]["minor"]
-    
-
-yield_pred = {"case14":{},
+    counts = {"case14":{},
               "case23":{},
               "case1":{},
               "case2":{},
               "case3":{},
               "case4":{},
-              }
+            }
 
-yield_uncert = {"case14":{},
-                "case23":{},
-                "case1":{},
-                "case2":{},
-                "case3":{},
-                "case4":{},
-                }
+    for case in counts:
+        for region in ["A", "B", "C", "D", "X", "Y"]:
+            counts[case][region] = {}
 
-def getPrediction(case):
-    target_B = counts[case]["B"]["data"] - counts[case]["B"]["minor"]
-    yield_pred[case] = target_B * counts[case]["D"]["major"] / counts[case]["B"]["major"]
+    def getCounts(case, region):
+        print(f'Processing {case}')
+        tempFileName  = f'/uscms/home/jmanagan/nobackup/BtoTW/CMSSW_13_0_18/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Aug2024/templates_BpMass_138fbfb_rebinned_stat0p2.root'
+        tFile = ROOT.TFile.Open(tempFileName, 'READ')
 
-    #prediction_err = yield_pred[case] * np.sqrt(1/target_B + 1/counts[case]["B"]["major"] + 1/counts[case]["D"]["major"])
+        hist_data  = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__data_obs')
+        hist_major = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__qcd') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__wjets') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__singletop') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ttbar')
+        hist_minor = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ttx') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ewk')
 
-    data = counts[case]["D"]["data"]
-    print('Data:{}'.format(counts[case]["D"]["data"]))
-    print('Minor:{}'.format(counts[case]["D"]["minor"]))
-    print('Data-Minor:{}'.format(counts[case]["D"]["data"]-counts[case]["D"]["minor"]))
-    
-    print('Major from MC         :{}'.format(counts[case]["D"]["major"]))
-    print('Major from alpha-ratio:{}'.format(yield_pred[case]))
-    
-    print('Major deviation in MC: {}%'.format(round(100*(abs(counts[case]["D"]["major"]+counts[case]["D"]["minor"]-counts[case]["D"]["data"])/(counts[case]["D"]["data"]-counts[case]["D"]["minor"])),2)))
-    print(f'Major deviation in alpha-ratio: {round(100*(abs(yield_pred[case]-data)/data),2)}%\n')
+        # integrate from the bin where 400 is in to the last bin
+        counts[case][region]["data"]  = hist_data.Integral(hist_data.FindBin(400), 99)
+        counts[case][region]["major"] = hist_major.Integral(hist_major.FindBin(400), 99)
+        counts[case][region]["minor"] = hist_minor.Integral(hist_minor.FindBin(400), 99)
 
-print("Performing alpha-ratio estimation.")
+        tFile.Close()
 
-getPrediction("case14")
-getPrediction("case23")
-getPrediction("case1")
-getPrediction("case2")
-getPrediction("case3")
-getPrediction("case4")
+    for region in ["A", "B", "C", "D", "X"]: #, "Y"]: # skip Y for now. problem with root file
+        print(f'Getting counts for region {region}')
+        getCounts("case1", region)
+        getCounts("case4", region)
+        getCounts("case2", region)
+        getCounts("case3", region)
 
-# TODO: add uncertainties
+        counts["case14"][region]["data"]  = counts["case1"][region]["data"]  + counts["case4"][region]["data"]
+        counts["case23"][region]["data"]  = counts["case2"][region]["data"]  + counts["case3"][region]["data"]
 
+        counts["case14"][region]["major"] = counts["case1"][region]["major"] + counts["case4"][region]["major"]
+        counts["case23"][region]["major"] = counts["case2"][region]["major"] + counts["case3"][region]["major"]
+
+        counts["case14"][region]["minor"] = counts["case1"][region]["minor"] + counts["case4"][region]["minor"]
+        counts["case23"][region]["minor"] = counts["case2"][region]["minor"] + counts["case3"][region]["minor"]
+
+    # store counts in a json file
+    print("Writing to counts.json...")
+    json_object = json.dumps(counts)
+    with open("counts.json", "w") as outfile:
+        outfile.write(json_object)
+
+    # alpha-ratio prediction
+    yield_pred = {"case14":{},
+                  "case23":{},
+                  "case1":{},
+                  "case2":{},
+                  "case3":{},
+                  "case4":{},
+                  }
+
+    def getPrediction(case):
+        print(f'Getting prediction for {case}...')
+        target_B  = counts[case]["B"]["data"] - counts[case]["B"]["minor"]
+        predict_D = target_B * counts[case]["D"]["major"] / counts[case]["B"]["major"]
+        target_D  = counts[case]["D"]["data"] - counts[case]["D"]["minor"]
+
+        yield_pred[case]["prediction"] = predict_D
+        yield_pred[case]["systematic"]  = predict_D * np.sqrt(1/target_B + 1/counts[case]["B"]["major"] + 1/counts[case]["D"]["major"])
+        yield_pred[case]["statistical"] = np.sqrt(predict_D)
+        yield_pred[case]["closure"]     = abs(predict_D-target_D)
+        yield_pred[case]["uncertainty"] = np.sqrt(yield_pred[case]["systematic"]**2 + yield_pred[case]["statistical"]**2 + yield_pred[case]["closure"]**2) / predict_D
+
+        print('Data:{}'.format(counts[case]["D"]["data"]))
+        print('Minor:{}'.format(counts[case]["D"]["minor"]))
+        print(f'Data-Minor:{target_D}')
+
+        print('Major from MC         :{}'.format(counts[case]["D"]["major"]))
+        print(f'Major from alpha-ratio:{predict_D}')
+
+        print('Major deviation in MC: {}%'.format(round(100*(abs(counts[case]["D"]["major"]-target_D)/target_D),2)))
+        print(f'Major deviation in alpha-ratio: {round(100*(yield_pred[case]["closure"]/target_D),2)}%')
+        print(f'Total uncertainty from alpha-ratio (percentage): {round(100*yield_pred[case]["uncertainty"],2)}%\n')
+
+
+    print("\nPerforming alpha-ratio estimation.\n")
+    getPrediction("case14")
+    getPrediction("case23")
+    getPrediction("case1")
+    getPrediction("case2")
+    getPrediction("case3")
+    getPrediction("case4")
+
+    # write alpha-ratio restuls to a json file
+    print("Writing to alphaRatio_factors.json...")
+    json_object = json.dumps(yield_pred)
+    with open("alphaRatio_factors.json", "w") as outjson:
+        outjson.write(json_object)
+else:
+    print("Skipping counts and alpha-ratio estimation...")
+
+
+exit()
 
 # Load histograms and plot validation
 binlo = 400
