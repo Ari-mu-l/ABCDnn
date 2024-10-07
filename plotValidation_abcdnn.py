@@ -69,7 +69,7 @@ if getAlphaRatio=="True":
 
     # store counts in a json file
     print("Writing to counts.json...")
-    json_object = json.dumps(counts)
+    json_object = json.dumps(counts, indent=4)
     with open("counts.json", "w") as outfile:
         outfile.write(json_object)
 
@@ -116,7 +116,7 @@ if getAlphaRatio=="True":
 
     # write alpha-ratio restuls to a json file
     print("Writing to alphaRatio_factors.json...")
-    json_object = json.dumps(yield_pred)
+    json_object = json.dumps(yield_pred, indent=4)
     with open("alphaRatio_factors.json", "w") as outjson:
         outjson.write(json_object)
 else:

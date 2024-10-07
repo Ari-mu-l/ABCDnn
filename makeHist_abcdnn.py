@@ -28,7 +28,8 @@ args = parser.parse_args()
 # histogram settings
 bin_lo = 400
 bin_hi = 2500
-Nbins = 43 # bin width = 50
+Nbins  = 50
+#Nbins = 43 # bin width = 50
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]
 folder_contents = os.listdir( folder )
@@ -286,9 +287,5 @@ else:
   makeHists_fit("X", "case23")
   makeHists_fit("Y", "case23")
 
-  
 makeHists_plot()
-
-
-
 histFile.Close()

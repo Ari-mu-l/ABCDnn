@@ -110,7 +110,8 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
                 #.Define("NJets_forward_subtract", "(int) Sum((run>=319077 || (run==1 && event%100 >= 35) ) && ((gcforwJet_phi>-1.57 && gcforwJet_phi<-0.87 && gcforwJet_eta>-2.5 && gcforwJet_eta<-1.3) || (gcforwJet_phi>-1.57 && gcforwJet_phi<-0.87 && gcforwJet_eta>-3.0 && gcforwJet_eta<-2.5)))")\
                 #.Redefine("NJets_forward", "NJets_forward-NJets_forward_subtract") # fix forwardJets. TODO: might not needed later
       sample_total = rDF.Count().GetValue()
-      filter_string = "(W_MT <= 200)"
+      #filter_string = "(W_MT <= 200)" # have been training for <=200. SLA has <200
+      filter_string = "(W_MT < 200)"
       scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset # COMMENT: What is isTraining? # what is scale used for?
       filter_string += " && ( {} ) ".format( ntuple.selection[ args.case ] )
       print('filter_string: {}'.format(filter_string))
