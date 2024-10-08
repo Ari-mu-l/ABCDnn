@@ -28,7 +28,7 @@ args = parser.parse_args()
 # histogram settings
 bin_lo = 400
 bin_hi = 2500
-Nbins  = 50
+Nbins  = 42
 #Nbins = 43 # bin width = 50
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]

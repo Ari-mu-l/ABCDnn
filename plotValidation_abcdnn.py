@@ -11,7 +11,6 @@ else:
 if not os.path.exists('validation_plots'):
     os.makedirs('validation_plots')
 
-
 ###############################
 # calculate correction factor #
 ###############################

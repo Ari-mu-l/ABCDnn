@@ -13,12 +13,14 @@ gROOT.SetBatch(True) # suppress histogram display
 
 binlo = 400
 binhi = 2500
-bins = 43
+bins = 43 #43
 
 # store parameters in dictionaries
 params = {"case14":{"tgt":{},"pre":{}},
           "case23":{"tgt":{},"pre":{}},
           }
+
+previousbins = {}
 
 lastbin = {"case14":{"tgt":{},"pre":{}},
            "case23":{"tgt":{},"pre":{}},
@@ -26,7 +28,22 @@ lastbin = {"case14":{"tgt":{},"pre":{}},
 
 pred_uncert = {"Description":"Prediction uncertainty","case14":{}, "case23":{}}
 
-fit_apply = {}
+#fit_apply = {}
+
+tag = {"case14": "allWlep",
+       "case23": "allTlep",
+       "case1" : "tagTjet",
+       "case2" : "tagWjet",
+       "case3" : "untagTlep",
+       "case4" : "untagWlep",
+       }
+
+hist_D= {"case14":{},
+         "case23":{}}
+
+# skewNorm_cubic with initialization 1 worked the best for both case14 and case 23
+fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] + [5] * x + [6] * x * x + [7] * x * x * x"
+nparams=8
 
 def fitHist(case):
     print(f'Fitting hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root...')
@@ -35,16 +52,10 @@ def fitHist(case):
     if not os.path.exists(plotDir):
         os.makedirs(plotDir)
 
-    # skewNorm_cubic with initialization 1 worked the best for both case14 and case 23
-    fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] + [5] * x + [6] * x * x + [7] * x * x * x"
-    nparams=8
-    fit = TF1("fitFunc", fitFunc, 400, 2500, nparams)
+    fit = TF1(f'fitFunc', fitFunc, 400, 2500, nparams)
     fit.SetParameters(5, 400, 500, 50, 0.00001, 0.000001, 0.00000001)
 
     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
-    alphaFactors = {}
-    with open("alphaRatio_factors.json","r") as alphaFile:
-        alphaFactors = json.load(alphaFile)
 
     for region in ["A", "B", "C", "D", "X", "Y"]:
         params[case]["tgt"][region] = {}
@@ -62,8 +73,19 @@ def fitHist(case):
             latex.SetNDC()
             if htype == "tgt":
                 hist = histFile.Get(f'Bprime_mass_tgt_{region}_{case}') - histFile.Get(f'Bprime_mass_mnr_{region}_{case}')
+                if region=="D":
+                    hist_D[case]["Target"] = hist.Clone()
+                    hist_D[case]["Target"].Scale(1/hist.Integral())
+                    hist_D[case]["Target"].SetDirectory(0)
+                    # TODO: check underflow bin
+                    #hist.Print("all")
+                    #exit()
             elif htype == "pre":
                 hist = histFile.Get(f'Bprime_mass_pre_{region}_{case}')
+                if region=="D":
+                    hist_D[case]["ABCDnn"] = hist.Clone()
+                    hist_D[case]["ABCDnn"].Scale(1/hist.Integral())
+                    hist_D[case]["ABCDnn"].SetDirectory(0)
             else:
                 print(f'Undefined histogram type {htype}. Check for typo.')
 
@@ -85,7 +107,9 @@ def fitHist(case):
                 params[case][htype][region][f'param{str(i)}'] = [fit.GetParameter(i), fit.GetParError(i)]
 
             if region=="D" and htype=="pre": # store the fit to create histogram
-                fit_apply[case] = fit
+                hist_D[case]["Fitted"] = hist.Clone()
+                hist_D[case]["Fitted"].SetDirectory(0)
+                
     
     histFile.Close()
     
@@ -117,8 +141,74 @@ with open("pred_uncert.json", "w") as outjsonfile:
 print("Saved parameter and last bin info to pred_uncert.json")
 
 # create histogram from fit func
-hist_pred = fit_apply["case14"].CreateHistogram().Rebin(2) # if use create histogram, need to make initial histograms with 50 bins
-hist_pred.Print("all")
+alphaFactors = {}
+with open("alphaRatio_factors.json","r") as alphaFile:
+    alphaFactors = json.load(alphaFile)
+    
+if not os.path.exists('application_plots'):
+    os.makedirs('application_plots')
+    
+def createHist(case):
+    #fit_apply[case].SetNpx(bins)
+    #hist_pred = fit_apply[case].GetHistogram() #hist_pred = fit_apply["case14"].CreateHistogram().Rebin(2)
+
+    c = TCanvas("")
+    legend = TLegend(0.5,0.2,0.9,0.3)
+    
+    #hist_pred.Scale(1/hist_pred.Integral())
+    #hist_pred.SetLineColor(kBlue)
+    #hist_pred.Draw()
+    #fit_apply[case].Draw()
+
+    fit = hist_D[case]["Fitted"].GetFunction("fitFunc")
+    fit.SetNpx(bins)
+    hist_pred = fit.CreateHistogram()
+    hist_pred.SetTitle("")
+    hist_pred.SetLineColor(kBlue)
+    hist_pred.Draw()
+
+    hist_D[case]["Fitted"].SetLineColor(kBlack)
+    hist_D[case]["Fitted"].Draw("SAME")
+    
+    legend.AddEntry(hist_pred, "Histogram from the fit", "l")
+    legend.AddEntry(hist_D[case]["Fitted"], "Histogram directly from ABCDnn", "l")
+    legend.Draw()
+
+    c.SaveAs(f'application_plots/GeneratedHist_with_fit_{case}.png')
+
+    # TODO: histogram error bars
+    # TODO: finness scaling
+    #hist_pred.Scale(hist_D[case]["ABCDnn"].Integral(1,bins))
+    #hist_pred.SetBinContent(bins+1, lastbin[case]["pre"]["D"])
+    #print(hist_D[case]["ABCDnn"].Integral(bins-1,bins))
+    #exit()
+    legend = TLegend(0.6,0.6,0.9,0.9)
+    
+    hist_pred.Scale(alphaFactors[case]["prediction"])
+    hist_pred.Draw("HIST")
+
+    hist_D[case]["Target"].Scale(alphaFactors[case]["prediction"])
+    hist_D[case]["Target"].Draw("HIST SAME")
+
+    hist_D[case]["ABCDnn"].Scale(alphaFactors[case]["prediction"])
+    hist_D[case]["ABCDnn"].Draw("HIST SAME")
+    
+    legend.AddEntry(hist_pred, "Histogram from fit", "l")
+    legend.AddEntry(hist_D[case]["ABCDnn"], "Directly from ABCDnn", "l")
+    legend.AddEntry(hist_D[case]["Target"], "Data-minor", "l")
+    legend.Draw()
+    
+    c.SaveAs(f'application_plots/GeneratedHist_with_target_{case}.png')
+
+    hist_pred.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_D__major')
+    #hist_pred.Print("all")
+    #hist_trueABCDnn[case].Print("all")
+
+    
+histFile = TFile.Open("templates_BpMass_ABCDnn_138fbfb.root","RECREATE")
+createHist("case14")
+createHist("case23")
+histFile.Close()
 exit()
 
 
