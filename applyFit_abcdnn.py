@@ -152,7 +152,8 @@ def createHist(case):
     #fit_apply[case].SetNpx(bins)
     #hist_pred = fit_apply[case].GetHistogram() #hist_pred = fit_apply["case14"].CreateHistogram().Rebin(2)
 
-    c = TCanvas("")
+    # create hist and plot with the fit func
+    c1 = TCanvas("")
     legend = TLegend(0.5,0.2,0.9,0.3)
     
     #hist_pred.Scale(1/hist_pred.Integral())
@@ -174,36 +175,91 @@ def createHist(case):
     legend.AddEntry(hist_D[case]["Fitted"], "Histogram directly from ABCDnn", "l")
     legend.Draw()
 
-    c.SaveAs(f'application_plots/GeneratedHist_with_fit_{case}.png')
+    c1.SaveAs(f'application_plots/GeneratedHist_with_fit_{case}.png')
+    c1.Close()
 
+    # scale and plot with target and ABCDnn histograms
     # TODO: histogram error bars
     # TODO: finness scaling
     #hist_pred.Scale(hist_D[case]["ABCDnn"].Integral(1,bins))
     #hist_pred.SetBinContent(bins+1, lastbin[case]["pre"]["D"])
     #print(hist_D[case]["ABCDnn"].Integral(bins-1,bins))
     #exit()
-    legend = TLegend(0.6,0.6,0.9,0.9)
+    c2 = TCanvas("c2", "", 800, 800)
+    pad1 = TPad("hist_plot", "hist_plot", 0.05, 0.3, 1, 1)
+    pad1.SetBottomMargin(0) #join upper and lower plot
+    pad1.SetLeftMargin(0.1)
+    pad1.Draw()
+    pad1.cd()
     
+    legend = TLegend(0.6,0.6,0.9,0.9)
+    hist_pred.SetBinContent(bins, hist_pred.GetBinContent(bins)+lastbin[case]["tgt"]["D"])
     hist_pred.Scale(alphaFactors[case]["prediction"])
+
+    for i in range(1,bins):
+        hist_pred.SetBinError(i, np.sqrt(hist_pred.GetBinContent(i)))
     hist_pred.Draw("HIST")
 
-    hist_D[case]["Target"].Scale(alphaFactors[case]["prediction"])
-    hist_D[case]["Target"].Draw("HIST SAME")
+    hist_target = hist_D[case]["Target"]
+    hist_abcdnn = hist_D[case]["ABCDnn"]
+    
+    hist_target.Scale(alphaFactors[case]["prediction"])
+    hist_target.SetBinContent(bins, hist_target.GetBinContent(bins)+lastbin[case]["tgt"]["D"])
+    for i in range(1,bins): # remove (1, once the underflow bin issue is solved
+        hist_target.SetBinError(i, np.sqrt(hist_target.GetBinContent(i)))
+    hist_target.SetLineColor(kBlack)
+    hist_target.Draw("SAME")
 
-    hist_D[case]["ABCDnn"].Scale(alphaFactors[case]["prediction"])
-    hist_D[case]["ABCDnn"].Draw("HIST SAME")
+    hist_abcdnn.Scale(alphaFactors[case]["prediction"])
+    hist_abcdnn.SetBinContent(bins, hist_abcdnn.GetBinContent(bins)+lastbin[case]["pre"]["D"])
+    for i in range(1,bins):
+        hist_abcdnn.SetBinError(i, np.sqrt(hist_abcdnn.GetBinContent(i)))
+    hist_abcdnn.SetLineColor(kBlue)
+    hist_abcdnn.Draw("HIST SAME")
     
     legend.AddEntry(hist_pred, "Histogram from fit", "l")
-    legend.AddEntry(hist_D[case]["ABCDnn"], "Directly from ABCDnn", "l")
-    legend.AddEntry(hist_D[case]["Target"], "Data-minor", "l")
+    legend.AddEntry(hist_abcdnn, "Directly from ABCDnn", "l")
+    legend.AddEntry(hist_target, "Data-minor", "l")
     legend.Draw()
     
-    c.SaveAs(f'application_plots/GeneratedHist_with_target_{case}.png')
+    c2.cd()
+    pad2 = TPad("ratio_plot", "ratio_plot", 0.05, 0.05, 1, 0.3)
+    pad2.SetTopMargin(0)
+    pad2.SetBottomMargin(0.2)
+    pad2.SetLeftMargin(0.1)
+    pad2.SetGrid()
+    pad2.Draw()
+    pad2.cd()
 
-    hist_pred.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_D__major')
+    line = TF1("line", "1", binlo, binhi, 0)
+    
+    hist_ratio = hist_pred / hist_target
+    hist_ratio.SetTitle("")
+    hist_ratio.GetYaxis().SetRangeUser(0.5,1.5)
+    hist_ratio.GetYaxis().SetTitle("fit/target")
+
+    hist_ratio.SetMarkerStyle(20)
+    hist_ratio.SetLineColor(kBlack)
+    hist_ratio.Draw("pex0")
+    line.SetLineColor(kBlack)
+    line.Draw("SAME")
     #hist_pred.Print("all")
     #hist_trueABCDnn[case].Print("all")
 
+    hist_pred.GetYaxis().SetTitle("Events/50GeV")
+    hist_pred.GetYaxis().SetTitleSize(20)
+    hist_pred.GetYaxis().SetTitleFont(43)
+
+    hist_ratio.GetYaxis().SetTitleSize(20)
+    hist_ratio.GetYaxis().SetTitleFont(43)
+
+    #text = TText(0.4, 0.4,"Statistical uncertainty only")
+    #text.Draw()
+    
+    c2.SaveAs(f'application_plots/GeneratedHist_with_target_{case}.png')
+    c2.Close()
+    
+    hist_pred.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_D__major')
     
 histFile = TFile.Open("templates_BpMass_ABCDnn_138fbfb.root","RECREATE")
 createHist("case14")
