@@ -153,7 +153,7 @@ def createHist(case):
     #hist_pred = fit_apply[case].GetHistogram() #hist_pred = fit_apply["case14"].CreateHistogram().Rebin(2)
 
     # create hist and plot with the fit func
-    c1 = TCanvas("")
+    c1 = TCanvas("c1", "c1")
     legend = TLegend(0.5,0.2,0.9,0.3)
     
     #hist_pred.Scale(1/hist_pred.Integral())
@@ -164,7 +164,7 @@ def createHist(case):
     fit = hist_D[case]["Fitted"].GetFunction("fitFunc")
     fit.SetNpx(bins)
     hist_pred = fit.CreateHistogram()
-    hist_pred.SetTitle("")
+    hist_pred.SetTitle(f'Shape verification {case}')
     hist_pred.SetLineColor(kBlue)
     hist_pred.Draw()
 
@@ -185,7 +185,7 @@ def createHist(case):
     #hist_pred.SetBinContent(bins+1, lastbin[case]["pre"]["D"])
     #print(hist_D[case]["ABCDnn"].Integral(bins-1,bins))
     #exit()
-    c2 = TCanvas("c2", "", 800, 800)
+    c2 = TCanvas("c2", "c2", 800, 800)
     pad1 = TPad("hist_plot", "hist_plot", 0.05, 0.3, 1, 1)
     pad1.SetBottomMargin(0) #join upper and lower plot
     pad1.SetLeftMargin(0.1)
@@ -204,9 +204,12 @@ def createHist(case):
     hist_abcdnn = hist_D[case]["ABCDnn"]
     
     hist_target.Scale(alphaFactors[case]["prediction"])
-    hist_target.SetBinContent(bins, hist_target.GetBinContent(bins)+lastbin[case]["tgt"]["D"])
+    #hist_target.SetBinContent(bins, hist_target.GetBinContent(bins)+lastbin[case]["tgt"]["D"])
     for i in range(1,bins): # remove (1, once the underflow bin issue is solved
-        hist_target.SetBinError(i, np.sqrt(hist_target.GetBinContent(i)))
+        if hist_target.GetBinCenter(i) > 1000:
+            hist_target.SetBinContent(i,0)
+        else:
+            hist_target.SetBinError(i, np.sqrt(hist_target.GetBinContent(i)))
     hist_target.SetLineColor(kBlack)
     hist_target.Draw("SAME")
 
@@ -233,7 +236,7 @@ def createHist(case):
 
     line = TF1("line", "1", binlo, binhi, 0)
     
-    hist_ratio = hist_pred / hist_target
+    hist_ratio = hist_target / hist_pred
     hist_ratio.SetTitle("")
     hist_ratio.GetYaxis().SetRangeUser(0.5,1.5)
     hist_ratio.GetYaxis().SetTitle("fit/target")
@@ -246,6 +249,7 @@ def createHist(case):
     #hist_pred.Print("all")
     #hist_trueABCDnn[case].Print("all")
 
+    hist_pred.SetTitle(f'Major background {case}')
     hist_pred.GetYaxis().SetTitle("Events/50GeV")
     hist_pred.GetYaxis().SetTitleSize(20)
     hist_pred.GetYaxis().SetTitleFont(43)
@@ -261,10 +265,23 @@ def createHist(case):
     
     hist_pred.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_D__major')
     
-histFile = TFile.Open("templates_BpMass_ABCDnn_138fbfb.root","RECREATE")
+outFile = TFile.Open("templates_BpMass_ABCDnn_138fbfb.root","RECREATE")
 createHist("case14")
 createHist("case23")
-histFile.Close()
+outFile.Close()
+
+# plot validation
+def plotValidation(case):
+    histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+    hist_data  = histFile.Get("Bprime_mass_data_val")
+    hist_minor = histFile.Get("Bprime_mass_minor_val")
+
+    # TODO: how to get validation ABCDnn. easiest: fit on validation ABCDnn
+    tempFile = TFile.Open("templates_BpMass_ABCDnn_138fbfb.root","RECREATE")
+    #hist_fit = tempFile.Get(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_D__major')
+
+    #hist_model = hist_minor + hist_fit
+
 exit()
 
 
