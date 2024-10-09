@@ -10,14 +10,14 @@ eosUserName = "xshen"
 condorDir = "root://cmseos.fnal.gov//store/user/xshen/"
 
 sourceDir = {
-  "LPC": "root://cmseos.fnal.gov//store/user/lpchtop/BtoTW_Aug2024_fullRun2/",
+  "LPC": "root://cmseos.fnal.gov//store/user/lpchtop/BtoTW_Oct2024_fullRun2/",
   #"LPC": "root://cmseos.fnal.gov//store/user/jmanagan/BtoTW_Oct2023_fullRun2/", # TEMP
   #"BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
 targetDir = {
   #"LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Oct2023_fullRun2/".format( eosUserName ),
-  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Aug2024_fullRun2/".format( eosUserName ),
+  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Oct2024_fullRun2/".format( eosUserName ),
   #"BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
@@ -25,7 +25,7 @@ targetDir = {
   #"root://cmseos.fnal.gov//store/user/{}/BtoTW_Oct2023_fullRun2/ABCDnn_Jan2024/".format( eosUserName )
   #year: "FWLJMET106XUL_singleLep{}UL_RunIISummer20_{}_step3/nominal/".format( year, postfix ) for year in [ "2016APV", "2016", "2017", "2018" ]
 #}
-sampleDir = "root://cmseos.fnal.gov//store/user/xshen/BtoTW_Aug2024_fullRun2/".format( eosUserName )
+sampleDir = "root://cmseos.fnal.gov//store/user/xshen/BtoTW_Oct2024_fullRun2/".format( eosUserName )
 
 variables = {
   "Bprime_mass": {
