@@ -11,6 +11,7 @@ condorDir = "root://cmseos.fnal.gov//store/user/xshen/"
 
 sourceDir = {
   "LPC": "root://cmseos.fnal.gov//store/user/lpchtop/BtoTW_Oct2024_fullRun2/",
+  #"LPC": "root://cmseos.fnal.gov//store/user/jmanagan/BtoTW_Oct2023_fullRun2/", # TEMP
   #"BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
@@ -46,6 +47,13 @@ variables = {
   #  "TRANSFORM": True,
   #  "LIMIT": [0,1],
   #  "LATEX": "gcOSFatJet pNetQCD"
+  # },
+  # "Bprime_ptbal":{
+  #   "CATEGORICAL": False,
+  #   "TRANSFORM": True,
+  #   "LIMIT": [0, 3],
+  #   #"MIN": 0,
+  #   "LATEX": "p_{Tbal}"
   # },
   "NJets_forward": {
     "CATEGORICAL": True,
@@ -104,19 +112,19 @@ regions = {
 
 params = {
   "MODEL": { # parameters for setting up the NAF model
-    "NODES_COND": 14,
-    "HIDDEN_COND": 1,
-    "NODES_TRANS": 6,
+    "NODES_COND": 3,
+    "HIDDEN_COND": 4,
+    "NODES_TRANS": 10,
     "LRATE": 0.01,
-    "DECAY": 0.01,
-    "GAP": 1000,
-    "DEPTH": 4,
+    "DECAY": 1.0,
+    "GAP": 600,
+    "DEPTH": 3,
     "REGULARIZER": "None", # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": "tanh", # softplus, relu, swish
-    "BETA1": 0.99,
-    "BETA2": 0.9,
-    "MMD SIGMAS": [0.682263356726457, 0.20190084043106504, 0.36854095643192414],
+    "ACTIVATION": "softplus", # softplus, relu, swish
+    "BETA1": 0.9,
+    "BETA2": 0.99,
+    "MMD SIGMAS": [0.05678260673584392, 0.9510179684691678, 0.5033482471452687],
     "MMD WEIGHTS": None,
     "MINIBATCH": 1024,
     "RETRAIN": True,

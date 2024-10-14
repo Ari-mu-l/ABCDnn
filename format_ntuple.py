@@ -2,7 +2,7 @@
 # formats three types of samples: data (no weights), major MC background (no weights), and minor MC backgrounds (weights)
 # last modified April 11, 2023 by Daniel Li
 
-# python3 format_ntuple.py -y all -n AugMajor -p 100 -c case14 --doMajorMC
+# python3 format_ntuple.py -y all -n OctMajor -p 100 -c case14 --doMajorMC
 
 import os, sys, ROOT
 from array import array
@@ -32,9 +32,15 @@ args = parser.parse_args()
 if args.location not in [ "LPC", "BRUX" ]: quit( "[ERR] Invalid -l (--location) argument used. Quitting..." )
 
 ROOT.gInterpreter.Declare("""
-    float compute_weight( float optionalWeight, float L1PreFiringWeight_Nom, float genWeight, float lumi, float xsec, float nRun, float PileupWeights, float leptonRecoSF, float leptonIDSF, float leptonIsoSF, float leptonHLTSF, float btagWeights ){
-    return optionalWeight * PileupWeights * L1PreFiringWeight_Nom * leptonIDSF * leptonRecoSF * leptonIsoSF * leptonHLTSF * btagWeights * genWeight * lumi * xsec / (nRun * abs(genWeight));
+    float compute_weight( float optionalWeight, float L1PreFiringWeight_Nom, float genWeight, float lumi, float xsec, float nRun, float PileupWeights, float leptonRecoSF, float leptonIDSF, float leptonIsoSF, float leptonHLTSF, float btagWeights, float puJetSF ){
+    return optionalWeight * PileupWeights * L1PreFiringWeight_Nom * leptonIDSF * leptonRecoSF * leptonIsoSF * leptonHLTSF * btagWeights * puJetSF * genWeight * lumi * xsec / (nRun * abs(genWeight));
     }
+""")
+
+ROOT.gInterpreter.Declare("""
+float transform(float Bprime_mass){
+return TMath::Log(Bprime_mass);
+}
 """)
 
 class ToyTree:
@@ -107,11 +113,14 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
       print( ">> Processing {}".format( samplename ) )
       fChain = getfChain( output, samplename, year )
       rDF = ROOT.RDataFrame(fChain)
-                #.Define("NJets_forward_subtract", "(int) Sum((run>=319077 || (run==1 && event%100 >= 35) ) && ((gcforwJet_phi>-1.57 && gcforwJet_phi<-0.87 && gcforwJet_eta>-2.5 && gcforwJet_eta<-1.3) || (gcforwJet_phi>-1.57 && gcforwJet_phi<-0.87 && gcforwJet_eta>-3.0 && gcforwJet_eta<-2.5)))")\
-                #.Redefine("NJets_forward", "NJets_forward-NJets_forward_subtract") # fix forwardJets. TODO: might not needed later
+      #rDF = ROOT.RDataFrame(fChain)\
+      #          .Redefine("Bprime_mass", "transform(Bprime_mass)")
       sample_total = rDF.Count().GetValue()
-      #filter_string = "(W_MT <= 200)" # have been training for <=200. SLA has <200
-      filter_string = "(W_MT < 200)"
+      filter_string = "(W_MT <= 200) && (isMu || isEl)"
+      if 'SingleMuon' in samplename:
+        filter_string += "&& (isMu==1)"
+      elif ('SingleElec' in samplename) or ('EGamma' in samplename):
+        filter_string += "&& (isEl==1)"
       scale = 1. / ( int( args.pEvents ) / 100. ) # isTraining == 3 is 20% of the total dataset # COMMENT: What is isTraining? # what is scale used for?
       filter_string += " && ( {} ) ".format( ntuple.selection[ args.case ] )
       print('filter_string: {}'.format(filter_string))
@@ -120,11 +129,11 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
       if args.doData:
         rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")
       elif "_WJetsHT"  in samplename:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
       elif "TTTo" in samplename or 'TTMT' in sample.prefix:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
       else:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]") )
+        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
 
       if "OS1FatJetProbJ" in config.variables.keys():
         rDF_weight = rDF_weight.Define("OS1FatJetProbJ", "gcOSFatJet_pNetJ[0]")

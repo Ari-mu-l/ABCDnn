@@ -11,6 +11,7 @@ condorDir = "root://cmseos.fnal.gov//store/user/xshen/"
 
 sourceDir = {
   "LPC": "root://cmseos.fnal.gov//store/user/lpchtop/BtoTW_Oct2024_fullRun2/",
+  #"LPC": "root://cmseos.fnal.gov//store/user/jmanagan/BtoTW_Oct2023_fullRun2/", # TEMP
   #"BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
@@ -104,19 +105,19 @@ regions = {
 
 params = {
   "MODEL": { # parameters for setting up the NAF model
-    "NODES_COND": 14,
-    "HIDDEN_COND": 1,
+    "NODES_COND": 13,
+    "HIDDEN_COND": 5,
     "NODES_TRANS": 6,
     "LRATE": 0.01,
     "DECAY": 0.01,
-    "GAP": 1000,
+    "GAP": 300,
     "DEPTH": 4,
     "REGULARIZER": "None", # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": "tanh", # softplus, relu, swish
+    "ACTIVATION": "swish", # softplus, relu, swish
     "BETA1": 0.99,
     "BETA2": 0.9,
-    "MMD SIGMAS": [0.682263356726457, 0.20190084043106504, 0.36854095643192414],
+    "MMD SIGMAS": [0.10674758518367773, 0.6043943813831741, 0.9852138040725308],
     "MMD WEIGHTS": None,
     "MINIBATCH": 1024,
     "RETRAIN": True,

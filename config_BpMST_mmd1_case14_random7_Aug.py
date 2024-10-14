@@ -10,13 +10,14 @@ eosUserName = "xshen"
 condorDir = "root://cmseos.fnal.gov//store/user/xshen/"
 
 sourceDir = {
-  "LPC": "root://cmseos.fnal.gov//store/user/lpchtop/BtoTW_Oct2024_fullRun2/",
+  "LPC": "root://cmseos.fnal.gov//store/user/lpchtop/BtoTW_Aug2024_fullRun2/",
+  #"LPC": "root://cmseos.fnal.gov//store/user/jmanagan/BtoTW_Oct2023_fullRun2/", # TEMP
   #"BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
 targetDir = {
   #"LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Oct2023_fullRun2/".format( eosUserName ),
-  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Oct2024_fullRun2/".format( eosUserName ),
+  "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Aug2024_fullRun2/".format( eosUserName ),
   #"BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
@@ -24,7 +25,7 @@ targetDir = {
   #"root://cmseos.fnal.gov//store/user/{}/BtoTW_Oct2023_fullRun2/ABCDnn_Jan2024/".format( eosUserName )
   #year: "FWLJMET106XUL_singleLep{}UL_RunIISummer20_{}_step3/nominal/".format( year, postfix ) for year in [ "2016APV", "2016", "2017", "2018" ]
 #}
-sampleDir = "root://cmseos.fnal.gov//store/user/xshen/BtoTW_Oct2024_fullRun2/".format( eosUserName )
+sampleDir = "root://cmseos.fnal.gov//store/user/xshen/BtoTW_Aug2024_fullRun2/".format( eosUserName )
 
 variables = {
   "Bprime_mass": {
@@ -104,21 +105,21 @@ regions = {
 
 params = {
   "MODEL": { # parameters for setting up the NAF model
-    "NODES_COND": 14,
-    "HIDDEN_COND": 1,
-    "NODES_TRANS": 6,
-    "LRATE": 0.01,
-    "DECAY": 0.01,
-    "GAP": 1000,
-    "DEPTH": 4,
-    "REGULARIZER": "None", # DROPOUT, BATCHNORM, ALL, NONE
+    "NODES_COND": 6,
+    "HIDDEN_COND": 4,
+    "NODES_TRANS": 3,
+    "LRATE": 0.001,
+    "DECAY": 1.0,
+    "GAP": 200,
+    "DEPTH": 1,
+    "REGULARIZER": "L2", # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": "tanh", # softplus, relu, swish
+    "ACTIVATION": "swish", # softplus, relu, swish
     "BETA1": 0.99,
-    "BETA2": 0.9,
-    "MMD SIGMAS": [0.682263356726457, 0.20190084043106504, 0.36854095643192414],
+    "BETA2": 0.99,
+    "MMD SIGMAS": [0.5877970491841644, 0.8750340661906585, 0.18860998756998287],
     "MMD WEIGHTS": None,
-    "MINIBATCH": 1024,
+    "MINIBATCH": 512,
     "RETRAIN": True,
     "PERMUTE": False,
     "SEED": 101, # this can be overridden when running train_abcdnn.py

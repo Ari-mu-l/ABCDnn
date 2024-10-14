@@ -5,7 +5,7 @@ from ROOT import *
 from argparse import ArgumentParser
 
 gStyle.SetOptFit(1)
-#gROOT.SetBatch(True) # suppress histogram display
+gROOT.SetBatch(True) # suppress histogram display
 
 # define the fit function
 # f(x) = 2 pdf(x) * cdf(a x)
@@ -22,7 +22,7 @@ case = parser.parse_args().case
 
 binlo = 400
 binhi = 2500
-bins = 43
+bins = 42
 print(f'Fitting hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root...')
 
 plotDir = f'fit_plots/{case}_{fitType}_{binlo}to{binhi}_{bins}'
@@ -37,6 +37,11 @@ if fitType=="skewNorm_quadratic":
 elif fitType=="skewNorm_cubic":
     fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] + [5] * x + [6] * x * x + [7] * x * x * x"
     nparams = 8
+    fit = TF1("fitFunc", fitFunc, 400, 2500, nparams)
+    fit.SetParameters(5, 400, 500, 50, 0.00001, 0.000001, 0.00000001)
+elif fitType=="skewNorm_4":
+    fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] + [5] * x + [6] * x * x + [7] * x * x * x + [8] * x * x * x * x"
+    nparams = 9
     fit = TF1("fitFunc", fitFunc, 400, 2500, nparams)
     fit.SetParameters(5, 400, 500, 50, 0.00001, 0.000001, 0.00000001)
 elif fitType=="landau":

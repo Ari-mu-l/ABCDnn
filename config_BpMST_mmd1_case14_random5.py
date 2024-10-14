@@ -104,21 +104,21 @@ regions = {
 
 params = {
   "MODEL": { # parameters for setting up the NAF model
-    "NODES_COND": 14,
-    "HIDDEN_COND": 1,
-    "NODES_TRANS": 6,
-    "LRATE": 0.01,
-    "DECAY": 0.01,
-    "GAP": 1000,
-    "DEPTH": 4,
-    "REGULARIZER": "None", # DROPOUT, BATCHNORM, ALL, NONE
+    "NODES_COND": 8,
+    "HIDDEN_COND": 3,
+    "NODES_TRANS": 5,
+    "LRATE": 0.001,
+    "DECAY": 1.0,
+    "GAP": 600,
+    "DEPTH": 1,
+    "REGULARIZER": "L1+L2", # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": "tanh", # softplus, relu, swish
-    "BETA1": 0.99,
+    "ACTIVATION": "elu", # softplus, relu, swish
+    "BETA1": 0.9,
     "BETA2": 0.9,
-    "MMD SIGMAS": [0.682263356726457, 0.20190084043106504, 0.36854095643192414],
+    "MMD SIGMAS": [0.47969487710612707, 0.4477890746977519, 0.42561530815245174],
     "MMD WEIGHTS": None,
-    "MINIBATCH": 1024,
+    "MINIBATCH": 512,
     "RETRAIN": True,
     "PERMUTE": False,
     "SEED": 101, # this can be overridden when running train_abcdnn.py
