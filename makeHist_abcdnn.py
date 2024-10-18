@@ -177,9 +177,9 @@ def makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, p
   #inputs_mnr_array = inputs_mnr_region["D"].to_numpy(dtype='d')
   #weight_mnr_array = inputs_mnr_region["D"]["xsecWeight"].to_numpy(dtype='d')
 
-  hist_predict_val = ROOT.TH1D(f'Bprime_mass_ABCDnn_val', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-  hist_data_val    = ROOT.TH1D(f'Bprime_mass_data_val'  , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-  hist_minor_val   = ROOT.TH1D(f'Bprime_mass_minor_val' , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_predict_val = ROOT.TH1D(f'Bprime_mass_pre_val', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_data_val    = ROOT.TH1D(f'Bprime_mass_dat_val'  , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_minor_val   = ROOT.TH1D(f'Bprime_mass_mnr_val' , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
   
   for i in range(len(predict_array)):
     if predict_array[i][1]<850 and predict_array[i][1]>400:
@@ -227,9 +227,9 @@ def makeHists_fit(region, case):
     #prediction_array = np.clip(predictions[region][:,0], 0, 2500)
     prediction_array = np.clip(predictions[region], 0, 2500)
 
-  hist_tgt = ROOT.TH1D(f'Bprime_mass_tgt_{region}_{case}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
-  hist_mnr = ROOT.TH1D(f'Bprime_mass_mnr_{region}_{case}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
-  hist_pre = ROOT.TH1D(f'Bprime_mass_pre_{region}_{case}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_tgt = ROOT.TH1D(f'Bprime_mass_dat_{region}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
+  hist_mnr = ROOT.TH1D(f'Bprime_mass_mnr_{region}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
+  hist_pre = ROOT.TH1D(f'Bprime_mass_pre_{region}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
 
   for i in range(len(inputs_tgt_array)):
     if inputs_tgt_array[i][0]>400:

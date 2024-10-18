@@ -1,4 +1,4 @@
-# python3 optimizeFit_abcdnn.py -f skewNorm_cubic -c case14 --doValidation
+# python3 optimizeFit_abcdnn.py -f skewNorm_cubic -c case14
 import os
 import numpy as np
 from ROOT import *
@@ -15,7 +15,6 @@ gROOT.SetBatch(True) # suppress histogram display
 parser = ArgumentParser()
 parser.add_argument("-f", "--fitType" , default="skewNorm_cubic")
 parser.add_argument("-c", "--case"    , default="case14")
-parser.add_argument("--doValidation", action = "store_true")
 
 fitType = parser.parse_args().fitType
 case = parser.parse_args().case
@@ -29,21 +28,47 @@ plotDir = f'fit_plots/{case}_{fitType}_{binlo}to{binhi}_{bins}'
 if not os.path.exists(plotDir):
     os.makedirs(plotDir)
 
-if fitType=="skewNorm_quadratic":
+if fitType=="skewNorm":
+    fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 )"
+    nparams = 4
+    fit     = TF1("fitFunc", fitFunc, 400, 2500, nparams)
+    fit.SetParameters(5, 400, 500, 50)
+elif fitType=="skewNorm_linear":
+    fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] + [5] * x"
+    nparams = 6
+    fit     = TF1("fitFunc", fitFunc, 400, 2500, nparams)
+    #fit.SetParameters(5, 400, 500, 50, 0.00001, 0.00001) # good for case1
+    #fit.SetParameters(5, 400, 500, 50, 0.001, 0.0001)
+    fit.SetParameters(5, 400, 500, 50)
+elif fitType=="skewNorm_quadratic":
     fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] + [5] * x + [6] * x * x"
     nparams = 7
     fit     = TF1("fitFunc", fitFunc, 400, 2500, nparams)
-    fit.SetParameters(5, 400, 500, 50, 0.00001, 0.00001, 0.0000001)
+    #fit.SetParameters(5, 400, 500, 50, 0.00001, 0.0000001, 0.00000001)
+    #fit.SetParameters(5, 400, 500, 50)
 elif fitType=="skewNorm_cubic":
     fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] + [5] * x + [6] * x * x + [7] * x * x * x"
     nparams = 8
     fit = TF1("fitFunc", fitFunc, 400, 2500, nparams)
     fit.SetParameters(5, 400, 500, 50, 0.00001, 0.000001, 0.00000001)
+    #fit.SetParameters(5, 400, 500, 50)
+elif fitType=="skewNorm_cubic_2":
+    fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] * x + [5] * x * x + [6] * x * x * x"
+    nparams = 7
+    fit = TF1("fitFunc", fitFunc, 400, 2500, nparams)
+    fit.SetParameters(5, 400, 500, 50, 0.000001, 0.00000001)
 elif fitType=="skewNorm_4":
     fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] + [5] * x + [6] * x * x + [7] * x * x * x + [8] * x * x * x * x"
     nparams = 9
     fit = TF1("fitFunc", fitFunc, 400, 2500, nparams)
+    #fit.SetParameters(5, 400, 500, 50, 0.0000001, 0.00000001, 0.00000000001)
     fit.SetParameters(5, 400, 500, 50, 0.00001, 0.000001, 0.00000001)
+    #fit.SetParameters(5, 400, 500, 50) # case2
+elif fitType=="skewNorm_5":
+    fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] + [5] * x + [6] * x * x + [7] * x * x * x + [8] * x * x * x * x + [9] * x * x * x * x * x"
+    nparams = 10
+    fit = TF1("fitFunc", fitFunc, 400, 2500, nparams) 
+    fit.SetParameters(5, 400, 500, 50)
 elif fitType=="landau":
     fitFunc = "TMath::Landau(x, [0], [1])"
     nparams = 2
@@ -76,7 +101,8 @@ def fit_and_plot(hist, plotname):
     c = TCanvas("")
     latex = TLatex()
     latex.SetNDC()
-    
+
+    hist.SetBinContent(bins+1, 0)
     hist.Scale(1/hist.Integral())
     hist.Fit(fit, "E")
     hist.Draw()
@@ -95,41 +121,37 @@ params = {"tgt":{},
           "pre":{}
           }
 
-if parser.parse_args().doValidation:
-    hist_abcdnn = histFile.Get(f'Bprime_mass_ABCDnn_val')
-    fit_and_plot(hist_abcdnn, f'{plotDir}/fit_ABCDnn_validation.png')
-else:
-    for region in ["A", "B", "C", "D", "X", "Y"]:
-        params["tgt"][region] = {}
-        params["pre"][region] = {}
+for region in ["A", "B", "C", "D", "X", "Y", "val"]:
+    params["tgt"][region] = {}
+    params["pre"][region] = {}
 
-    # fit
-    # hist range: [400, 2500]
-    for region in ["A", "B", "C", "D", "X", "Y"]:
-        for htype in ["tgt", "pre"]:
-            if htype == "tgt":
-                hist = histFile.Get(f'Bprime_mass_tgt_{region}_{case}') - histFile.Get(f'Bprime_mass_mnr_{region}_{case}')
-            elif htype == "pre":
-                hist = histFile.Get(f'Bprime_mass_pre_{region}_{case}')
-            else:
-                print(f'Undefined histogram type {htype}. Check for typo.')
+# fit
+# hist range: [400, 2500]
+for region in ["A", "B", "C", "D", "X", "Y", "val"]:
+    for htype in ["tgt", "pre"]:
+        if htype == "tgt":
+            hist = histFile.Get(f'Bprime_mass_dat_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}')
+        elif htype == "pre":
+            hist = histFile.Get(f'Bprime_mass_pre_{region}')
+        else:
+            print(f'Undefined histogram type {htype}. Check for typo.')
 
-            fit_and_plot(hist, f'{plotDir}/fit_{htype}_{region}.png')
-            
-            for i in range(nparams):
-                params[htype][region][str(i)] = fit.GetParameter(i)
+        fit_and_plot(hist, f'{plotDir}/fit_{htype}_{region}.png')
 
-    histFile.Close()
+        for i in range(nparams):
+            params[htype][region][str(i)] = fit.GetParameter(i)
 
-    # compare
-    params_uncert = {}
-    for i in ["0", "1", "2", "3", "4", "5", "6"]:
-        uncert = 0
-        for region in ["A", "B", "C"]: # excluded X, Y. Y p6 oddly different.
-            uncert += abs((params["pre"][region][i]-params["tgt"][region][i])/params["tgt"][region][i])
+histFile.Close()
 
-        params_uncert[i] = uncert/3
-        print(f'Avg deviation in param{i}: {100*uncert/3}%')
+# compare
+params_uncert = {}
+for i in range(nparams):
+    uncert = 0
+    for region in ["A", "B", "C"]: # excluded X, Y. Y p6 oddly different.
+        uncert += abs((params["pre"][region][str(i)]-params["tgt"][region][str(i)])/params["tgt"][region][str(i)])
+        print(f'Region {region} deviation in param{i}:', abs((params["pre"][region][str(i)]-params["tgt"][region][str(i)])/params["tgt"][region][str(i)]))
+    params_uncert[i] = uncert/3
+    print(f'Avg deviation in param{i}: {100*uncert/3}%')
 
 
 
