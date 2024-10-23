@@ -112,9 +112,10 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
         #  samplename += sample.samplename.split('-')[0][-1]
       print( ">> Processing {}".format( samplename ) )
       fChain = getfChain( output, samplename, year )
-      rDF = ROOT.RDataFrame(fChain)
-      #rDF = ROOT.RDataFrame(fChain)\
-      #          .Redefine("Bprime_mass", "transform(Bprime_mass)")
+      #rDF = ROOT.RDataFrame(fChain)
+      rDF = ROOT.RDataFrame(fChain)\
+                .Redefine("Bprime_mass", "transform(Bprime_mass)")\
+                .Redefine("gcJet_ST", "transform(gcJet_ST)")
       sample_total = rDF.Count().GetValue()
       filter_string = "(W_MT <= 200) && (isMu || isEl)"
       if 'SingleMuon' in samplename:

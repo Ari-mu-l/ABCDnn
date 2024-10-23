@@ -32,13 +32,13 @@ if args.randomize: config.params["MODEL"]["SEED"] = np.random.randint( 100000 )
 
 hp = { # parameters for setting up the NAF model
     "NODES_COND": int(np.random.randint(2,15, size=1)[0]),
-    "HIDDEN_COND": int(np.random.randint(1,8, size=1)[0]),
+    "HIDDEN_COND": int(np.random.randint(1,15, size=1)[0]),
     "NODES_TRANS": int(np.random.randint(2,15, size=1)[0]),
     "LRATE": float(np.random.choice([1e-2, 1e-3], 1)[0]),
     #"LRATE": float(np.random.choice([1e-2, 1e-3, 1e-4, 1e-5, 1e-6], 1)[0]),
     "DECAY": float(np.random.choice([1, 1e-1, 1e-2], 1)[0]),
     "GAP": int(np.random.choice([100, 200, 300, 400, 500, 600, 1000], 1)[0]),
-    "DEPTH": int(np.random.randint(1, 8, size=1)[0]),
+    "DEPTH": int(np.random.randint(1, 15, size=1)[0]),
     "REGULARIZER": (np.random.choice(["L1","L2","L1+L2","None"], 1).tolist()[0]), # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
     "ACTIVATION": (np.random.choice(["swish", "relu", "elu", "softplus", "tanh"], 1)).tolist()[0], # softplus, relu, swish

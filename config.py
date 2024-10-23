@@ -31,7 +31,8 @@ variables = {
   "Bprime_mass": {
     "CATEGORICAL": False,
     "TRANSFORM": True,
-    "LIMIT": [0., 2500.], # was 5000
+    "LIMIT": [0., 10], #TEMP
+    "LIMIT_plot": [0., 2500.], # was 5000
     "MIN": 400,
     "LATEX": "M_{reco}"
   },
@@ -39,6 +40,7 @@ variables = {
     "CATEGORICAL": False,
     "TRANSFORM": True,
     "LIMIT": [0.,1500.], # was 6000
+    "LIMIT_plot": [0., 1500.],
     "MIN": 400,
     "LATEX": "ST_{gcJet}"
   },

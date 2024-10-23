@@ -52,7 +52,7 @@ tag = {"case14": "allWlep",
        "case4" : "untagWlep",
        }
 
-name_map = {"A": "A", "B": "B", "C": "C", "D": "D", "X": "X", "Y": "Y", "V": "val"}
+#name_map = {"A": "A", "B": "B", "C": "C", "D": "D", "X": "X", "Y": "Y", "V": "val"}
 
 outDir = '/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates'
 #######
@@ -106,9 +106,9 @@ def fitHist(case):
     for region in ["A", "B", "C", "D", "X", "Y", "V"]:
         for htype in ["tgt", "pre"]:
             if htype == "tgt":
-                hist = histFile.Get(f'Bprime_mass_dat_{name_map[region]}') - histFile.Get(f'Bprime_mass_mnr_{name_map[region]}')
+                hist = histFile.Get(f'Bprime_mass_dat_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}')
             else:
-                hist = histFile.Get(f'Bprime_mass_pre_{name_map[region]}')
+                hist = histFile.Get(f'Bprime_mass_pre_{region}')
 
             fit = fit_and_plot(hist, f'{plotDir}/fit_{htype}_{region}.png') # normalizes hist
 
@@ -270,8 +270,8 @@ def createHist(case, region):
     #        hist_gen.SetBinContent(j, 0)
     
     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
-    hist_target = histFile.Get(f'Bprime_mass_dat_{name_map[region]}').Clone(f'Bprime_mass_tgt_{region}') - histFile.Get(f'Bprime_mass_mnr_{name_map[region]}').Clone()
-    hist_abcdnn = histFile.Get(f'Bprime_mass_pre_{name_map[region]}').Clone()
+    hist_target = histFile.Get(f'Bprime_mass_dat_{region}').Clone(f'Bprime_mass_tgt_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}').Clone()
+    hist_abcdnn = histFile.Get(f'Bprime_mass_pre_{region}').Clone()
     hist_abcdnn_shape = hist_abcdnn.Clone()
     #print('before scaling: ', hist_abcdnn_shape.GetBinError(10))
     #hist_abcdnn_shape.Scale(1/hist_abcdnn.Integral())
@@ -331,21 +331,6 @@ def createHist(case, region):
 for case in ["case14", "case23", "case1", "case2", "case3", "case4"]:
     for region in ["V", "D"]:
         createHist(case, region)
-      
-#outFile.Close()
-
-# plot validation
-#def plotValidation(case):
-#    histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
-#    hist_data  = histFile.Get("Bprime_mass_data_val")
-#    hist_minor = histFile.Get("Bprime_mass_minor_val")
-
-    # TODO: how to get validation ABCDnn. easiest: fit on validation ABCDnn
-#    tempFile = TFile.Open("templates_BpMass_ABCDnn_138fbfb.root","RECREATE")
-    #hist_fit = tempFile.Get(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_D__major')
-
-    #hist_model = hist_minor + hist_fit
-
 
 # shift
 def shiftLastBin(case, region, shift):

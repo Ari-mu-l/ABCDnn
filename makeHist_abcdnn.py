@@ -177,9 +177,9 @@ def makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, p
   #inputs_mnr_array = inputs_mnr_region["D"].to_numpy(dtype='d')
   #weight_mnr_array = inputs_mnr_region["D"]["xsecWeight"].to_numpy(dtype='d')
 
-  hist_predict_val = ROOT.TH1D(f'Bprime_mass_pre_val', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-  hist_data_val    = ROOT.TH1D(f'Bprime_mass_dat_val'  , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-  hist_minor_val   = ROOT.TH1D(f'Bprime_mass_mnr_val' , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_predict_val = ROOT.TH1D(f'Bprime_mass_pre_V', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_data_val    = ROOT.TH1D(f'Bprime_mass_dat_V'  , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_minor_val   = ROOT.TH1D(f'Bprime_mass_mnr_V' , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
   
   for i in range(len(predict_array)):
     if predict_array[i][1]<850 and predict_array[i][1]>400:
