@@ -108,8 +108,8 @@ print( ">> Found {} total minor background entries".format( inputs_mnr.shape[0] 
 #inputs_src = inputs_src.loc[inputs_src["gcLeadingOSFatJet_pNetJ"]>0.5]
 #inputs_tgt = inputs_tgt.loc[inputs_tgt["OS1FatJetProbJ"]>0.9]
 #inputs_mnr = inputs_mnr.loc[inputs_mnr["OS1FatJetProbJ"]>0.9]
-inputs_tgt = inputs_tgt.loc[inputs_tgt["gcJet_ST"]<850]
-inputs_mnr = inputs_mnr.loc[inputs_mnr["gcJet_ST"]<850]
+#inputs_tgt = inputs_tgt.loc[inputs_tgt["gcJet_ST"]<850]
+#inputs_mnr = inputs_mnr.loc[inputs_mnr["gcJet_ST"]<850]
 #inputs_tgt = inputs_tgt.loc[inputs_tgt["Bprime_ptbal"]<0.85]
 #inputs_mnr = inputs_mnr.loc[inputs_mnr["Bprime_ptbal"]<0.85]
 
@@ -220,7 +220,7 @@ if plotBest:
     NAF_predict = np.asarray( NAF.predict( np.asarray( inputs_nrm_region[ region ] )[::2] ) )
     #print("NAF_predict shape: {}".format(NAF_predict.shape))
     predictions_best[ region ] = NAF_predict * inputsigmas[0:2] + inputmeans[0:2]
-    predictions_best[ region ] = predictions_best[ region ][predictions_best[ region ][:,1]<850] # TEMP validation cut
+    #predictions_best[ region ] = predictions_best[ region ][predictions_best[ region ][:,1]<850] # TEMP validation cut
 
   del NAF
   
@@ -277,6 +277,20 @@ def ratio_err( x, xerr, y, yerr ):
   return np.sqrt( ( yerr * x / y**2 )**2 + ( xerr / y )**2 )
 
 def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
+  # log to original
+  mc_pred  = np.exp(mc_pred)
+  mc_true  = np.exp(mc_true)
+  mc_minor = np.exp(mc_minor)
+  data     = np.exp(data)
+  # put tail in one bin
+  mc_minor = np.clip(mc_minor, bins[0], bins[-1])
+  data     = np.clip(data, bins[0], bins[-1])
+  # validation cut
+  mc_pred   = mc_pred[mc_pred<850]
+  mc_true   = mc_true[mc_true<850]
+  mc_minor  = mc_minor[mc_minor<850]
+  data      = data[data<850]
+  
   mc_pred_hist = np.histogram( np.clip( mc_pred, bins[0], bins[-1] ), bins = bins, density = False )
   mc_pred_scale = len(mc_pred)
 
@@ -361,6 +375,21 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   ax.legend( loc = "upper right", ncol = 2, fontsize = 8 )
 
 def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
+  # log to original
+  mc_pred  = np.exp(mc_pred)
+  mc_true  = np.exp(mc_true)
+  mc_minor = np.exp(mc_minor)
+  data     = np.exp(data)
+  # put tail in one bin
+  mc_minor = np.clip(mc_minor, bins[0], bins[-1])
+  data     = np.clip(data, bins[0], bins[-1])
+  # validation cut 
+  mc_pred   = mc_pred[mc_pred<850]
+  mc_true   = mc_true[mc_true<850]
+  mc_minor  = mc_minor[mc_minor<850]
+  data      = data[data<850]
+
+  
   mc_pred_hist = np.histogram( np.clip( mc_pred, bins[0], bins[-1] ), bins = bins, density = False  )
   mc_pred_scale = float( len(mc_pred) )
   

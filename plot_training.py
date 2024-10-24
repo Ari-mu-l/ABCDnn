@@ -248,13 +248,14 @@ def ratio_err( x, xerr, y, yerr ):
   return np.sqrt( ( yerr * x / y**2 )**2 + ( xerr / y )**2 )
 
 def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
-  if variable=="Bprime_mass": # TEMP. add if log in directory
-    mc_pred  = np.exp(mc_pred)
-    mc_true  = np.exp(mc_true)
-    mc_minor = np.exp(mc_minor)
-    data  = np.exp(data)
-    mc_minor = np.clip(mc_minor, bins[0], bins[-1])
-    data = np.clip(data, bins[0], bins[-1])
+  #if variable=="Bprime_mass": # TEMP. add if log in directory
+  # TEMP. add if log in directory
+  mc_pred  = np.exp(mc_pred)
+  mc_true  = np.exp(mc_true)
+  mc_minor = np.exp(mc_minor)
+  data  = np.exp(data)
+  mc_minor = np.clip(mc_minor, bins[0], bins[-1])
+  data = np.clip(data, bins[0], bins[-1])
     
   mc_pred_hist = np.histogram( np.clip( mc_pred, bins[0], bins[-1] ), bins = bins, density = False )
   mc_pred_scale = float( np.sum( mc_pred_hist[0] ) )
@@ -346,13 +347,13 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
 
 def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
 
-  if variable=="Bprime_mass": # TEMP
-    mc_pred  = np.exp(mc_pred)
-    mc_true  = np.exp(mc_true)
-    mc_minor = np.exp(mc_minor)
-    data  = np.exp(data)
-    mc_minor = np.clip(mc_minor, bins[0], bins[-1])
-    data = np.clip(data, bins[0], bins[-1])
+  #if variable=="Bprime_mass": # TEMP
+  mc_pred  = np.exp(mc_pred)
+  mc_true  = np.exp(mc_true)
+  mc_minor = np.exp(mc_minor)
+  data  = np.exp(data)
+  mc_minor = np.clip(mc_minor, bins[0], bins[-1])
+  data = np.clip(data, bins[0], bins[-1])
     
   mc_pred_hist = np.histogram( np.clip( mc_pred, bins[0], bins[-1] ), bins = bins, density = False  )
   mc_pred_scale = float( len(mc_pred) )
