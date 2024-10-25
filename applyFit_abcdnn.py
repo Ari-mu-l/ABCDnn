@@ -65,11 +65,14 @@ outDir = '/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTe
 #nparams=9
 
 # skewNorm_cubic_2
-fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] * x + [5] * x * x + [6] * x * x * x"
+#fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] * x + [5] * x * x + [6] * x * x * x"
+
+# crysalBall
+fitFunc="crystalball"
 nparams=7
 
 def fit_and_plot(hist, plotname):
-    fit = TF1(f'fitFunc', fitFunc,400, 2500, nparams)
+    fit = TF1(f'fitFunc', fitFunc, 400, 2500, nparams)
     fit.SetParameters(5, 400, 500, 50, 0.000001, 0.00000001)
     
     c = TCanvas("")

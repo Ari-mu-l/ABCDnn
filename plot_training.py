@@ -439,8 +439,6 @@ if plotBest:
           if ( x == 4 or x == 5 ):
             blind = True
         if x % 2 == 0:
-          print(inputs_mnr_region[ region_key[int(x/2)][y] ][ [ "xsecWeight" ] ].to_numpy().shape)
-          exit()
           plot_hist(
             ax = axs[x,y],
             variable = variable,

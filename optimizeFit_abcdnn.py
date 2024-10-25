@@ -93,7 +93,6 @@ elif fitType=="crystalball":
     nparams = 5
     fit = TF1("crystalball", "crystalball", 400, 2500, nparams)
     fit.SetParameters(0.1, 500, 200, -2, 100)
-    #fit.SetParameters()
 else:
     print("fitFunc not defined. Please specify.")
     exit()
