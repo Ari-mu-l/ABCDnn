@@ -144,12 +144,6 @@ for region in [ "X", "Y", "A", "B", "C", "D" ]:
   inputs_src_region[region] = inputs_src.loc[select_src]
   inputs_tgt_region[region] = inputs_tgt.loc[select_tgt]
   inputs_mnr_region[region] = inputs_mnr.loc[select_mnr]
-  
-#inputs_tgt_region["D"] = inputs_tgt_region["D"].where(inputs_tgt_region["D"] <= 1000, 0) # TODO
-#inputs_mnr_region["D"] = inputs_mnr_region["D"].where(inputs_tgt_region["D"] <= 1000, 0)
-#inputs_tgt_region["D"] = inputs_tgt_region["D"].loc[inputs_tgt_region["D"]['Bprime_mass']<=1000]
-#inputs_mnr_region["D"] = inputs_mnr_region["D"].loc[inputs_mnr_region["D"]['Bprime_mass']<=1000]
-#inputs_src_region["D"] = 
 
 print( ">> Yields in each region:" )
 for region in inputs_src_region:
@@ -191,7 +185,7 @@ if plotBest:
   for region in tqdm.tqdm( predictions_best ):
     NAF_predict = np.asarray( NAF.predict( np.asarray( inputs_nrm_region[ region ] )[::2] ) )
     print("NAF_predict shape: {}".format(NAF_predict.shape))
-    predictions_best[ region ] = NAF_predict * inputsigmas[0:2] + inputmeans[0:2] 
+    predictions_best[ region ] = NAF_predict * inputsigmas[0:2] + inputmeans[0:2]
 
   del NAF
 
@@ -445,6 +439,8 @@ if plotBest:
           if ( x == 4 or x == 5 ):
             blind = True
         if x % 2 == 0:
+          print(inputs_mnr_region[ region_key[int(x/2)][y] ][ [ "xsecWeight" ] ].to_numpy().shape)
+          exit()
           plot_hist(
             ax = axs[x,y],
             variable = variable,
@@ -453,7 +449,6 @@ if plotBest:
             mc_pred = np.asarray( predictions_best[ region_key[ int(x/2) ][y] ] )[:,i],
             mc_true = inputs_src_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
             mc_minor = inputs_mnr_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
-            #weights_minor= np.zeros(np.shape(inputs_mnr_region[ region_key[int(x/2)][y] ][["Bprime_mass"]])),
             weights_minor = inputs_mnr_region[ region_key[int(x/2)][y] ][ [ "xsecWeight" ] ].to_numpy()[:,0],
             data = inputs_tgt_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
             bins = bins,
@@ -468,7 +463,6 @@ if plotBest:
             mc_pred = np.asarray( predictions_best[ region_key[ int((x-1)/2) ][y] ] )[:,i],
             mc_true = inputs_src_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
             mc_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
-            #weights_minor= np.zeros(np.shape(inputs_mnr_region[ region_key[int(x/2)][y] ][["Bprime_mass"]])),
             weights_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ [ "xsecWeight" ] ].to_numpy()[:,0],
             data = inputs_tgt_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
             bins = bins,

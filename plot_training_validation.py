@@ -276,20 +276,30 @@ images = { variable: [] for variable in variables_transform }
 def ratio_err( x, xerr, y, yerr ):
   return np.sqrt( ( yerr * x / y**2 )**2 + ( xerr / y )**2 )
 
-def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
+def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind, i ):
   # log to original
   mc_pred  = np.exp(mc_pred)
   mc_true  = np.exp(mc_true)
   mc_minor = np.exp(mc_minor)
   data     = np.exp(data)
+  # validation cut
+  mc_pred       = mc_pred[mc_pred[:,1]<850]
+  mc_true       = mc_true[mc_true[:,1]<850]
+  weights_minor = weights_minor[mc_minor[:,1]<850] # has to go before making changes to mc_minor
+  mc_minor      = mc_minor[mc_minor[:,1]<850]
+  data          = data[data[:,1]<850]
+  
+  # select variable to plot
+  mc_pred       = mc_pred[:,i]
+  mc_true       = mc_true[:,i]
+  mc_minor      = mc_minor[:,i]
+  data          = data[:,i]
+  
   # put tail in one bin
   mc_minor = np.clip(mc_minor, bins[0], bins[-1])
   data     = np.clip(data, bins[0], bins[-1])
-  # validation cut
-  mc_pred   = mc_pred[mc_pred<850]
-  mc_true   = mc_true[mc_true<850]
-  mc_minor  = mc_minor[mc_minor<850]
-  data      = data[data<850]
+
+  print(mc_minor.shape)
   
   mc_pred_hist = np.histogram( np.clip( mc_pred, bins[0], bins[-1] ), bins = bins, density = False )
   mc_pred_scale = len(mc_pred)
@@ -374,21 +384,26 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   )
   ax.legend( loc = "upper right", ncol = 2, fontsize = 8 )
 
-def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
+def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind, i ):
   # log to original
   mc_pred  = np.exp(mc_pred)
   mc_true  = np.exp(mc_true)
   mc_minor = np.exp(mc_minor)
   data     = np.exp(data)
+  # validation cut
+  mc_pred       = mc_pred[mc_pred[:,1]<850]
+  mc_true       = mc_true[mc_true[:,1]<850]
+  weights_minor = weights_minor[mc_minor[:,1]<850]
+  mc_minor      = mc_minor[mc_minor[:,1]<850]
+  data          = data[data[:,1]<850]
+  # select variable to plot
+  mc_pred       = mc_pred[:,i]
+  mc_true       = mc_true[:,i]
+  mc_minor      = mc_minor[:,i]
+  data          = data[:,i]
   # put tail in one bin
   mc_minor = np.clip(mc_minor, bins[0], bins[-1])
   data     = np.clip(data, bins[0], bins[-1])
-  # validation cut 
-  mc_pred   = mc_pred[mc_pred<850]
-  mc_true   = mc_true[mc_true<850]
-  mc_minor  = mc_minor[mc_minor<850]
-  data      = data[data<850]
-
   
   mc_pred_hist = np.histogram( np.clip( mc_pred, bins[0], bins[-1] ), bins = bins, density = False  )
   mc_pred_scale = float( len(mc_pred) )
@@ -483,15 +498,15 @@ if plotBest:
             variable = variable,
             x = int( x / 2 ), y = y,
             epoch = "BEST",
-            mc_pred = np.asarray( predictions_best[ region_key[ int(x/2) ][y] ] )[:,i],
-            mc_true = inputs_src_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
-            mc_minor = inputs_mnr_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
-            #weights_minor= np.zeros(np.shape(inputs_mnr_region[ region_key[int(x/2)][y] ][["Bprime_mass"]])),
-            weights_minor = inputs_mnr_region[ region_key[int(x/2)][y] ][ [ "xsecWeight" ] ].to_numpy()[:,0],
-            data = inputs_tgt_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
+            mc_pred = np.asarray( predictions_best[ region_key[ int(x/2) ][y] ] ),
+            mc_true = inputs_src_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy(),
+            mc_minor = inputs_mnr_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy(),
+            weights_minor = inputs_mnr_region[ region_key[int(x/2)][y] ][ [ "xsecWeight" ] ][:,0].to_numpy(),
+            data = inputs_tgt_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy(),
             bins = bins,
             useMinor = args.useMinor,
-            blind = blind
+            blind = blind,
+            i = i
           )
         else:
           plot_ratio(
@@ -499,14 +514,14 @@ if plotBest:
             variable = variable,
             x = int((x-1)/2), y = y,
             mc_pred = np.asarray( predictions_best[ region_key[ int((x-1)/2) ][y] ] )[:,i],
-            mc_true = inputs_src_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
-            mc_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
-            #weights_minor= np.zeros(np.shape(inputs_mnr_region[ region_key[int(x/2)][y] ][["Bprime_mass"]])),
-            weights_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ [ "xsecWeight" ] ].to_numpy()[:,0],
-            data = inputs_tgt_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
+            mc_true = inputs_src_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy(),
+            mc_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy(),
+            weights_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ [ "xsecWeight" ] ][:,0].to_numpy(),
+            data = inputs_tgt_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy(),
             bins = bins,
             useMinor = args.useMinor,
-            blind = blind
+            blind = blind,
+            i = i
           )
         if(x!=0):
           position_old = axs[x,y].get_position()
@@ -538,28 +553,30 @@ else:
               variable = variable,
               x = int( x / 2 ), y = y,
               epoch = epoch,
-              mc_pred = np.asarray( predictions[ epoch ][ region_key[int(x/2)][y] ] )[:,i],
-              mc_true = inputs_src_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
-              mc_minor = inputs_mnr_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
-              weights_minor = inputs_mnr_region[ region_key[int((x)/2)][y] ][ [ "xsecWeight" ] ].to_numpy()[:,0],
-              data = inputs_tgt_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy()[:,i],
+              mc_pred = np.asarray( predictions[ epoch ][ region_key[int(x/2)][y] ] ),
+              mc_true = inputs_src_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy(),
+              mc_minor = inputs_mnr_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy(),
+              weights_minor = inputs_mnr_region[ region_key[int((x)/2)][y] ][ [ "xsecWeight" ] ][:,0].to_numpy(),
+              data = inputs_tgt_region[ region_key[int(x/2)][y] ][ variables_transform ].to_numpy(),
               bins = bins,
               useMinor = args.useMinor,
-              blind = blind
+              blind = blind,
+              i = i
             )
           else: 
             plot_ratio( 
               ax = axs[x,y],
               variable = variable,
               x = int((x-1)/2), y = y, 
-              mc_pred = np.asarray( predictions[ epoch ][ region_key[int((x-1)/2)][y] ] )[:,i],
-              mc_true = inputs_src_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
-              mc_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
-              weights_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ [ "xsecWeight" ] ].to_numpy()[:,0],
-              data = inputs_tgt_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy()[:,i],
+              mc_pred = np.asarray( predictions[ epoch ][ region_key[int((x-1)/2)][y] ] ),
+              mc_true = inputs_src_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy(),
+              mc_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy(),
+              weights_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ [ "xsecWeight" ] ][:,0].to_numpy(),
+              data = inputs_tgt_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy(),
               bins = bins,
               useMinor = args.useMinor,
-              blind = blind
+              blind = blind,
+              i = i
             )
           if(x!=0):
             position_old = axs[x,y].get_position()
