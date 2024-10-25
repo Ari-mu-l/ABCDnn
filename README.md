@@ -1,3 +1,9 @@
+# Steps of application
+- Run `makeHist_abcdnn.py` to create template histograms and ABCDnn prediction histograms
+- Run `getAlphaRatio.py` to get alpha ratio factor
+- Run `optimizeFit_abcdnn.py` to explore the fitting function and initialization
+- Run `applyFit_abcdnn.py` to create plots and template histograms that go to the SLA plotter.
+
 # ABCDnn
 
 To run the notebook on the LPC (works on CMSSW_9_4_6_patch1 and CMSSW_10_6_29):
