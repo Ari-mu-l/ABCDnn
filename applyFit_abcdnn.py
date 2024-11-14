@@ -307,7 +307,7 @@ def createHist(case, region):
     
     #fit.SetRange(0,2500)
     #fit.SetNpx(50)
-    fit.SetNpx(bins)
+    #fit.SetNpx(bins)
     hist_gen = fit.CreateHistogram()
     #for j in range(10):
     #    if hist_gen.GetXaxis().GetBinCenter(j) < 400:
@@ -352,11 +352,11 @@ def createHist(case, region):
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
-                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_42bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major')
                 outFile.Close()
         else:
-            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_42bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major')
             outFile.Close()
     elif binlo==0:
@@ -401,11 +401,11 @@ def shiftLastBin(case, region, shift):
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
-                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_42bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__lastbin{shift}')
                 outFile.Close()
         else:
-            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_42bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__lastbin{shift}')
             outFile.Close()
     elif binlo==0:
@@ -445,11 +445,11 @@ def shiftParam(case, region, i, shift):
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
-                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_42bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__param{i}{shift}')
                 outFile.Close()
         else:
-            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_42bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__param{i}{shift}')
             outFile.Close()
     elif binlo==0:
@@ -482,11 +482,11 @@ def shiftFactor(case, region, shift):
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
-                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_42bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__factor{shift}')
                 outFile.Close()
         else:
-            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_42bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__factor{shift}')
             outFile.Close()
     elif binlo==0:
