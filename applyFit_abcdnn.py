@@ -14,9 +14,9 @@ gROOT.SetBatch(True) # suppress histogram display
 
 binlo = 400
 binhi = 2500
-bins = 420
+bins = 42 # will be changed to 420 later in the code for the creation of histograms
 
-doV2 = False
+doV2 = True
 
 # store parameters in dictionaries
 # region: A, B, C, D, X, Y
@@ -138,7 +138,8 @@ def fitHist(case):
             fit = fit_and_plot(hist, f'{plotDir}/fit_{htype}_{region}.png', case) # normalizes hist
 
             # last bin is not fitted. get bin content. after scaling. capture shape only
-            params[case][htype][region]["lastbin"] = hist.GetBinContent(bins+1)
+            #params[case][htype][region]["lastbin"] = hist.GetBinContent(bins+1)
+            params[case][htype][region]["lastbin"] = hist.Integral(2495,9999)
             for i in range(nparams):
                 params[case][htype][region][f'param{str(i)}'] = [fit.GetParameter(i), fit.GetParError(i)]
 
@@ -162,9 +163,9 @@ def fitHist(case):
         # #fit_uncer = 0 # TEMP. debug only
         # pred_uncert[case][f'param{i}'] = abs(np.sqrt(train_uncert**2+fit_uncer**2)/params[case]["pre"]["D"][f'param{i}'][0])
         
-        uncert = 0
         if i<4:
-            for region in ["A", "B", "C"]: # excluded X, Y
+            uncert = 0
+            for region in ["A", "B", "C"]:
                 uncert += abs((params[case]["pre"][region][f'param{i}'][0]-params[case]["tgt"][region][f'param{i}'][0])/params[case]["tgt"][region][f'param{i}'][0]) # params[case]["pre"][region][i] is a list of [param, err]
             train_uncert = (uncert/3)*params[case]["pre"]["D"][f'param{i}'][0] # absolute shift for D
             fit_uncer = params[case]["pre"]["D"][f'param{i}'][1]
@@ -175,7 +176,8 @@ def fitHist(case):
             
     lastbin_uncert=0
     for region in ["A", "B", "C"]:
-        lastbin_uncert += abs(params[case]["pre"][region]["lastbin"]-params[case]["tgt"][region]["lastbin"])/params[case]["tgt"][region]["lastbin"]
+        if params[case]["tgt"][region]["lastbin"]!=0: # TEMP. simplified for test only.
+            lastbin_uncert += abs(params[case]["pre"][region]["lastbin"]-params[case]["tgt"][region]["lastbin"])/params[case]["tgt"][region]["lastbin"]
     pred_uncert[case]["lastbin"] = lastbin_uncert/3
 
 #fitHist("case14")
@@ -200,6 +202,8 @@ print("Saved parameter and last bin info to pred_uncert.json")
 #############################
 # create histogram from fit #
 #############################
+bins = 420 # TEMP. test with more bins
+
 alphaFactors = {}
 with open("alphaRatio_factors.json","r") as alphaFile:
     alphaFactors = json.load(alphaFile)
@@ -307,13 +311,14 @@ def createHist(case, region):
     
     #fit.SetRange(0,2500)
     #fit.SetNpx(50)
-    #fit.SetNpx(bins)
+    fit.SetNpx(bins)
     hist_gen = fit.CreateHistogram()
     #for j in range(10):
     #    if hist_gen.GetXaxis().GetBinCenter(j) < 400:
     #        hist_gen.SetBinContent(j, 0)
     
     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+    #histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_42.root', "READ") # DEV ONLY
     hist_target = histFile.Get(f'Bprime_mass_dat_{region}').Clone(f'Bprime_mass_tgt_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}').Clone()
     hist_abcdnn = histFile.Get(f'Bprime_mass_pre_{region}').Clone()
     hist_abcdnn_shape = hist_abcdnn.Clone()
@@ -368,7 +373,8 @@ def createHist(case, region):
         print("New binning encounterd. Make up a new name and folder.")
     
 for case in ["case1", "case2", "case3", "case4"]:
-    for region in ["V", "D"]:
+    #for region in ["V", "D"]:
+    for region in ["D"]: # DEV ONLY
         createHist(case, region)
 
 # shift
@@ -496,7 +502,6 @@ def shiftFactor(case, region, shift):
     else:
         exit()
         print("New binning encounterd. Make up a new name and folder.")
-
     
     
 for case in ["case1", "case2", "case3", "case4"]:
