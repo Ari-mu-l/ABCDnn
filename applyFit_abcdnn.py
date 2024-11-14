@@ -121,6 +121,8 @@ def fitHist(case):
         os.makedirs(plotDir)
 
     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+    histFile_lastbin = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_420.root', "READ")
+    #histFile_lastbin = TFile.Open(f'hists_ABCDnn_{case}_0to{binhi}_420.root', "READ") #TEMP DEV ONLY
 
     for region in ["A", "B", "C", "D", "X", "Y", "V"]:
         params[case]["tgt"][region] = {}
@@ -132,18 +134,23 @@ def fitHist(case):
         for htype in ["tgt", "pre"]:
             if htype == "tgt":
                 hist = histFile.Get(f'Bprime_mass_dat_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}')
+                hist_lastbin = histFile_lastbin.Get(f'Bprime_mass_dat_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}') #TEMP
             else:
                 hist = histFile.Get(f'Bprime_mass_pre_{region}')
+                hist_lastbin = histFile_lastbin.Get(f'Bprime_mass_pre_{region}') # TEMP
 
             fit = fit_and_plot(hist, f'{plotDir}/fit_{htype}_{region}.png', case) # normalizes hist
 
             # last bin is not fitted. get bin content. after scaling. capture shape only
-            #params[case][htype][region]["lastbin"] = hist.GetBinContent(bins+1)
-            params[case][htype][region]["lastbin"] = hist.Integral(2495,9999)
+            hist_lastbin.Scale(1/hist_lastbin.Integral())
+            params[case][htype][region]["lastbin"] = hist_lastbin.GetBinContent(420+1) # TEMP
+            #params[case][htype][region]["lastbin"] = hist_lastbin.GetBinContent(bins+1)
+            #params[case][htype][region]["lastbin"] = hist.Integral(2495,9999)
             for i in range(nparams):
                 params[case][htype][region][f'param{str(i)}'] = [fit.GetParameter(i), fit.GetParError(i)]
 
     histFile.Close()
+    histFile_lastbin.Close() #TEMP
     
     # compare
     for i in range(nparams):
@@ -176,8 +183,12 @@ def fitHist(case):
             
     lastbin_uncert=0
     for region in ["A", "B", "C"]:
-        if params[case]["tgt"][region]["lastbin"]!=0: # TEMP. simplified for test only.
-            lastbin_uncert += abs(params[case]["pre"][region]["lastbin"]-params[case]["tgt"][region]["lastbin"])/params[case]["tgt"][region]["lastbin"]
+        #if params[case]["tgt"][region]["lastbin"]!=0: # TEMP. simplified for test only.
+        #lastbin_uncert += abs(params[case]["pre"][region]["lastbin"]-params[case]["tgt"][region]["lastbin"])/params[case]["tgt"][region]["lastbin"]
+        #    print("LASTBIN NOT 0")
+        #elif params[case]["pre"][region]["lastbin"]!=0:
+        #    print("LASTBIN NOT 0")
+        lastbin_uncert += abs(params[case]["pre"][region]["lastbin"]-params[case]["tgt"][region]["lastbin"])/params[case]["pre"][region]["lastbin"]
     pred_uncert[case]["lastbin"] = lastbin_uncert/3
 
 #fitHist("case14")
@@ -373,8 +384,8 @@ def createHist(case, region):
         print("New binning encounterd. Make up a new name and folder.")
     
 for case in ["case1", "case2", "case3", "case4"]:
-    #for region in ["V", "D"]:
-    for region in ["D"]: # DEV ONLY
+    for region in ["V", "D"]:
+    #for region in ["D"]: # DEV ONLY
         createHist(case, region)
 
 # shift

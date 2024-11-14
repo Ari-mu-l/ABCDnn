@@ -26,14 +26,14 @@ parser.add_argument( "-m", "--tag"   , required = True  )
 args = parser.parse_args()
 
 # histogram settings
-bin_lo = 0 #400
+bin_lo = 400 #0
 bin_hi = 2500
 Nbins  = 420 # 42
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]
 folder_contents = os.listdir( folder )
 
-isTest = True
+isTest = False
 if isTest:
   testDir = args.tag
   if not os.path.exists(testDir):
