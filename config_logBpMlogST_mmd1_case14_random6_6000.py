@@ -114,21 +114,21 @@ regions = {
 
 params = {
   "MODEL": { # parameters for setting up the NAF model
-    "NODES_COND": 6,
-    "HIDDEN_COND": 1,
-    "NODES_TRANS": 6,
+    "NODES_COND": 10,
+    "HIDDEN_COND": 2,
+    "NODES_TRANS": 2,
     "LRATE": 0.01,
-    "DECAY": 0.01,
-    "GAP": 300,
-    "DEPTH": 4,
-    "REGULARIZER": "L2", # DROPOUT, BATCHNORM, ALL, NONE
+    "DECAY": 0.1,
+    "GAP": 1000,
+    "DEPTH": 6,
+    "REGULARIZER": "None", # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": "softplus", # softplus, relu, swish
+    "ACTIVATION": "swish", # softplus, relu, swish
     "BETA1": 0.9,
-    "BETA2": 0.9,
-    "MMD SIGMAS": [0.7622399194545756, 0.579081129757496, 0.3833264874080849],
+    "BETA2": 0.99,
+    "MMD SIGMAS": [0.4409296020385188, 0.7037566107999585, 0.691053210012482],
     "MMD WEIGHTS": None,
-    "MINIBATCH": 1024,
+    "MINIBATCH": 512,
     "RETRAIN": True,
     "PERMUTE": False,
     "SEED": 101, # this can be overridden when running train_abcdnn.py
@@ -137,7 +137,7 @@ params = {
     "VERBOSE": True  
   },
   "TRAIN": {
-    "EPOCHS": 5000,
+    "EPOCHS": 6000,
     "PATIENCE": 0,
     "MONITOR": 100,
     "MONITOR THRESHOLD": 0,  # only save model past this epoch

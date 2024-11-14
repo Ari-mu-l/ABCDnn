@@ -26,13 +26,19 @@ parser.add_argument( "-m", "--tag"   , required = True  )
 args = parser.parse_args()
 
 # histogram settings
-bin_lo = 400
+bin_lo = 0 #400
 bin_hi = 2500
-Nbins  = 42
-#Nbins = 43 # bin width = 50
+Nbins  = 420 # 42
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]
 folder_contents = os.listdir( folder )
+
+isTest = True
+if isTest:
+  testDir = args.tag
+  if not os.path.exists(testDir):
+    os.makedirs(testDir)
+else: testDir = ''
 
 print( ">> Reading in {}.json for hyper parameters...".format( args.tag ) )
 with open( os.path.join( folder, args.tag + ".json" ), "r" ) as f:
@@ -203,29 +209,40 @@ def makeHists_fit(region, case):
     inputs_tgt_array = inputs_tgt_region[region][ Bdecay_tgt_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region][ Bdecay_mnr_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d')[:,:2]
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"][ Bdecay_mnr_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d')
-    prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==1 ], 0, 2500)
-    #prediction_array = np.clip(predictions[region][:,0][ Bdecay_src_region[region]["Bdecay_obs"]==1 ], 0, 2500)
+    prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==1 ]
+    #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==1 ], 0, 2500)
   elif case=="case2":
     inputs_tgt_array = inputs_tgt_region[region][ Bdecay_tgt_region[region]["Bdecay_obs"]==2 ].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region][ Bdecay_mnr_region[region]["Bdecay_obs"]==2 ].to_numpy(dtype='d')[:,:2]
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"][ Bdecay_mnr_region[region]["Bdecay_obs"]==2 ].to_numpy(dtype='d')
-    prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==2 ], 0, 2500)
+    prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==2 ]
+    #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==2 ], 0, 2500)
   elif case=="case3":
     inputs_tgt_array = inputs_tgt_region[region][ Bdecay_tgt_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region][ Bdecay_mnr_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')[:,:2]
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"][ Bdecay_mnr_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')
-    prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==3 ], 0, 2500)
+    prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==3 ]
+    #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==3 ], 0, 2500)
   elif case=="case4":
     inputs_tgt_array = inputs_tgt_region[region][ Bdecay_tgt_region[region]["Bdecay_obs"]==4 ].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region][ Bdecay_mnr_region[region]["Bdecay_obs"]==4 ].to_numpy(dtype='d')[:,:2]
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"][ Bdecay_mnr_region[region]["Bdecay_obs"]==4 ].to_numpy(dtype='d')
-    prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==4 ], 0, 2500)
+    prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==4 ]
+    #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==4 ], 0, 2500)
   else:
     inputs_tgt_array = inputs_tgt_region[region].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region].to_numpy(dtype='d')[:,:2]
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"].to_numpy(dtype='d')
-    #prediction_array = np.clip(predictions[region][:,0], 0, 2500)
-    prediction_array = np.clip(predictions[region], 0, 2500)
+    prediction_array = predictions[region]
+    #prediction_array = np.clip(predictions[region], 0, 2500)
+    
+  inputs_tgt_array = np.exp(inputs_tgt_array)
+  inputs_mnr_array = np.exp(inputs_mnr_array)
+  prediction_array = np.exp(prediction_array)
+
+  inputs_tgt_array = np.clip(inputs_tgt_array, 0, 2500)
+  inputs_mnr_array = np.clip(inputs_mnr_array, 0, 2500)
+  prediction_array = np.clip(prediction_array, 0, 2500)
 
   hist_tgt = ROOT.TH1D(f'Bprime_mass_dat_{region}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
   hist_mnr = ROOT.TH1D(f'Bprime_mass_mnr_{region}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
@@ -255,7 +272,7 @@ elif 'case23' in args.tag:
   case_list = ["case23", "case2", "case3"]
   
 for case in case_list:
-  histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}.root', "recreate")
+  histFile = ROOT.TFile.Open(f'{testDir}/hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}.root', "recreate")
 
   makeHists_fit("A", case)
   makeHists_fit("B", case)
@@ -264,5 +281,5 @@ for case in case_list:
   makeHists_fit("X", case)
   makeHists_fit("Y", case)
 
-  makeHists_plot(case, inputs_tgt_array, inputs_mnr_array , weight_mnr_array, prediction_array)
+  makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, prediction_array)
   histFile.Close()

@@ -41,6 +41,7 @@ if getAlphaRatio=="True":
     def getCounts(case, region):
         print(f'Processing {case}')
         tempFileName  = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Oct2024_42bins/templates_BpMass_138fbfb.root'
+        #tempFileName  = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Oct2024_Julie/templates_BpMass_138fbfb.root'
         tFile = ROOT.TFile.Open(tempFileName, 'READ')
         hist_data  = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__data_obs')
         hist_major = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__qcd') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__wjets') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__singletop') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ttbar')
@@ -107,8 +108,8 @@ if getAlphaRatio=="True":
         print(f'Getting prediction for {case}...')
         target_B    = counts[case][B]["data"] - counts[case][B]["minor"]
         predict_D   = target_B * counts[case][D]["major"] / counts[case][B]["major"]
-        predict_val = target_B * counts[case][region]["major"] / counts[case][B]["major"]
-        target_val  = counts[case][region]["data"] - counts[case][region]["minor"]
+        predict_val = target_B * counts[case]["V"]["major"] / counts[case][B]["major"]
+        target_val  = counts[case]["V"]["data"] - counts[case]["V"]["minor"]
 
         yield_pred[case][region]["prediction"]  = predict_D
         yield_pred[case][region]["factor"]      = predict_D / counts[case][D]["unweighted"]
@@ -146,9 +147,9 @@ else:
 exit()
 
 # Load histograms and plot validation
-binlo = 400
+binlo = 0 #400
 binhi = 2500
-bins = 42
+bins = 50 #42
 
 def plot_validation(case, shape):
     histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")

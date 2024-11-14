@@ -218,7 +218,7 @@ if plotBest:
 
   for region in tqdm.tqdm( predictions_best ):
     NAF_predict = np.asarray( NAF.predict( np.asarray( inputs_nrm_region[ region ] )[::2] ) )
-    #print("NAF_predict shape: {}".format(NAF_predict.shape))
+    print("NAF_predict shape: {}".format(NAF_predict.shape))
     predictions_best[ region ] = NAF_predict * inputsigmas[0:2] + inputmeans[0:2]
     #predictions_best[ region ] = predictions_best[ region ][predictions_best[ region ][:,1]<850] # TEMP validation cut
 
@@ -288,19 +288,17 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   weights_minor = weights_minor[mc_minor[:,1]<850] # has to go before making changes to mc_minor
   mc_minor      = mc_minor[mc_minor[:,1]<850]
   data          = data[data[:,1]<850]
-  
+
   # select variable to plot
   mc_pred       = mc_pred[:,i]
   mc_true       = mc_true[:,i]
   mc_minor      = mc_minor[:,i]
   data          = data[:,i]
-  
+
   # put tail in one bin
   mc_minor = np.clip(mc_minor, bins[0], bins[-1])
   data     = np.clip(data, bins[0], bins[-1])
 
-  print(mc_minor.shape)
-  
   mc_pred_hist = np.histogram( np.clip( mc_pred, bins[0], bins[-1] ), bins = bins, density = False )
   mc_pred_scale = len(mc_pred)
 
@@ -353,7 +351,7 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
     color = "red", alpha = 0.2
   )
   
-  ax.set_xlim( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1] )
+  ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
   y_max = max( [ max( data_mod ) / data_mod_scale, max( mc_true_hist[0] ) / mc_true_scale ] )
   ax.set_ylim( 0, 1.4 * y_max )
   ax.set_yscale( config.params[ "PLOT" ][ "YSCALE" ] )
@@ -455,7 +453,7 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
   )
 
   ax.set_xlabel( "${}$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 10 )
-  ax.set_xlim( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1] )
+  ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
   ax.set_ylabel( "Target/ABCDnn", ha = "right", y = 1.0, fontsize = 8 )
   ax.set_ylim( config.params[ "PLOT" ][ "RATIO" ][0], config.params[ "PLOT" ][ "RATIO" ][1] )
   ax.set_yticks( [ 0.80, 0.90, 1.0, 1.10, 1.20 ] )
@@ -479,7 +477,7 @@ if plotBest:
     elif variable == "Bprime_ptbal":
       bins = np.array([config.variables[ variable ][ "LIMIT" ][0],0.85,config.variables[ variable ][ "LIMIT" ][1]])
     else:
-      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], 26)
+      bins = np.linspace( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1], 26)
     #  bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], 5000, config.params[ "PLOT" ][ "NBINS" ] )
     #  bins = np.concatenate((bins[bins<2500], np.array([2750, 3750, 5000])), axis=0)
     #else:
@@ -513,7 +511,7 @@ if plotBest:
             ax = axs[x,y],
             variable = variable,
             x = int((x-1)/2), y = y,
-            mc_pred = np.asarray( predictions_best[ region_key[ int((x-1)/2) ][y] ] )[:,i],
+            mc_pred = np.asarray( predictions_best[ region_key[ int((x-1)/2) ][y] ] ),
             mc_true = inputs_src_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy(),
             mc_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ variables_transform ].to_numpy(),
             weights_minor = inputs_mnr_region[ region_key[int((x-1)/2)][y] ][ [ "xsecWeight" ] ].to_numpy()[:,0],
@@ -539,7 +537,7 @@ else:
   for epoch in sorted( predictions.keys() ):
     print( "  + Generating image for epoch {}".format( epoch ) )
     for i, variable in enumerate( variables_transform ): 
-      bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
+      bins = np.linspace( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1], config.params[ "PLOT" ][ "NBINS" ] )
       fig, axs = plt.subplots( 6, 2, figsize = (9,12), gridspec_kw = { "height_ratios": [3,1,3,1,3,1] } )
       for x in range( 6 ):
         for y in range( 2 ):
