@@ -1,3 +1,7 @@
+# Steps of making histograms with 420bins
+1. In SLA, run `python3 organizeHist.py` for signals and minor backgrounds.
+2. In ABCDnn, change outDir to `<SLA_directory>/makeTemplates`. Then run `python3 applyFit_abcdnn.py`. The ABCDnn histograms should appear in file `templatesD_Oct2024_420bins/templates_BpMass_ABCDnn_138fbfb.root`.
+   
 # Steps of application
 - Run `makeHist_abcdnn.py` to create template histograms and ABCDnn prediction histograms
 - Run `getAlphaRatio.py` to get alpha ratio factor
