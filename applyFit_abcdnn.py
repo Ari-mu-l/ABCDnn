@@ -6,6 +6,7 @@ import json
 gStyle.SetOptFit(1)
 gStyle.SetOptStat(0)
 gROOT.SetBatch(True) # suppress histogram display
+TH1.SetDefaultSumw2(True)
 
 # define the fit function
 # f(x) = 2 pdf(x) * cdf(a x)
@@ -92,22 +93,53 @@ def fit_and_plot(hist, plotname, case):
     #    fit.SetParameters(5, 400, 500, 50, 0.0000001, 0.000000001, 0.000000000001)
     #fit.SetParameters(0.1, 500, 200, -2.5, 100000000) #crystalball
     
-    c = TCanvas("")
+    c = TCanvas("c", "c", 800, 800)
+    pad1 = TPad("hist_plot", "hist_plot", 0.05, 0.3, 1, 1)
+    pad1.SetBottomMargin(0) #join upper and lower plot
+    pad1.SetLeftMargin(0.1)
+    pad1.Draw()
+    pad1.cd()
+
     latex = TLatex()
     latex.SetNDC()
 
     hist.Scale(1/hist.Integral())
+    hist_target = hist.Clone()
     hist.Fit(fit, "E")
     hist.Draw()
-
-    #chi2ndof = fit.GetChisquare() / fit.GetNDF()
-    #latex.DrawText(0.6, 0.2, f'chi2/ndof = {round(chi2ndof,2)}')
-
     latex.DrawText(0.6, 0.4, f'{case}')
+
+    c.cd()
+    pad2 = TPad("ratio_plot", "ratio_plot", 0.05, 0.05, 1, 0.3)
+    pad2.SetTopMargin(0)
+    pad2.SetBottomMargin(0.2)
+    pad2.SetLeftMargin(0.1)
+    pad2.SetGrid()
+    pad2.Draw()
+    pad2.cd()
+
+    line = TF1("line", "1", binlo, binhi, 0)
+
+    hist_ratio = hist / hist_target
+    hist_ratio.SetTitle("")
+    hist_ratio.GetYaxis().SetRangeUser(0.8,1.2)
+    hist_ratio.GetYaxis().SetTitle("fit/target")
+
+    hist_ratio.SetMarkerStyle(20)
+    hist_ratio.SetLineColor(kBlack)
+    hist_ratio.Draw("pex0")
+    line.SetLineColor(kBlack)
+    line.Draw("SAME")
+    
     hist.SetTitle("")
     hist.GetXaxis().SetTitle("Mass reco [GeV]")
     hist.GetYaxis().SetTitle("Frequency")
+    hist.GetYaxis().SetTitleSize(20)
+    hist.GetYaxis().SetTitleFont(43)
 
+    hist_ratio.GetYaxis().SetTitleSize(20)
+    hist_ratio.GetYaxis().SetTitleFont(43)
+    
     c.SaveAs(plotname)
     print(f'Saved plot to {plotname}.')
 
@@ -197,7 +229,7 @@ fitHist("case1")
 fitHist("case2")
 fitHist("case3")
 fitHist("case4")
-#exit()
+exit() # TEMP
 
 # save parameters and last bin to a json file
 json_obj = json.dumps(params, indent=4)
