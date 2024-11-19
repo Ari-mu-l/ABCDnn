@@ -37,7 +37,7 @@ isTest = False
 if isTest:
   testDir = args.tag
   if not os.path.exists(testDir):
-    os.makedirs(testDir)
+    os.makedirs(testDir+'/')
 else: testDir = ''
 
 print( ">> Reading in {}.json for hyper parameters...".format( args.tag ) )
@@ -272,7 +272,7 @@ elif 'case23' in args.tag:
   case_list = ["case23", "case2", "case3"]
   
 for case in case_list:
-  histFile = ROOT.TFile.Open(f'{testDir}/hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}.root', "recreate")
+  histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}.root', "recreate")
 
   makeHists_fit("A", case)
   makeHists_fit("B", case)
