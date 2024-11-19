@@ -65,8 +65,12 @@ def get_RSS(hist_in, htype, region):
         RSS_dict[htype][region][f'poly{npower+1}'] = diff
 
 def get_f(p1,p2,n):
-    RSS1 = RSS_dict[htype][region][f'poly{p1}']
-    RSS2 = RSS_dict[htype][region][f'poly{p2}']
+    if separateRegions:
+        RSS1 = RSS_dict[htype][region][f'poly{p1}']
+        RSS2 = RSS_dict[htype][region][f'poly{p2}']
+    else:
+        RSS1 = RSS_all[f'poly{p1}']
+        RSS2 = RSS_all[f'poly{p2}']
     return (RSS1-RSS2)*(n-p2-4)/(RSS2*(p2-p1))
 
 histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
@@ -88,19 +92,21 @@ for region in ["A", "B", "C", "D", "V"]:
             f_dict[htype][region] = {}
             for i in range(1,npoly,1):
                 f_dict[htype][region][f'f{i}{i+1}'] = get_f(i,i+1,bins)
-                print(scipy.stats.f.ppf(0.05, 1, bins-(i+1+4)))
+                #print(scipy.stats.f.ppf(0.05, 1, bins-(i+1+4)))
 
 if not separateRegions:
-    for htype in ["tgt",  "pre"]:
-        RSS_dict[htype]["all"] = {}
-        f_dict[htype]["all"]   = {}
-        for i in range(1,npoly+1,1):
-            RSS_dict[htype]["all"][f'poly{i}'] = 0
+    RSS_all={}
+    f_all={}
+    for i in range(1,npoly+1,1):
+        RSS_all[f'poly{i}'] = 0
+        for htype in ["tgt",  "pre"]:
             for region in ["A", "B", "C", "D"]:
-                RSS_dict[htype]["all"][f'poly{i}'] += RSS_dict[htype][region][f'poly{i}']
-        for i in range(1,npoly,1):
-            f_dict[htype]["all"][f'f{i}{i+1}'] = get_f(i,i+1,bins*4)
-            print(scipy.stats.f.ppf(0.05, 1, bins*4-(i+1+4))) # significance level 0.05. p2-p1=1. n-p2. p2 = (i+1)+4. 4 params from gaussian
+                RSS_all[f'poly{i}'] += RSS_dict[htype][region][f'poly{i}']
+    for i in range(1,npoly,1):
+        f_all[f'f{i}{i+1}'] = get_f(i,i+1,bins*4)
+        print(f'sig:{0.05}, df1:{4}, df2:{(bins-(i+1+4))*4}, F_c:{scipy.stats.f.ppf(q=0.05, dfn=1*4, dfd=(bins-(i+1+4))*4)}')
+        #print(scipy.stats.f.ppf(0.05, 1*4, (bins-(i+1+4))*4))
+        #print(scipy.stats.f.ppf(0.05, (bins-(i+1+4))*4, 1)) # significance level 0.05. p2-p1=1. n-p2. p2 = (i+1)+4. 4 params from gaussian
             
        
-print(f_dict)
+print(f_all)
