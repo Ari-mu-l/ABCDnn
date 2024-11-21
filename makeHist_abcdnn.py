@@ -29,6 +29,13 @@ args = parser.parse_args()
 bin_lo = 400 #0
 bin_hi = 2500
 Nbins  = 420 # 42
+validationCut = 850
+
+log = True # set to False if want BpM instead of log(BpM)
+if log:
+  validationCut = np.log(validationCut)
+  bin_lo = np.log(bin_lo)
+  bin_hi = np.log(bin_hi)
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]
 folder_contents = os.listdir( folder )
@@ -188,15 +195,15 @@ def makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, p
   hist_minor_val   = ROOT.TH1D(f'Bprime_mass_mnr_V' , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
   
   for i in range(len(predict_array)):
-    if predict_array[i][1]<850 and predict_array[i][1]>400:
+    if predict_array[i][1]<validationCut and predict_array[i][1]>bin_lo:
       hist_predict_val.Fill(predict_array[i][0])
 
   for i in range(len(inputs_tgt_array)):
-    if inputs_tgt_array[i][1]<850 and inputs_tgt_array[i][1]>400:
+    if inputs_tgt_array[i][1]<validationCut and inputs_tgt_array[i][1]>bin_lo:
       hist_data_val.Fill(inputs_tgt_array[i][0])
 
   for i in range(len(inputs_mnr_array)):
-    if inputs_mnr_array[i][1]<850 and inputs_mnr_array[i][1]>400:
+    if inputs_mnr_array[i][1]<validationCut and inputs_mnr_array[i][1]>bin_lo:
       hist_minor_val.Fill(inputs_mnr_array[i][0], weight_mnr_array[i])
   
   hist_predict_val.Write()
@@ -235,10 +242,11 @@ def makeHists_fit(region, case):
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"].to_numpy(dtype='d')
     prediction_array = predictions[region]
     #prediction_array = np.clip(predictions[region], 0, 2500)
-    
-  inputs_tgt_array = np.exp(inputs_tgt_array)
-  inputs_mnr_array = np.exp(inputs_mnr_array)
-  prediction_array = np.exp(prediction_array)
+
+  if not log:
+    inputs_tgt_array = np.exp(inputs_tgt_array)
+    inputs_mnr_array = np.exp(inputs_mnr_array)
+    prediction_array = np.exp(prediction_array)
 
   inputs_tgt_array = np.clip(inputs_tgt_array, 0, 2500)
   inputs_mnr_array = np.clip(inputs_mnr_array, 0, 2500)
@@ -249,15 +257,15 @@ def makeHists_fit(region, case):
   hist_pre = ROOT.TH1D(f'Bprime_mass_pre_{region}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
 
   for i in range(len(inputs_tgt_array)):
-    if inputs_tgt_array[i][0]>400:
+    if inputs_tgt_array[i][0]>bin_lo:
       hist_tgt.Fill(inputs_tgt_array[i][0])
 
   for i in range(len(inputs_mnr_array)):
-    if inputs_mnr_array[i][0]>400:
+    if inputs_mnr_array[i][0]>bin_lo:
       hist_mnr.Fill(inputs_mnr_array[i][0], weight_mnr_array[i])
 
   for i in range(len(prediction_array)):
-    if prediction_array[i][0]>400:
+    if prediction_array[i][0]>bin_lo:
       hist_pre.Fill(prediction_array[i][0])
   
   hist_tgt.Write()
@@ -272,7 +280,10 @@ elif 'case23' in args.tag:
   case_list = ["case23", "case2", "case3"]
   
 for case in case_list:
-  histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}.root', "recreate")
+  if log:
+    histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}_log.root', "recreate")
+  else:
+    histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}.root', "recreate")
 
   makeHists_fit("A", case)
   makeHists_fit("B", case)
