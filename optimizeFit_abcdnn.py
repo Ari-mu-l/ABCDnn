@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 
 gStyle.SetOptFit(1)
 gROOT.SetBatch(True) # suppress histogram display
+TH1.SetDefaultSumw2(True)
 
 # define the fit function
 # f(x) = 2 pdf(x) * cdf(a x)
@@ -21,10 +22,17 @@ case = parser.parse_args().case
 
 binlo = 400 #400
 binhi = 2500
-bins = 42 #42
-print(f'Fitting hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root...')
+bins = 420 #42
 
-plotDir = f'fit_plots_{case}/{fitType}_{binlo}to{binhi}_{bins}'
+log = False # set True if want to use log(BpM)
+
+if log:
+    histFileName = f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}_log.root'
+    plotDir = f'fit_plots_{case}/{fitType}_{binlo}to{binhi}_{bins}_log'
+else:
+    histFileName = f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root'
+    plotDir = f'fit_plots_{case}/{fitType}_{binlo}to{binhi}_{bins}'
+    
 if not os.path.exists(plotDir):
     os.makedirs(plotDir)
 
@@ -55,11 +63,13 @@ elif fitType=="skewNorm_cubic":
     #fit.SetParLimits(2, 200, 800)
     #fit.SetParameters(5, 400, 500, 50, 0.0000001, 0.0000000001)
 elif fitType=="skewNorm_cubic_2":
-    fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] * x + [5] * x * x + [6] * x * x * x"
+    fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] * (x/2500) + [5] * (x/2500) * (x/2500) + [6] * (x/2500) * (x/2500) * (x/2500)"
     nparams = 7
     fit = TF1("fitFunc", fitFunc, 400, 2500, nparams)
+    fit.SetParameters(5, 400, 500, 50)
     #fit.SetParameters(5, 400, 500, 50, 0.00001, 0.000001, 0.00000001)
-    fit.SetParameters(5, 400, 500, 50, 0.0000001, 0.0000000001, 0.00000000001)
+    #fit.SetParameters(5, 400, 500, 50, 0.0000001, 0.0000000001, 0.00000000001)
+    #fit.SetParameters(5, 400, 500, 50, 0.0000001, 0.00000001, 0.000000000001)
     #fit.SetParLimits(1, 100, 400)
     #fit.SetParLimits(2, 200, 800)
 elif fitType=="skewNorm_4":
@@ -116,7 +126,14 @@ elif fitType=="landau_cubic":
 elif fitType=="crystalball":
     nparams = 5
     fit = TF1("crystalball", "crystalball", 400, 2500, nparams)
-    fit.SetParameters(0.1, 500, 200, -2.5, 100000000)
+    #fit.SetParameters(0.1, 500, 200, -2.5, 100000000) # case14, regionABCD
+    #fit.SetParameters(0.1, 500, 200, -3, 100000000) # case14, regionV
+    #fit.SetParameters(0.001, 500, 250, -2.5, 100000000) # case23, regionABCDV
+    fit.SetParameters(0.01, 600, 150, -2, 1000)
+elif fitType=="quadratic":
+    fitFunc = "[0] + [1]*(x/2500) + [2]*(x/2500)*(x/2500)"
+    nparams = 3
+    fit = TF1("fitFunc", fitFunc, 400, 2500, nparams)
 else:
     print("fitFunc not defined. Please specify.")
     exit()
@@ -141,21 +158,24 @@ def fit_and_plot(hist, plotname):
     c.SaveAs(plotname)
     print(f'Saved plot to {plotname}.')
 
-    
-histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+
+print(f'Fitting {histFileName}...')
+histFile = TFile.Open(histFileName, "READ")
 
 # store parameters in dictionaries
 params = {"tgt":{},
           "pre":{}
           }
 
-for region in ["A", "B", "C", "D", "X", "Y", "V"]:
+#for region in ["A", "B", "C", "D", "X", "Y", "V"]:
+for region in ["A", "B", "C", "D", "V"]:
     params["tgt"][region] = {}
     params["pre"][region] = {}
 
 # fit
 # hist range: [400, 2500]
-for region in ["A", "B", "C", "D", "X", "Y", "V"]:
+#for region in ["A", "B", "C", "D", "X", "Y", "V"]:
+for region in ["A", "B", "C", "D", "V"]:
     for htype in ["tgt", "pre"]:
         if htype == "tgt":
             hist = histFile.Get(f'Bprime_mass_dat_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}')

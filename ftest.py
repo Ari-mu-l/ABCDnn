@@ -1,3 +1,4 @@
+# python3 ftest.py -f skewNorm -c case1
 import os
 import numpy as np
 import scipy.stats
@@ -16,7 +17,7 @@ case = parser.parse_args().case
 
 binlo = 400
 binhi = 2500
-bins = 42
+bins = 420
 npoly = 8
 
 plotDir = f'ftest_{case}/{fitType}_{binlo}to{binhi}_{bins}'
@@ -31,7 +32,7 @@ def fit_and_create(hist, fitFunc, nparams, plotname):
     latex.SetNDC()
     
     fit = TF1("fitFunc", fitFunc, binlo, binhi, nparams)
-    fit.SetParameters(5, 400, 500, 50, 0.0000001, 0.0000000001, 0.00000000001)
+    fit.SetParameters(5, 400, 500, 50)
 
     hist.SetBinContent(bins+1, 0)
     hist.Scale(1/hist.Integral())
@@ -47,13 +48,13 @@ def fit_and_create(hist, fitFunc, nparams, plotname):
     return hist_gen
 
 def get_RSS(hist_in, htype, region):
-    for npower in range(npoly):
+    for npower in range(npoly+1):
         nparams = npower+4
         polyfunc = ''
         for i in range(npower):
-            polyfunc += f'+ [{i+4}]*x'
+            polyfunc += f'+ [{i+4}]*(x/2500)'
             for power in range(i):
-                polyfunc += '*x'
+                polyfunc += '*(x/2500)'
         fitFunc = baseFunc + polyfunc
 
         hist_out = fit_and_create(hist_in, fitFunc, nparams, f'{plotDir}/fit_{htype}_{region}_{npower}.png')
@@ -62,7 +63,7 @@ def get_RSS(hist_in, htype, region):
         diff = 0
         for i in range(bins):
             diff += (hist_diff.GetBinContent(i))**2
-        RSS_dict[htype][region][f'poly{npower+1}'] = diff
+        RSS_dict[htype][region][f'poly{npower}'] = diff
 
 def get_f(p1,p2,n):
     if separateRegions:
@@ -90,23 +91,32 @@ for region in ["A", "B", "C", "D", "V"]:
 
         if separateRegions:
             f_dict[htype][region] = {}
-            for i in range(1,npoly,1):
+            for i in range(npoly):
                 f_dict[htype][region][f'f{i}{i+1}'] = get_f(i,i+1,bins)
                 #print(scipy.stats.f.ppf(0.05, 1, bins-(i+1+4)))
 
 if not separateRegions:
+    #combinedRegions = ["A", "B", "C", "D", "V"]
+    combinedRegions = ["D", "V"]
+    n = len(combinedRegions)
     RSS_all={}
     f_all={}
-    for i in range(1,npoly+1,1):
+    for i in range(npoly+1):
         RSS_all[f'poly{i}'] = 0
         for htype in ["tgt",  "pre"]:
-            for region in ["A", "B", "C", "D"]:
+            for region in combinedRegions:
                 RSS_all[f'poly{i}'] += RSS_dict[htype][region][f'poly{i}']
-    for i in range(1,npoly,1):
-        f_all[f'f{i}{i+1}'] = get_f(i,i+1,bins*4)
-        print(f'sig:{0.05}, df1:{4}, df2:{(bins-(i+1+4))*4}, F_c:{scipy.stats.f.ppf(q=0.05, dfn=1*4, dfd=(bins-(i+1+4))*4)}')
-        #print(scipy.stats.f.ppf(0.05, 1*4, (bins-(i+1+4))*4))
-        #print(scipy.stats.f.ppf(0.05, (bins-(i+1+4))*4, 1)) # significance level 0.05. p2-p1=1. n-p2. p2 = (i+1)+4. 4 params from gaussian
-            
-       
+
+    # CALCULATE f
+    # fine-tune
+    p1=4
+    p2=6
+    f_all[f'f{p1}{p2}'] = get_f(p1,p2,bins*n)
+    print(f'sig:{0.05}, df1:{n*(p2-p1)}, df2:{(bins-(p2+4))*n}')
+
+    # general search
+    # for i in range(npoly):
+    #     f_all[f'f{i}{i+1}'] = get_f(i,i+1,bins*n)
+    #     print(f'sig:{0.05}, df1:{n}, df2:{(bins-(i+1+4))*n}, F_c:{scipy.stats.f.ppf(q=0.05, dfn=1*n, dfd=(bins-(i+1+4))*n)}') # significance level 0.05. p2-p1=1. n-p2. p2 = (i+1)+4. 4 params from gaussian
+        
 print(f_all)

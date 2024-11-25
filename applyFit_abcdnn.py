@@ -17,7 +17,7 @@ binlo = 400
 binhi = 2500
 bins = 42 # will be changed to 420 later in the code for the creation of histograms
 
-doV2 = True
+doV2 = False
 
 # store parameters in dictionaries
 # region: A, B, C, D, X, Y
@@ -94,11 +94,11 @@ def fit_and_plot(hist, plotname, case):
     #fit.SetParameters(0.1, 500, 200, -2.5, 100000000) #crystalball
     
     c = TCanvas("c", "c", 800, 800)
-    pad1 = TPad("hist_plot", "hist_plot", 0.05, 0.3, 1, 1)
-    pad1.SetBottomMargin(0) #join upper and lower plot
-    pad1.SetLeftMargin(0.1)
-    pad1.Draw()
-    pad1.cd()
+    #pad1 = TPad("hist_plot", "hist_plot", 0.05, 0.3, 1, 1)
+    #pad1.SetBottomMargin(0) #join upper and lower plot
+    #pad1.SetLeftMargin(0.1)
+    #pad1.Draw()
+    #pad1.cd()
 
     latex = TLatex()
     latex.SetNDC()
@@ -106,28 +106,30 @@ def fit_and_plot(hist, plotname, case):
     hist.Scale(1/hist.Integral())
     hist_target = hist.Clone()
     hist.Fit(fit, "E")
-    hist.Draw()
+    hist.Draw("E")
     latex.DrawText(0.6, 0.4, f'{case}')
 
-    c.cd()
-    pad2 = TPad("ratio_plot", "ratio_plot", 0.05, 0.05, 1, 0.3)
-    pad2.SetTopMargin(0)
-    pad2.SetBottomMargin(0.2)
-    pad2.SetLeftMargin(0.1)
-    pad2.SetGrid()
-    pad2.Draw()
-    pad2.cd()
+    # c.cd()
+    # pad2 = TPad("ratio_plot", "ratio_plot", 0.05, 0.05, 1, 0.3)
+    # pad2.SetTopMargin(0)
+    # pad2.SetBottomMargin(0.2)
+    # pad2.SetLeftMargin(0.1)
+    # pad2.SetGrid()
+    # pad2.Draw()
+    # pad2.cd()
 
     line = TF1("line", "1", binlo, binhi, 0)
 
-    hist_ratio = hist / hist_target
-    hist_ratio.SetTitle("")
-    hist_ratio.GetYaxis().SetRangeUser(0.8,1.2)
-    hist_ratio.GetYaxis().SetTitle("fit/target")
+    #hist_ratio = hist / hist_target
+    hist_ratio = TRatioPlot(hist)
+    #hist_ratio.SetTitle("")
+    #hist_ratio.GetYaxis().SetRangeUser(0.8,1.2)
+    #hist_ratio.GetYaxis().SetTitle("target/fit")
 
-    hist_ratio.SetMarkerStyle(20)
-    hist_ratio.SetLineColor(kBlack)
-    hist_ratio.Draw("pex0")
+    #hist_ratio.SetMarkerStyle(20)
+    #hist_ratio.SetLineColor(kBlack)
+    #hist_ratio.Draw("pex0")
+    hist_ratio.Draw("EP")
     line.SetLineColor(kBlack)
     line.Draw("SAME")
     
@@ -137,8 +139,10 @@ def fit_and_plot(hist, plotname, case):
     hist.GetYaxis().SetTitleSize(20)
     hist.GetYaxis().SetTitleFont(43)
 
-    hist_ratio.GetYaxis().SetTitleSize(20)
-    hist_ratio.GetYaxis().SetTitleFont(43)
+    #hist_ratio.GetYaxis().SetTitleSize(20)
+    #hist_ratio.GetYaxis().SetTitleFont(43)
+
+    #hist_ratio.Print("all")
     
     c.SaveAs(plotname)
     print(f'Saved plot to {plotname}.')
@@ -229,7 +233,7 @@ fitHist("case1")
 fitHist("case2")
 fitHist("case3")
 fitHist("case4")
-exit() # TEMP
+#exit() # TEMP
 
 # save parameters and last bin to a json file
 json_obj = json.dumps(params, indent=4)
@@ -416,9 +420,11 @@ def createHist(case, region):
         print("New binning encounterd. Make up a new name and folder.")
     
 for case in ["case1", "case2", "case3", "case4"]:
-    for region in ["V", "D"]:
-    #for region in ["D"]: # DEV ONLY
-        createHist(case, region)
+    if doV2:
+        createHist(case, "D")
+        createHist(case, "V")
+    else:
+        createHist(case, "D")
 
 # shift
 def shiftLastBin(case, region, shift):
@@ -549,14 +555,20 @@ def shiftFactor(case, region, shift):
     
 for case in ["case1", "case2", "case3", "case4"]:
     for shift in ["Up", "Down"]:
-        shiftLastBin(case, "V", shift)
-        shiftLastBin(case, "D", shift)
-        shiftFactor(case, "V", shift)
-        shiftFactor(case, "D", shift)
-
+        if doV2:
+            shiftLastBin(case, "V", shift)
+            shiftLastBin(case, "D", shift)
+            shiftFactor(case, "V", shift)
+            shiftFactor(case, "D", shift)
+        else:
+            shiftLastBin(case, "D", shift)
+            shiftFactor(case, "D", shift)
+            
         for i in range(nparams):
-            shiftParam(case, "V", i, shift)
-            shiftParam(case, "D", i, shift)
-
+            if doV2:
+                shiftParam(case, "V", i, shift)
+                shiftParam(case, "D", i, shift)
+            else:
+                shiftParam(case, "D", i, shift)
 
 print(pred_uncert)
