@@ -11,7 +11,7 @@ TH1.SetDefaultSumw2(True)
 # define the fit function
 # f(x) = 2 pdf(x) * cdf(a x)
 # f(x) = 2/w pdf((x-xi)/2) * cdf(a*(x-xi)/2)
-# f(x) = f(x) + ax^2 + bx + c
+# f(x) = f(x) + ax^2 + bx
 
 binlo = 400
 binhi = 2500
@@ -65,9 +65,9 @@ outDir = '/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTe
 # Fit #
 #######
 
-# skewNorm_6 with diff initialization for case4
-#fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] + [5] * x + [6] * x * x + [7] * x * x * x + [8] * x * x * x * x + [9] * x * x * x * x * x + [10] * x * x * x * x * x * x"
-#nparams = 11
+# skewNorm_6
+#fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] * (x/2500) + [5] * TMath::Power(x/2500, 2) + [6] * TMath::Power(x/2500, 3) + [7] * TMath::Power(x/2500, 4) + [8] * TMath::Power(x/2500, 5) + [9] * TMath::Power(x/2500, 6)"
+#nparams = 10
 
 # skewNorm_4 with initialization 1 worked the best for both case14 and case 23
 fitFunc = "[3] * (2/[1]) * ( TMath::Exp(-((x-[2])/[1])*((x-[2])/[1])/2) / TMath::Sqrt(2*TMath::Pi()) ) * ( (1 + TMath::Erf([0]*((x-[2])/[1])/TMath::Sqrt(2)) ) / 2 ) + [4] * x + [5] * x * x + [6] * x * x * x + [7] * x * x * x * x"
@@ -83,6 +83,7 @@ nparams=8
 
 def fit_and_plot(hist, plotname, case):
     fit = TF1(f'fitFunc', fitFunc, binlo, binhi, nparams)
+    #fit.SetParameters(5, 400, 500, 50)
     #fit.SetParameters(5, 400, 500, 50, 0.000001, 0.00000001) #skewNorm_cubic
     fit.SetParameters(5, 400, 500, 50, 0.0000001, 0.00000001, 0.000000000001) # skewNorm_4. AN v3
     #if case=="case4":
@@ -105,7 +106,7 @@ def fit_and_plot(hist, plotname, case):
 
     hist.Scale(1/hist.Integral())
     hist_target = hist.Clone()
-    hist.Fit(fit, "E")
+    fitResult = hist.Fit(fit, "SE")
     hist.Draw("E")
     latex.DrawText(0.6, 0.4, f'{case}')
 
@@ -121,7 +122,80 @@ def fit_and_plot(hist, plotname, case):
     line = TF1("line", "1", binlo, binhi, 0)
 
     #hist_ratio = hist / hist_target
-    hist_ratio = TRatioPlot(hist)
+    #hist_ratio = TRatioPlot(hist)
+    #hist_ratio.SetFitResult(fitResult)
+    #hist_ratio.GetCalculationOutputGraph().Print()
+    hist_fill = hist_target.Clone()
+    hist_fill.Reset()
+    for i in range(bins):
+        x = hist_fill.GetBinCenter(i+1)
+        hist_fill.SetBinContent(i+1, fit.Eval(x))
+    hist_ratio = (hist_fill - hist)/hist
+
+    # get uncertainty band
+    #upEnv = 0
+    #dnEnv = 0
+    shift_arr = np.zeros(1000)
+    hist_uncert = hist_target.Clone()
+    hist_uncert.Reset()
+    for i in range(bins):
+        fit_upshift = fit.Clone()
+        fit_dnshift = fit.Clone()
+        fit_upshift.SetParameter(0,fit.GetParameter(0)*(1+fit.GetParError(0)))
+        fit_dnshift.SetParameter(0,fit.GetParameter(0)*(1-fit.GetParError(0)))
+        
+        x = hist_fill.GetBinCenter(i+1)
+        nom   = fit.Eval(x)
+        #shift1 = fit_upshift.Eval(x)-nom
+        #shift2 = fit_dnshift.Eval(x)-nom
+
+        if shift1>0:
+            upEnv = shift1
+        else:
+            dnEnv = shift1
+
+        if shift2>0:
+            if upEnv>0:
+                if shift2>upEnv:
+                    upEnv = shift2
+            else:
+                upEnv = shift2
+            if dnEnv<0:
+                if shift2<dnEnv:
+                    dnEnv = shift2
+            else:
+                dnEnv = shift2
+        print(f'upEnv:{upEnv}, dnEnv:{dnEnv}')
+        for j in range(nparams-1):
+            fit_upshift = fit.Clone()
+            fit_dnshift = fit.Clone()
+            fit_upshift.SetParameter(j,fit.GetParameter(j+1)*(1+fit.GetParError(j+1)))
+            fit_dnshift.SetParameter(j,fit.GetParameter(j+1)*(1-fit.GetParError(j+1)))
+
+            shift1 = fit_upshift.Eval(x)-nom
+            shift2 = fit_dnshift.Eval(x)-nom
+    
+            if shift1>0:
+                if shift1>upEnv:
+                    upEnv = shift1
+            else:
+                if shift1<dnEnv:
+                    dnEnv = shift1
+
+            if shift2>0:
+                if shift2>upEnv:
+                    upEnv = shift2
+            else:
+                if shift1<dnEnv:
+                    dnEnv = shift2
+    
+            print(f'shift1:{shift1}, shift2:{shift2}, upEnv:{upEnv}, dnEnv:{dnEnv}')
+        exit()
+            
+    #hist_ratio.Print("all")
+    
+    exit()
+
     #hist_ratio.SetTitle("")
     #hist_ratio.GetYaxis().SetRangeUser(0.8,1.2)
     #hist_ratio.GetYaxis().SetTitle("target/fit")
@@ -129,7 +203,8 @@ def fit_and_plot(hist, plotname, case):
     #hist_ratio.SetMarkerStyle(20)
     #hist_ratio.SetLineColor(kBlack)
     #hist_ratio.Draw("pex0")
-    hist_ratio.Draw("EP")
+    #hist_ratio.Draw("EP")
+    hist_ratio.Draw()
     line.SetLineColor(kBlack)
     line.Draw("SAME")
     
@@ -157,8 +232,7 @@ def fitHist(case):
         os.makedirs(plotDir)
 
     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
-    histFile_lastbin = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_420.root', "READ")
-    #histFile_lastbin = TFile.Open(f'hists_ABCDnn_{case}_0to{binhi}_420.root', "READ") #TEMP DEV ONLY
+    histFile_lastbin = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_420.root', "READ") # 42fit420bins
 
     for region in ["A", "B", "C", "D", "X", "Y", "V"]:
         params[case]["tgt"][region] = {}
@@ -170,41 +244,40 @@ def fitHist(case):
         for htype in ["tgt", "pre"]:
             if htype == "tgt":
                 hist = histFile.Get(f'Bprime_mass_dat_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}')
-                hist_lastbin = histFile_lastbin.Get(f'Bprime_mass_dat_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}') #TEMP
+                hist_lastbin = histFile_lastbin.Get(f'Bprime_mass_dat_{region}') - histFile_lastbin.Get(f'Bprime_mass_mnr_{region}') # 42fit420bins
             else:
                 hist = histFile.Get(f'Bprime_mass_pre_{region}')
-                hist_lastbin = histFile_lastbin.Get(f'Bprime_mass_pre_{region}') # TEMP
+                hist_lastbin = histFile_lastbin.Get(f'Bprime_mass_pre_{region}') # 42fit420bins
 
             fit = fit_and_plot(hist, f'{plotDir}/fit_{htype}_{region}.png', case) # normalizes hist
 
             # last bin is not fitted. get bin content. after scaling. capture shape only
-            hist_lastbin.Scale(1/hist_lastbin.Integral())
-            params[case][htype][region]["lastbin"] = hist_lastbin.GetBinContent(420+1) # TEMP
-            #params[case][htype][region]["lastbin"] = hist_lastbin.GetBinContent(bins+1)
-            #params[case][htype][region]["lastbin"] = hist.Integral(2495,9999)
+            hist_lastbin.Scale(1/hist_lastbin.Integral()) # 42fit420bins
+            params[case][htype][region]["lastbin"] = hist_lastbin.GetBinContent(420+1) # 42fit420bins
+            #params[case][htype][region]["lastbin"] = hist.GetBinContent(bins+1)
             for i in range(nparams):
                 params[case][htype][region][f'param{str(i)}'] = [fit.GetParameter(i), fit.GetParError(i)]
 
     histFile.Close()
-    histFile_lastbin.Close() #TEMP
+    histFile_lastbin.Close() #TEMP # 42fit420bins
     
     # compare
     for i in range(nparams):
-        # train_uncert = 0
-        # nRegions = 3
-        # for region in ["A", "B", "C"]:
-        #     uncert = abs((params[case]["pre"][region][f'param{i}'][0]-params[case]["tgt"][region][f'param{i}'][0])/params[case]["tgt"][region][f'param{i}'][0])
-        #     if uncert<1:
-        #         train_uncert += uncert
-        #     else:
-        #         nRegions = nRegions-1
-        # if nRegions==0:
-        #     train_uncert = 0
-        # else:
-        #     train_uncert = (train_uncert/nRegions)*params[case]["pre"]["D"][f'param{i}'][0] absolute shift for D
-        # fit_uncer = params[case]["pre"]["D"][f'param{i}'][1]
-        # #fit_uncer = 0 # TEMP. debug only
-        # pred_uncert[case][f'param{i}'] = abs(np.sqrt(train_uncert**2+fit_uncer**2)/params[case]["pre"]["D"][f'param{i}'][0])
+        train_uncert = 0
+        nRegions = 3
+        #for region in ["A", "B", "C"]:
+    #         uncert = abs((params[case]["pre"][region][f'param{i}'][0]-params[case]["tgt"][region][f'param{i}'][0])/params[case]["tgt"][region][f'param{i}'][0])
+    #         if uncert<0.5:
+    #             train_uncert += uncert
+    #         else:
+    #             nRegions = nRegions-1
+    #     if nRegions==0:
+    #         train_uncert = 0
+    #     else:
+    #         train_uncert = (train_uncert/nRegions)*params[case]["pre"]["D"][f'param{i}'][0] #absolute shift for D
+    #     fit_uncer = params[case]["pre"]["D"][f'param{i}'][1]
+    #     #fit_uncer = 0 # TEMP. debug only
+    #     pred_uncert[case][f'param{i}'] = abs(np.sqrt(train_uncert**2+fit_uncer**2)/params[case]["pre"]["D"][f'param{i}'][0])
         
         if i<4:
             uncert = 0
@@ -212,6 +285,7 @@ def fitHist(case):
                 uncert += abs((params[case]["pre"][region][f'param{i}'][0]-params[case]["tgt"][region][f'param{i}'][0])/params[case]["tgt"][region][f'param{i}'][0]) # params[case]["pre"][region][i] is a list of [param, err]
             train_uncert = (uncert/3)*params[case]["pre"]["D"][f'param{i}'][0] # absolute shift for D
             fit_uncer = params[case]["pre"]["D"][f'param{i}'][1]
+            #fit_uncer = 0 # TEMP. for train_uncert fit_uncert comparison
             pred_uncert[case][f'param{i}'] = abs(np.sqrt(train_uncert**2+fit_uncer**2)/params[case]["pre"]["D"][f'param{i}'][0])
         else:
             pred_uncert[case][f'param{i}'] = abs(params[case]["pre"]["D"][f'param{i}'][1]/params[case]["pre"]["D"][f'param{i}'][0])
@@ -233,7 +307,6 @@ fitHist("case1")
 fitHist("case2")
 fitHist("case3")
 fitHist("case4")
-#exit() # TEMP
 
 # save parameters and last bin to a json file
 json_obj = json.dumps(params, indent=4)
@@ -245,6 +318,8 @@ json_obj = json.dumps(pred_uncert, indent=4)
 with open("pred_uncert.json", "w") as outjsonfile:
     outjsonfile.write(json_obj)
 print("Saved parameter and last bin info to pred_uncert.json")
+
+exit() # TEMP
 
 #############################
 # create histogram from fit #
@@ -365,7 +440,6 @@ def createHist(case, region):
     #        hist_gen.SetBinContent(j, 0)
     
     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
-    #histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_42.root', "READ") # DEV ONLY
     hist_target = histFile.Get(f'Bprime_mass_dat_{region}').Clone(f'Bprime_mass_tgt_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}').Clone()
     hist_abcdnn = histFile.Get(f'Bprime_mass_pre_{region}').Clone()
     hist_abcdnn_shape = hist_abcdnn.Clone()
@@ -400,6 +474,7 @@ def createHist(case, region):
     targetAgreementPlot(region, case, fit, hist_gen, hist_target, hist_abcdnn_shape)
 
     hist_out = fillHistogram(hist_gen)
+    #hist_out.Rebin(10)
     
     if binlo==400:
         if doV2:
@@ -420,11 +495,13 @@ def createHist(case, region):
         print("New binning encounterd. Make up a new name and folder.")
     
 for case in ["case1", "case2", "case3", "case4"]:
-    if doV2:
-        createHist(case, "D")
-        createHist(case, "V")
-    else:
-        createHist(case, "D")
+    createHist(case, "D")
+    createHist(case, "V")
+    # if doV2:
+    #     createHist(case, "D")
+    #     createHist(case, "V")
+    # else:
+    #     createHist(case, "D")
 
 # shift
 def shiftLastBin(case, region, shift):
@@ -453,6 +530,8 @@ def shiftLastBin(case, region, shift):
     hist_bin.Scale(normalization[case][region])
 
     hist_out = fillHistogram(hist_bin)
+    #hist_out.Rebin(10)
+    
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
@@ -497,6 +576,7 @@ def shiftParam(case, region, i, shift):
     hist_param.Scale(normalization[case][region])
 
     hist_out = fillHistogram(hist_param)
+    #hist_out.Rebin(10)
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
@@ -533,7 +613,8 @@ def shiftFactor(case, region, shift):
     hist.Scale(normalization[case][region])
 
     hist_out = fillHistogram(hist)
-
+    #hist_out.Rebin(10)
+    
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
@@ -555,20 +636,26 @@ def shiftFactor(case, region, shift):
     
 for case in ["case1", "case2", "case3", "case4"]:
     for shift in ["Up", "Down"]:
-        if doV2:
-            shiftLastBin(case, "V", shift)
-            shiftLastBin(case, "D", shift)
-            shiftFactor(case, "V", shift)
-            shiftFactor(case, "D", shift)
-        else:
-            shiftLastBin(case, "D", shift)
-            shiftFactor(case, "D", shift)
+        shiftLastBin(case, "V", shift)
+        shiftLastBin(case, "D", shift)
+        shiftFactor(case, "V", shift)
+        shiftFactor(case, "D", shift)
+        # if doV2:
+        #     shiftLastBin(case, "V", shift)
+        #     shiftLastBin(case, "D", shift)
+        #     shiftFactor(case, "V", shift)
+        #     shiftFactor(case, "D", shift)
+        # else:
+        #     shiftLastBin(case, "D", shift)
+        #     shiftFactor(case, "D", shift)
             
         for i in range(nparams):
-            if doV2:
-                shiftParam(case, "V", i, shift)
-                shiftParam(case, "D", i, shift)
-            else:
-                shiftParam(case, "D", i, shift)
+            shiftParam(case, "V", i, shift)
+            shiftParam(case, "D", i, shift)
+            # if doV2:
+            #     shiftParam(case, "V", i, shift)
+            #     shiftParam(case, "D", i, shift)
+            # else:
+            #     shiftParam(case, "D", i, shift)
 
 print(pred_uncert)
