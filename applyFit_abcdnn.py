@@ -2,6 +2,7 @@ import os
 import numpy as np
 from ROOT import *
 import json
+from itertools import combinations
 
 gStyle.SetOptFit(1)
 gStyle.SetOptStat(0)
@@ -81,7 +82,7 @@ nparams=8
 #fitFunc="crystalball"
 #nparams=5
 
-def fit_and_plot(hist, plotname, case):
+def fit_and_plot(hist, plotname, case, doPlot):
     fit = TF1(f'fitFunc', fitFunc, binlo, binhi, nparams)
     #fit.SetParameters(5, 400, 500, 50)
     #fit.SetParameters(5, 400, 500, 50, 0.000001, 0.00000001) #skewNorm_cubic
@@ -94,137 +95,122 @@ def fit_and_plot(hist, plotname, case):
     #    fit.SetParameters(5, 400, 500, 50, 0.0000001, 0.000000001, 0.000000000001)
     #fit.SetParameters(0.1, 500, 200, -2.5, 100000000) #crystalball
     
-    c = TCanvas("c", "c", 800, 800)
-    #pad1 = TPad("hist_plot", "hist_plot", 0.05, 0.3, 1, 1)
-    #pad1.SetBottomMargin(0) #join upper and lower plot
-    #pad1.SetLeftMargin(0.1)
-    #pad1.Draw()
-    #pad1.cd()
-
-    latex = TLatex()
-    latex.SetNDC()
-
     hist.Scale(1/hist.Integral())
     hist_target = hist.Clone()
-    fitResult = hist.Fit(fit, "SE")
-    hist.Draw("E")
-    latex.DrawText(0.6, 0.4, f'{case}')
+    hist.Fit(fit, "E")
 
-    # c.cd()
-    # pad2 = TPad("ratio_plot", "ratio_plot", 0.05, 0.05, 1, 0.3)
-    # pad2.SetTopMargin(0)
-    # pad2.SetBottomMargin(0.2)
-    # pad2.SetLeftMargin(0.1)
-    # pad2.SetGrid()
-    # pad2.Draw()
-    # pad2.cd()
+    if doPlot:
+        c = TCanvas("c", "c", 800, 800)
+        pad1 = TPad("hist_plot", "hist_plot", 0.05, 0.3, 1, 1)
+        pad1.SetBottomMargin(0.01) #join upper and lower plot
+        pad1.SetLeftMargin(0.1)
+        pad1.Draw()
+        pad1.cd()
 
-    line = TF1("line", "1", binlo, binhi, 0)
+        latex = TLatex()
+        latex.SetNDC()
 
-    #hist_ratio = hist / hist_target
-    #hist_ratio = TRatioPlot(hist)
-    #hist_ratio.SetFitResult(fitResult)
-    #hist_ratio.GetCalculationOutputGraph().Print()
-    hist_fill = hist_target.Clone()
-    hist_fill.Reset()
-    for i in range(bins):
-        x = hist_fill.GetBinCenter(i+1)
-        hist_fill.SetBinContent(i+1, fit.Eval(x))
-    hist_ratio = (hist_fill - hist)/hist
+        hist.Draw("E")
+        latex.DrawText(0.6, 0.4, f'{case}')
 
-    # get uncertainty band
-    #upEnv = 0
-    #dnEnv = 0
-    shift_arr = np.zeros(1000)
-    hist_uncert = hist_target.Clone()
-    hist_uncert.Reset()
-    for i in range(bins):
-        fit_upshift = fit.Clone()
-        fit_dnshift = fit.Clone()
-        fit_upshift.SetParameter(0,fit.GetParameter(0)*(1+fit.GetParError(0)))
-        fit_dnshift.SetParameter(0,fit.GetParameter(0)*(1-fit.GetParError(0)))
-        
-        x = hist_fill.GetBinCenter(i+1)
-        nom   = fit.Eval(x)
-        #shift1 = fit_upshift.Eval(x)-nom
-        #shift2 = fit_dnshift.Eval(x)-nom
+        c.cd()
+        pad2 = TPad("ratio_plot", "ratio_plot", 0.05, 0.05, 1, 0.3)
+        pad2.SetTopMargin(0.01)
+        pad2.SetBottomMargin(0.2)
+        pad2.SetLeftMargin(0.1)
+        pad2.SetGrid()
+        pad2.Draw()
+        pad2.cd()
 
-        if shift1>0:
-            upEnv = shift1
-        else:
-            dnEnv = shift1
+        line = TF1("line", "0", binlo, binhi, 0)
 
-        if shift2>0:
-            if upEnv>0:
-                if shift2>upEnv:
-                    upEnv = shift2
-            else:
-                upEnv = shift2
-            if dnEnv<0:
-                if shift2<dnEnv:
-                    dnEnv = shift2
-            else:
-                dnEnv = shift2
-        print(f'upEnv:{upEnv}, dnEnv:{dnEnv}')
-        for j in range(nparams-1):
-            fit_upshift = fit.Clone()
-            fit_dnshift = fit.Clone()
-            fit_upshift.SetParameter(j,fit.GetParameter(j+1)*(1+fit.GetParError(j+1)))
-            fit_dnshift.SetParameter(j,fit.GetParameter(j+1)*(1-fit.GetParError(j+1)))
+        #hist_ratio = TRatioPlot(hist) # outputs 'Pull'. Set y-axis title 'Pull' and range[-3,3]
+        hist_fill = hist_target.Clone()
+        hist_fill.Reset()
+        for i in range(bins):
+            x = hist_fill.GetBinCenter(i+1)
+            hist_fill.SetBinContent(i+1, fit.Eval(x))
+        #hist_ratio = hist_fill/hist_target
+        hist_ratio = (hist_fill - hist_target)/hist_target
 
-            shift1 = fit_upshift.Eval(x)-nom
-            shift2 = fit_dnshift.Eval(x)-nom
-    
-            if shift1>0:
-                if shift1>upEnv:
-                    upEnv = shift1
-            else:
-                if shift1<dnEnv:
-                    dnEnv = shift1
+        # get uncertainty band
+        hist_Up = hist_target.Clone()
+        hist_Dn = hist_target.Clone()
+        hist_Up.Reset()
+        hist_Dn.Reset()
 
-            if shift2>0:
-                if shift2>upEnv:
-                    upEnv = shift2
-            else:
-                if shift1<dnEnv:
-                    dnEnv = shift2
-    
-            print(f'shift1:{shift1}, shift2:{shift2}, upEnv:{upEnv}, dnEnv:{dnEnv}')
-        exit()
-            
-    #hist_ratio.Print("all")
-    
-    exit()
+        params_arr = np.zeros((nparams,3))
+        for i in range(nparams):
+            params_arr[i][0] = fit.GetParameter(i)
+            params_arr[i][1] = fit.GetParameter(i)+fit.GetParError(i)
+            params_arr[i][2] = fit.GetParameter(i)-fit.GetParError(i)
 
-    #hist_ratio.SetTitle("")
-    #hist_ratio.GetYaxis().SetRangeUser(0.8,1.2)
-    #hist_ratio.GetYaxis().SetTitle("target/fit")
+        # get possible combinations of params
+        grids = np.array(np.meshgrid(params_arr[0],params_arr[1],params_arr[2],params_arr[3],params_arr[4],params_arr[5],params_arr[6],params_arr[7])).T.reshape(-1,8)[1:] # grids[0] is the nominal
+        Ngrids = len(grids)
 
-    #hist_ratio.SetMarkerStyle(20)
-    #hist_ratio.SetLineColor(kBlack)
-    #hist_ratio.Draw("pex0")
-    #hist_ratio.Draw("EP")
-    hist_ratio.Draw()
-    line.SetLineColor(kBlack)
-    line.Draw("SAME")
-    
-    hist.SetTitle("")
-    hist.GetXaxis().SetTitle("Mass reco [GeV]")
-    hist.GetYaxis().SetTitle("Frequency")
-    hist.GetYaxis().SetTitleSize(20)
-    hist.GetYaxis().SetTitleFont(43)
+        for i in range(bins):
+            x   = hist_fill.GetBinCenter(i+1)
+            nom = fit.Eval(x)
+            shifted_arr = np.zeros(Ngrids)
+            for j in range(Ngrids):
+                fitshift = fit.Clone()
+                fitshift.SetParameters(grids[j])
+                shifted_arr[j] = fitshift.Eval(x)
+            up_arr = shifted_arr[shifted_arr>nom]
+            dn_arr = shifted_arr[shifted_arr<nom]
+            hist_Up.SetBinContent(i+1,up_arr.max())
+            hist_Dn.SetBinContent(i+1,dn_arr.min())
 
-    #hist_ratio.GetYaxis().SetTitleSize(20)
-    #hist_ratio.GetYaxis().SetTitleFont(43)
+        hist_ratioUp = (hist_Up-hist_target)/hist_target
+        hist_ratioDn = (hist_Dn-hist_target)/hist_target
 
-    #hist_ratio.Print("all")
-    
-    c.SaveAs(plotname)
-    print(f'Saved plot to {plotname}.')
+        hist_ratioUp.SetTitle("")
+        hist_ratioUp.GetYaxis().SetRangeUser(-0.5,0.5)
+        hist_ratioUp.GetYaxis().SetTitle("ratio")
 
+        hist_ratio.SetMarkerStyle(20)
+        hist_ratio.SetLineColor(kBlack)
+
+        hist_ratioUp.SetFillColor(18)
+        hist_ratioUp.SetLineColor(18)
+        hist_ratioDn.SetFillColor(18)
+        hist_ratioDn.SetLineColor(18)
+
+        hist_ratioUp.Draw("HIST")
+        hist_ratioDn.Draw("HIST SAME")
+        hist_ratio.Draw("pex0 SAME")
+
+        line.SetLineColor(kBlack)
+        line.Draw("SAME")
+
+        hist.SetTitle("")
+        #hist.GetXaxis().SetTitle("Mass reco [GeV]")
+        #hist.GetXaxis().SetTitleSize(20)
+        #hist.GetXaxis().SetLabelSize(0.07)
+        hist.GetYaxis().SetTitle("Frequency")
+        hist.GetYaxis().SetTitleSize(20)
+        hist.GetYaxis().SetTitleFont(43)
+
+        #hist_ratioUp.GetYaxis().SetLabelSize(0.07)
+        hist_ratioUp.GetYaxis().SetTitleSize(20)
+        hist_ratioUp.GetYaxis().SetTitleFont(43)
+        hist_ratioUp.GetYaxis().SetLabelFont(43)
+        hist_ratioUp.GetYaxis().SetLabelSize(15)
+        hist_ratioUp.GetXaxis().SetTitle("Mass reco [GeV]")
+        hist_ratioUp.GetXaxis().SetTitleSize(20)
+        hist_ratioUp.GetXaxis().SetTitleOffset(4)
+        #hist_ratioUp.GetXaxis().SetLabelSize(0.1)
+        hist_ratioUp.GetXaxis().SetLabelFont(43)
+        hist_ratioUp.GetXaxis().SetLabelSize(15)
+
+        c.Update()
+        c.SaveAs(plotname)
+        print(f'Saved plot to {plotname}.')
+     
     return fit
 
-def fitHist(case):
+def fitHist(case, doPlot):
     print(f'Fitting hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root...')
 
     plotDir = f'fit_plots/{case}_{binlo}to{binhi}_{bins}'
@@ -240,7 +226,8 @@ def fitHist(case):
 
     # fit
     # hist range: [400, 2500]
-    for region in ["A", "B", "C", "D", "X", "Y", "V"]:
+    #for region in ["A", "B", "C", "D", "X", "Y", "V"]:
+    for region in ["D","V"]: # TEMP: ratio plot only
         for htype in ["tgt", "pre"]:
             if htype == "tgt":
                 hist = histFile.Get(f'Bprime_mass_dat_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}')
@@ -249,7 +236,7 @@ def fitHist(case):
                 hist = histFile.Get(f'Bprime_mass_pre_{region}')
                 hist_lastbin = histFile_lastbin.Get(f'Bprime_mass_pre_{region}') # 42fit420bins
 
-            fit = fit_and_plot(hist, f'{plotDir}/fit_{htype}_{region}.png', case) # normalizes hist
+            fit = fit_and_plot(hist, f'{plotDir}/fit_{htype}_{region}.png', case, doPlot) # normalizes hist
 
             # last bin is not fitted. get bin content. after scaling. capture shape only
             hist_lastbin.Scale(1/hist_lastbin.Integral()) # 42fit420bins
@@ -260,7 +247,9 @@ def fitHist(case):
 
     histFile.Close()
     histFile_lastbin.Close() #TEMP # 42fit420bins
-    
+
+    return 0 # TEMP: ratio plot only
+
     # compare
     for i in range(nparams):
         train_uncert = 0
@@ -303,10 +292,10 @@ def fitHist(case):
 
 #fitHist("case14")
 #fitHist("case23")
-fitHist("case1")
-fitHist("case2")
-fitHist("case3")
-fitHist("case4")
+fitHist("case1", doPlot=False) #plotting uncertainty band in ratio panel takes very long. skip plotting unless we need it
+fitHist("case2", doPlot=False)
+fitHist("case3", doPlot=False)
+fitHist("case4", doPlot=False)
 
 # save parameters and last bin to a json file
 json_obj = json.dumps(params, indent=4)
@@ -319,7 +308,7 @@ with open("pred_uncert.json", "w") as outjsonfile:
     outjsonfile.write(json_obj)
 print("Saved parameter and last bin info to pred_uncert.json")
 
-exit() # TEMP
+#exit() # TEMP
 
 #############################
 # create histogram from fit #
@@ -363,7 +352,7 @@ def shapePlot(region, case, hist_gen, hist_ABCDnn, step):
 def targetAgreementPlot(region, case, fit, hist_gen, hist_target, hist_abcdnn):
     c2 = TCanvas("c2", "c2", 800, 800)
     pad1 = TPad("hist_plot", "hist_plot", 0.05, 0.3, 1, 1)
-    pad1.SetBottomMargin(0) #join upper and lower plot
+    pad1.SetBottomMargin(0.01) #join upper and lower plot
     pad1.SetLeftMargin(0.1)
     pad1.Draw()
     pad1.cd()
