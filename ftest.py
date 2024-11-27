@@ -50,9 +50,11 @@ def fit_and_create(hist, fitFunc, nparams, plotname):
 def get_RSS(hist_in, htype, region):
     for npower in range(npoly+1):
         nparams = npower+4
-        polyfunc = ''
+        polyfunc = '' # w/o constant term
+        #polyfunc = '+ [4]' # with constant term
         for i in range(npower):
-            polyfunc += f'+ [{i+4}]*(x/2500)'
+            polyfunc += f'+ [{i+4}]*(x/2500)' # w/o constant term
+            #polyfunc += f'+ [{i+5}]*(x/2500)' # with constant term
             for power in range(i):
                 polyfunc += '*(x/2500)'
         fitFunc = baseFunc + polyfunc
@@ -109,14 +111,14 @@ if not separateRegions:
 
     # CALCULATE f
     # fine-tune
-    p1=4
-    p2=6
-    f_all[f'f{p1}{p2}'] = get_f(p1,p2,bins*n)
-    print(f'sig:{0.05}, df1:{n*(p2-p1)}, df2:{(bins-(p2+4))*n}')
+    #p1=4
+    #p2=6
+    #f_all[f'f{p1}{p2}'] = get_f(p1,p2,bins*n)
+    #print(f'sig:{0.05}, df1:{n*(p2-p1)}, df2:{(bins-(p2+4))*n}')
 
     # general search
-    # for i in range(npoly):
-    #     f_all[f'f{i}{i+1}'] = get_f(i,i+1,bins*n)
-    #     print(f'sig:{0.05}, df1:{n}, df2:{(bins-(i+1+4))*n}, F_c:{scipy.stats.f.ppf(q=0.05, dfn=1*n, dfd=(bins-(i+1+4))*n)}') # significance level 0.05. p2-p1=1. n-p2. p2 = (i+1)+4. 4 params from gaussian
+    for i in range(npoly):
+        f_all[f'f{i}{i+1}'] = get_f(i,i+1,bins*n)
+        print(f'sig:{0.05}, df1:{n}, df2:{(bins-(i+1+4))*n}, F_c:{scipy.stats.f.ppf(q=0.05, dfn=1*n, dfd=(bins-(i+1+4))*n)}') # significance level 0.05. p2-p1=1. n-p2. p2 = (i+1)+4. 4 params from gaussian
         
 print(f_all)

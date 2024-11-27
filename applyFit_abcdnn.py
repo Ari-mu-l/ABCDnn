@@ -2,7 +2,6 @@ import os
 import numpy as np
 from ROOT import *
 import json
-from itertools import combinations
 
 gStyle.SetOptFit(1)
 gStyle.SetOptStat(0)
@@ -218,7 +217,7 @@ def fitHist(case, doPlot):
         os.makedirs(plotDir)
 
     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
-    histFile_lastbin = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_420.root', "READ") # 42fit420bins
+    #histFile_lastbin = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_420.root', "READ") # 42fit420bins
 
     for region in ["A", "B", "C", "D", "X", "Y", "V"]:
         params[case]["tgt"][region] = {}
@@ -226,69 +225,103 @@ def fitHist(case, doPlot):
 
     # fit
     # hist range: [400, 2500]
-    #for region in ["A", "B", "C", "D", "X", "Y", "V"]:
-    for region in ["D","V"]: # TEMP: ratio plot only
+    if doPlot:
+        regionList = ["D","V"]
+    else:
+        regionList = ["A", "B", "C", "D", "V"]
+    for region in regionList:
         for htype in ["tgt", "pre"]:
             if htype == "tgt":
                 hist = histFile.Get(f'Bprime_mass_dat_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}')
-                hist_lastbin = histFile_lastbin.Get(f'Bprime_mass_dat_{region}') - histFile_lastbin.Get(f'Bprime_mass_mnr_{region}') # 42fit420bins
+                #hist_lastbin = histFile_lastbin.Get(f'Bprime_mass_dat_{region}') - histFile_lastbin.Get(f'Bprime_mass_mnr_{region}') # 42fit420bins
             else:
                 hist = histFile.Get(f'Bprime_mass_pre_{region}')
-                hist_lastbin = histFile_lastbin.Get(f'Bprime_mass_pre_{region}') # 42fit420bins
+                #hist_lastbin = histFile_lastbin.Get(f'Bprime_mass_pre_{region}') # 42fit420bins
 
             fit = fit_and_plot(hist, f'{plotDir}/fit_{htype}_{region}.png', case, doPlot) # normalizes hist
 
             # last bin is not fitted. get bin content. after scaling. capture shape only
-            hist_lastbin.Scale(1/hist_lastbin.Integral()) # 42fit420bins
-            params[case][htype][region]["lastbin"] = hist_lastbin.GetBinContent(420+1) # 42fit420bins
-            #params[case][htype][region]["lastbin"] = hist.GetBinContent(bins+1)
+            #hist_lastbin.Scale(1/hist_lastbin.Integral()) # 42fit420bins
+            #params[case][htype][region]["lastbin"] = hist_lastbin.GetBinContent(420+1) # 42fit420bins
+            params[case][htype][region]["lastbin"] = hist.GetBinContent(bins+1)
             for i in range(nparams):
                 params[case][htype][region][f'param{str(i)}'] = [fit.GetParameter(i), fit.GetParError(i)]
 
     histFile.Close()
-    histFile_lastbin.Close() #TEMP # 42fit420bins
+    #histFile_lastbin.Close() #TEMP # 42fit420bins
+    
+    #if doPlot:
+    #    return 0
 
-    return 0 # TEMP: ratio plot only
 
-    # compare
+    #### FIT UNCERT ONLY ####
+    # not needed for training+fit uncert method
     for i in range(nparams):
-        train_uncert = 0
-        nRegions = 3
-        #for region in ["A", "B", "C"]:
-    #         uncert = abs((params[case]["pre"][region][f'param{i}'][0]-params[case]["tgt"][region][f'param{i}'][0])/params[case]["tgt"][region][f'param{i}'][0])
-    #         if uncert<0.5:
-    #             train_uncert += uncert
-    #         else:
-    #             nRegions = nRegions-1
-    #     if nRegions==0:
-    #         train_uncert = 0
+        pred_uncert[case][f'param{i}'] = params[case]["pre"]["D"][f'param{i}'][1]
+    
+    #### TRAINING UNCERTAINTY ON PARAMETERS ####
+    # for i in range(nparams):
+    #     train_uncert = 0
+    #     nRegions = 3
+    #     ## Method 1 ##
+    #     # for region in ["A", "B", "C"]:
+    #     #     uncert = abs((params[case]["pre"][region][f'param{i}'][0]-params[case]["tgt"][region][f'param{i}'][0])/params[case]["tgt"][region][f'param{i}'][0])
+    #     #     if uncert<0.5:
+    #     #         train_uncert += uncert
+    #     #     else:
+    #     #         nRegions = nRegions-1
+    #     # if nRegions==0:
+    #     #     train_uncert = 0
+    #     # else:
+    #     #     train_uncert = (train_uncert/nRegions)*params[case]["pre"]["D"][f'param{i}'][0] #absolute shift for D
+    #     # fit_uncer = params[case]["pre"]["D"][f'param{i}'][1]
+    #     # #fit_uncer = 0 # TEMP. debug only
+    #     # pred_uncert[case][f'param{i}'] = abs(np.sqrt(train_uncert**2+fit_uncer**2)/params[case]["pre"]["D"][f'param{i}'][0])
+
+    #     ## Method 2 ##
+    #     if i<4:
+    #         uncert = 0
+    #         for region in ["A", "B", "C"]:
+    #             uncert += abs((params[case]["pre"][region][f'param{i}'][0]-params[case]["tgt"][region][f'param{i}'][0])/params[case]["tgt"][region][f'param{i}'][0]) # params[case]["pre"][region][i] is a list of [param, err]
+    #         train_uncert = (uncert/3)*params[case]["pre"]["D"][f'param{i}'][0] # absolute shift for D
+    #         fit_uncer = params[case]["pre"]["D"][f'param{i}'][1]
+    #         #fit_uncer = 0 # TEMP. for train_uncert fit_uncert comparison
+    #         pred_uncert[case][f'param{i}'] = abs(np.sqrt(train_uncert**2+fit_uncer**2)/params[case]["pre"]["D"][f'param{i}'][0])
     #     else:
-    #         train_uncert = (train_uncert/nRegions)*params[case]["pre"]["D"][f'param{i}'][0] #absolute shift for D
-    #     fit_uncer = params[case]["pre"]["D"][f'param{i}'][1]
-    #     #fit_uncer = 0 # TEMP. debug only
-    #     pred_uncert[case][f'param{i}'] = abs(np.sqrt(train_uncert**2+fit_uncer**2)/params[case]["pre"]["D"][f'param{i}'][0])
-        
-        if i<4:
-            uncert = 0
-            for region in ["A", "B", "C"]:
-                uncert += abs((params[case]["pre"][region][f'param{i}'][0]-params[case]["tgt"][region][f'param{i}'][0])/params[case]["tgt"][region][f'param{i}'][0]) # params[case]["pre"][region][i] is a list of [param, err]
-            train_uncert = (uncert/3)*params[case]["pre"]["D"][f'param{i}'][0] # absolute shift for D
-            fit_uncer = params[case]["pre"]["D"][f'param{i}'][1]
-            #fit_uncer = 0 # TEMP. for train_uncert fit_uncert comparison
-            pred_uncert[case][f'param{i}'] = abs(np.sqrt(train_uncert**2+fit_uncer**2)/params[case]["pre"]["D"][f'param{i}'][0])
-        else:
-            pred_uncert[case][f'param{i}'] = abs(params[case]["pre"]["D"][f'param{i}'][1]/params[case]["pre"]["D"][f'param{i}'][0])
-        print(f'Uncertainty in param{i}: ',pred_uncert[case][f'param{i}'])
+    #         pred_uncert[case][f'param{i}'] = abs(params[case]["pre"]["D"][f'param{i}'][1]/params[case]["pre"]["D"][f'param{i}'][0])
+    #     print(f'Uncertainty in param{i}: ',pred_uncert[case][f'param{i}'])
             
-    lastbin_uncert=0
+    # lastbin_uncert=0
+    # for region in ["A", "B", "C"]:
+    #     #if params[case]["tgt"][region]["lastbin"]!=0: # TEMP. simplified for test only.
+    #     #lastbin_uncert += abs(params[case]["pre"][region]["lastbin"]-params[case]["tgt"][region]["lastbin"])/params[case]["tgt"][region]["lastbin"]
+    #     #    print("LASTBIN NOT 0")
+    #     #elif params[case]["pre"][region]["lastbin"]!=0:
+    #     #    print("LASTBIN NOT 0")
+    #     lastbin_uncert += abs(params[case]["pre"][region]["lastbin"]-params[case]["tgt"][region]["lastbin"])/params[case]["pre"][region]["lastbin"]
+    # pred_uncert[case]["lastbin"] = lastbin_uncert/3
+
+def modifyOverflow(hist, bins):
+    hist.SetBinContent(bins, hist.GetBinContent(bins)+hist.GetBinContent(bins+1))
+    hist.SetBinContent(bins+1, 0)
+    
+#### TRAINING UNCERTAINTY BY BINS ####
+def getPredUncert(case):
+    histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+    hist_dev = TH1D(f'train_uncert_{case}', f'Training Uncertainty ({case})', bins, binlo, binhi)
     for region in ["A", "B", "C"]:
-        #if params[case]["tgt"][region]["lastbin"]!=0: # TEMP. simplified for test only.
-        #lastbin_uncert += abs(params[case]["pre"][region]["lastbin"]-params[case]["tgt"][region]["lastbin"])/params[case]["tgt"][region]["lastbin"]
-        #    print("LASTBIN NOT 0")
-        #elif params[case]["pre"][region]["lastbin"]!=0:
-        #    print("LASTBIN NOT 0")
-        lastbin_uncert += abs(params[case]["pre"][region]["lastbin"]-params[case]["tgt"][region]["lastbin"])/params[case]["pre"][region]["lastbin"]
-    pred_uncert[case]["lastbin"] = lastbin_uncert/3
+        hist_pre = histFile.Get(f'Bprime_mass_pre_{region}')
+        hist_tgt = histFile.Get(f'Bprime_mass_dat_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}')
+        hist_pre.Scale(1/hist_pre.Integral())
+        hist_tgt.Scale(1/hist_tgt.Integral())
+        modifyOverflow(hist_pre,bins)
+        modifyOverflow(hist_tgt,bins)
+        hist_dev += (hist_tgt - hist_pre)/hist_pre
+    hist_dev.Scale(1/3) # average over 3 regions
+    
+    uncertFile.cd()
+    hist_dev.Write()
+    histFile.Close()
 
 #fitHist("case14")
 #fitHist("case23")
@@ -296,6 +329,13 @@ fitHist("case1", doPlot=False) #plotting uncertainty band in ratio panel takes v
 fitHist("case2", doPlot=False)
 fitHist("case3", doPlot=False)
 fitHist("case4", doPlot=False)
+
+uncertFile = TFile.Open(f'hists_trainUncert_{binlo}to{binhi}_{bins}.root', "RECREATE")
+getPredUncert("case1")
+getPredUncert("case2")
+getPredUncert("case3")
+getPredUncert("case4")
+uncertFile.Close()
 
 # save parameters and last bin to a json file
 json_obj = json.dumps(params, indent=4)
@@ -313,7 +353,7 @@ print("Saved parameter and last bin info to pred_uncert.json")
 #############################
 # create histogram from fit #
 #############################
-bins = 420 # TEMP. test with more bins
+bins = 42 # TEMP. test with more bins
 
 alphaFactors = {}
 with open("alphaRatio_factors.json","r") as alphaFile:
@@ -414,7 +454,6 @@ def fillHistogram(hist):
         hist_new.SetBinContent(i,hist.GetBinContent(i))
     return hist_new
     
-    return hist_new
 def createHist(case, region):
     fit = TF1(f'fitFunc', fitFunc,binlo,binhi, nparams)
     for i in range(nparams):
@@ -463,7 +502,6 @@ def createHist(case, region):
     targetAgreementPlot(region, case, fit, hist_gen, hist_target, hist_abcdnn_shape)
 
     hist_out = fillHistogram(hist_gen)
-    #hist_out.Rebin(10)
     
     if binlo==400:
         if doV2:
@@ -493,6 +531,47 @@ for case in ["case1", "case2", "case3", "case4"]:
     #     createHist(case, "D")
 
 # shift
+def shiftTrainingUncert(case, region, shift):
+    fit = TF1(f'fitFunc', fitFunc, binlo,binhi, nparams)
+    for i in range(nparams):
+        fit.SetParameter(i, params[case]["pre"][region][f'param{i}'][0])
+    fit.SetNpx(bins)
+    
+    hist_bin = fit.CreateHistogram()
+    hist_bin.SetBinContent(bins+1, params[case]["pre"][region]["lastbin"])
+    modifyOverflow(hist_bin,bins) # take overflow bin and add to last bin. set over flow bin to 0
+
+    uncertFile = TFile.Open(f'hists_trainUncert_{binlo}to{binhi}_{bins}.root', 'READ')
+    uncertHist = uncertFile.Get(f'train_uncert_{case}')
+
+    if shift=="Up":
+        for i in range(bins):
+            hist_bin.SetBinContent(i, hist_bin.GetBinContent(i) * (1 + uncertHist.GetBinContent(i)))
+    else:
+        for i in range(bins):
+    	    hist_bin.SetBinContent(i, hist_bin.GetBinContent(i) * (1 - uncertHist.GetBinContent(i)))
+
+    hist_bin.Scale(normalization[case][region])
+    hist_out = fillHistogram(hist_bin)
+
+    if binlo==400:
+        if doV2:
+            if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
+                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+                hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__train{shift}')
+                outFile.Close()
+        else:
+            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__train{shift}')
+            outFile.Close()
+    elif binlo==0:
+        outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_Julie/templates_BpMass_138fbfb.root', "UPDATE")
+        hist_out.Write(f'BpMass_138fbfb_isL_{tag[case]}_{region}__major__train{shift}')
+        outFile.Close()
+    else:
+        exit()
+        print("New binning encounterd. Make up a new name and folder.")
+    
 def shiftLastBin(case, region, shift):
     fit = TF1(f'fitFunc', fitFunc, binlo,binhi, nparams)
     for i in range(nparams):
@@ -519,7 +598,6 @@ def shiftLastBin(case, region, shift):
     hist_bin.Scale(normalization[case][region])
 
     hist_out = fillHistogram(hist_bin)
-    #hist_out.Rebin(10)
     
     if binlo==400:
         if doV2:
@@ -565,7 +643,6 @@ def shiftParam(case, region, i, shift):
     hist_param.Scale(normalization[case][region])
 
     hist_out = fillHistogram(hist_param)
-    #hist_out.Rebin(10)
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
@@ -625,10 +702,13 @@ def shiftFactor(case, region, shift):
     
 for case in ["case1", "case2", "case3", "case4"]:
     for shift in ["Up", "Down"]:
-        shiftLastBin(case, "V", shift)
-        shiftLastBin(case, "D", shift)
-        shiftFactor(case, "V", shift)
+        shiftTrainingUncert(case, "D", shift)
         shiftFactor(case, "D", shift)
+        #shiftLastBin(case, "D", shift) # not needed for bin train uncert method
+        
+        shiftTrainingUncert(case, "V", shift)
+        shiftFactor(case, "V", shift)
+        #shiftLastBin(case, "V", shift)
         # if doV2:
         #     shiftLastBin(case, "V", shift)
         #     shiftLastBin(case, "D", shift)
@@ -647,4 +727,4 @@ for case in ["case1", "case2", "case3", "case4"]:
             # else:
             #     shiftParam(case, "D", i, shift)
 
-print(pred_uncert)
+#print(pred_uncert)
