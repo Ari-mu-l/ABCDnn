@@ -1,4 +1,4 @@
-# python3 makeHist_abcdnn.py -s rootFiles_BprimepNetST_Aug2024Run2/Case23/AugMajor_all_mc_p100.root -b rootFiles_BprimepNetST_Aug2024Run2/Case23/AugMinor_all_mc_p100.root -t rootFiles_BprimepNetST_Aug2024Run2/Case23/AugData_all_data_p100.root -m BpMST_mmd2_case23_random10
+# python3 makeHist_abcdnn.py -s rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctMajor_all_mc_p100.root -b rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctMinor_all_mc_p100.root -t rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctData_all_data_p100.root -f 1.0 -m logBpMST_mmd2_case14_random104
 
 import numpy as np
 import os, tqdm
@@ -80,9 +80,9 @@ inputs_src = sTree.arrays( variables, library="pd" )
 inputs_tgt = tTree.arrays( variables, library="pd" )
 inputs_mnr = mTree.arrays( variables + ["xsecWeight"], library="pd" )
 
-Bdecay_src = sTree.arrays( ["Bdecay_obs"], library="pd" )
+Bdecay_src = sTree.arrays( ["Bdecay_obs", "pNetTtagWeight", "pNetTtagWeightUp", "pNetTtagWeightDn", "pNetWtagWeight", "pNetWtagWeightUp", "pNetWtagWeightDn"], library="pd" )
 Bdecay_tgt = tTree.arrays( ["Bdecay_obs"], library="pd" )
-Bdecay_mnr = mTree.arrays( ["Bdecay_obs"], library="pd" )
+Bdecay_mnr = mTree.arrays( ["Bdecay_obs", "pNetTtagWeight", "pNetWtagWeight"], library="pd" )
 #Bdecay_tgt = tTree.arrays( ["Bdecay_obs"], library="pd" )[inputs_tgt["Bprime_mass"]>400]
 #Bdecay_mnr = mTree.arrays( ["Bdecay_obs"], library="pd" )[inputs_mnr["Bprime_mass"]>400]
 
@@ -184,31 +184,49 @@ for region in tqdm.tqdm(predictions):
 del NAF
 
 
-def makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, predict_array):
+def makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, predict_array, pNet_mnr_array, pNet_src_array, pNetUp_src_array, pNetDn_src_array):
   #predict_array = predictions["D"]
   #inputs_tgt_array = inputs_tgt_region["D"].to_numpy(dtype='d')
   #inputs_mnr_array = inputs_mnr_region["D"].to_numpy(dtype='d')
   #weight_mnr_array = inputs_mnr_region["D"]["xsecWeight"].to_numpy(dtype='d')
 
-  hist_predict_val = ROOT.TH1D(f'Bprime_mass_pre_V', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-  hist_data_val    = ROOT.TH1D(f'Bprime_mass_dat_V'  , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-  hist_minor_val   = ROOT.TH1D(f'Bprime_mass_mnr_V' , "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-  
-  for i in range(len(predict_array)):
-    if predict_array[i][1]<validationCut and predict_array[i][1]>bin_lo:
-      hist_predict_val.Fill(predict_array[i][0])
+  hist_predict_val        = ROOT.TH1D(f'Bprime_mass_pre_V', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_predict_val_pNetUp = ROOT.TH1D(f'Bprime_mass_pre_V_pNetUp', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_predict_val_pNetDn = ROOT.TH1D(f'Bprime_mass_pre_V_pNetDn', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_data_val           = ROOT.TH1D(f'Bprime_mass_dat_V', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_minor_val          = ROOT.TH1D(f'Bprime_mass_mnr_V', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
 
   for i in range(len(inputs_tgt_array)):
     if inputs_tgt_array[i][1]<validationCut and inputs_tgt_array[i][1]>bin_lo:
       hist_data_val.Fill(inputs_tgt_array[i][0])
 
-  for i in range(len(inputs_mnr_array)):
-    if inputs_mnr_array[i][1]<validationCut and inputs_mnr_array[i][1]>bin_lo:
-      hist_minor_val.Fill(inputs_mnr_array[i][0], weight_mnr_array[i])
+  if case=="case1" or case=="case3":
+    print(f'{case}: applying pNet weights')
+    # fill prediction hist
+    for i in range(len(predict_array)):
+      if predict_array[i][1]<validationCut and predict_array[i][1]>bin_lo:
+        hist_predict_val.Fill(predict_array[i][0], pNet_src_array[i]) # pNetSF
+        hist_predict_val_pNetUp.Fill(predict_array[i][0], pNetUp_src_array[i]) # pNetSF_Up
+        hist_predict_val_pNetDn.Fill(predict_array[i][0], pNetDn_src_array[i]) # pNetSF_Down
+    # fill minor hist
+    for i in range(len(inputs_mnr_array)):
+      if inputs_mnr_array[i][1]<validationCut and inputs_mnr_array[i][1]>bin_lo:
+        hist_minor_val.Fill(inputs_mnr_array[i][0], weight_mnr_array[i] * pNet_mnr_array[i])
+  else:
+    # untagged cases do not need pNetSFs
+    for i in range(len(predict_array)):
+      if predict_array[i][1]<validationCut and predict_array[i][1]>bin_lo:
+        hist_predict_val.Fill(predict_array[i][0])
+    for i in range(len(inputs_mnr_array)):
+      if inputs_mnr_array[i][1]<validationCut and inputs_mnr_array[i][1]>bin_lo:
+        hist_minor_val.Fill(inputs_mnr_array[i][0], weight_mnr_array[i])
   
-  hist_predict_val.Write()
   hist_data_val.Write()
   hist_minor_val.Write()
+  hist_predict_val.Write()
+  if case=="case1" or case=="case3":
+    hist_predict_val_pNetUp.Write()
+    hist_predict_val_pNetDn.Write()
   
 
 def makeHists_fit(region, case):
@@ -216,30 +234,50 @@ def makeHists_fit(region, case):
     inputs_tgt_array = inputs_tgt_region[region][ Bdecay_tgt_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region][ Bdecay_mnr_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d')[:,:2]
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"][ Bdecay_mnr_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d')
+    pNet_mnr_array = Bdecay_mnr_region[region]["pNetTtagWeight"][ Bdecay_mnr_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d') # case1: Ttag
+    pNet_src_array = Bdecay_src_region[region]["pNetTtagWeight"][ Bdecay_src_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d')
+    pNetUp_src_array = Bdecay_src_region[region]["pNetTtagWeightUp"][ Bdecay_src_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d')
+    pNetDn_src_array = Bdecay_src_region[region]["pNetTtagWeightDn"][ Bdecay_src_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d')
     prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==1 ]
     #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==1 ], 0, 2500)
   elif case=="case2":
     inputs_tgt_array = inputs_tgt_region[region][ Bdecay_tgt_region[region]["Bdecay_obs"]==2 ].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region][ Bdecay_mnr_region[region]["Bdecay_obs"]==2 ].to_numpy(dtype='d')[:,:2]
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"][ Bdecay_mnr_region[region]["Bdecay_obs"]==2 ].to_numpy(dtype='d')
+    pNet_mnr_array   = np.zeros(1) # dummies: untagged cases do not need pNetSF
+    pNet_src_array   = np.zeros(1)
+    pNetUp_src_array = np.zeros(1)
+    pNetDn_src_array = np.zeros(1)
     prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==2 ]
     #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==2 ], 0, 2500)
   elif case=="case3":
     inputs_tgt_array = inputs_tgt_region[region][ Bdecay_tgt_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region][ Bdecay_mnr_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')[:,:2]
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"][ Bdecay_mnr_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')
+    pNet_mnr_array = Bdecay_mnr_region[region]["pNetWtagWeight"][ Bdecay_mnr_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')
+    pNet_src_array = Bdecay_src_region[region]["pNetWtagWeight"][ Bdecay_src_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')
+    pNetUp_src_array = Bdecay_src_region[region]["pNetWtagWeightUp"][ Bdecay_src_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')
+    pNetDn_src_array = Bdecay_src_region[region]["pNetWtagWeightDn"][ Bdecay_src_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')
     prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==3 ]
     #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==3 ], 0, 2500)
   elif case=="case4":
     inputs_tgt_array = inputs_tgt_region[region][ Bdecay_tgt_region[region]["Bdecay_obs"]==4 ].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region][ Bdecay_mnr_region[region]["Bdecay_obs"]==4 ].to_numpy(dtype='d')[:,:2]
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"][ Bdecay_mnr_region[region]["Bdecay_obs"]==4 ].to_numpy(dtype='d')
+    pNet_mnr_array   = np.zeros(1) # dummies
+    pNet_src_array   = np.zeros(1)
+    pNetUp_src_array = np.zeros(1)
+    pNetDn_src_array = np.zeros(1)
     prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==4 ]
     #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==4 ], 0, 2500)
   else:
     inputs_tgt_array = inputs_tgt_region[region].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region].to_numpy(dtype='d')[:,:2]
     weight_mnr_array = inputs_mnr_region[region]["xsecWeight"].to_numpy(dtype='d')
+    pNet_mnr_array   = np.zeros(1) # dummies: pNet tag should be implemented for case14 and 23, but we do not need the combined cases for now.
+    pNet_src_array   = np.zeros(1)
+    pNetUp_src_array = np.zeros(1)
+    pNetDn_src_array = np.zeros(1)
     prediction_array = predictions[region]
     #prediction_array = np.clip(predictions[region], 0, 2500)
 
@@ -252,45 +290,68 @@ def makeHists_fit(region, case):
   inputs_mnr_array = np.clip(inputs_mnr_array, 0, 2500)
   prediction_array = np.clip(prediction_array, 0, 2500)
 
-  hist_tgt = ROOT.TH1D(f'Bprime_mass_dat_{region}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
-  hist_mnr = ROOT.TH1D(f'Bprime_mass_mnr_{region}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
-  hist_pre = ROOT.TH1D(f'Bprime_mass_pre_{region}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  hist_tgt   = ROOT.TH1D(f'Bprime_mass_dat_{region}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
+  hist_mnr   = ROOT.TH1D(f'Bprime_mass_mnr_{region}', "Bprime_mass"       , Nbins, bin_lo, bin_hi)
+  hist_pre   = ROOT.TH1D(f'Bprime_mass_pre_{region}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  if case=="case1" or case=="case3":
+    hist_pre_pNetUp = ROOT.TH1D(f'Bprime_mass_pre_{region}_pNetUp', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+    hist_pre_pNetDn = ROOT.TH1D(f'Bprime_mass_pre_{region}_pNetUp', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
 
+  # fill target hist. Same for all cases. No pNetSF needed
   for i in range(len(inputs_tgt_array)):
     if inputs_tgt_array[i][0]>bin_lo:
       hist_tgt.Fill(inputs_tgt_array[i][0])
-
-  for i in range(len(inputs_mnr_array)):
-    if inputs_mnr_array[i][0]>bin_lo:
-      hist_mnr.Fill(inputs_mnr_array[i][0], weight_mnr_array[i])
-
-  for i in range(len(prediction_array)):
-    if prediction_array[i][0]>bin_lo:
-      hist_pre.Fill(prediction_array[i][0])
+      
+  if case=="case1" or case=="case3":
+    print(f'{case}: applying pNet weights')
+    # fill minor hist with pNet. Shift not needed. Taken care of by analyze_RDF.py
+    for i in range(len(inputs_mnr_array)):
+      if inputs_mnr_array[i][0]>bin_lo:
+        hist_mnr.Fill(inputs_mnr_array[i][0], weight_mnr_array[i] * pNet_mnr_array[i])
+    # fill prediction hist with pNet and pNetShifts
+    for i in range(len(prediction_array)):
+      if prediction_array[i][0]>bin_lo:
+        hist_pre.Fill(prediction_array[i][0], pNet_src_array[i])
+        hist_pre_pNetUp.Fill(prediction_array[i][0], pNetUp_src_array[i])
+        hist_pre_pNetDn.Fill(prediction_array[i][0], pNetDn_src_array[i])
+  else:
+    # fill minor hist
+    for i in range(len(inputs_mnr_array)):
+      if inputs_mnr_array[i][0]>bin_lo:
+        hist_mnr.Fill(inputs_mnr_array[i][0], weight_mnr_array[i])
+    # fill prediction hist
+    for i in range(len(prediction_array)):
+      if prediction_array[i][0]>bin_lo:
+        hist_pre.Fill(prediction_array[i][0])
   
   hist_tgt.Write()
   hist_mnr.Write()
   hist_pre.Write()
+  if case=="case1" or case=="case3":
+    hist_pre_pNetUp.Write()
+    hist_pre_pNetDn.Write()
 
-  return inputs_tgt_array, inputs_mnr_array , weight_mnr_array, prediction_array
+  return inputs_tgt_array, inputs_mnr_array , weight_mnr_array, prediction_array, pNet_mnr_array, pNet_src_array, pNetUp_src_array, pNetDn_src_array
 
 if 'case14' in args.tag:
-  case_list = ["case14", "case1", "case4"]
+  #case_list = ["case14", "case1", "case4"]
+  case_list = ["case1", "case4"]
 elif 'case23' in args.tag:
-  case_list = ["case23", "case2", "case3"]
+  #case_list = ["case23", "case2", "case3"]
+  case_list = ["case2", "case3"]
   
 for case in case_list:
   if log:
-    histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}_log.root', "recreate")
+    histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}_log_pNet.root', "recreate")
   else:
-    histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}.root', "recreate")
+    histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}_pNet.root', "recreate")
 
   makeHists_fit("A", case)
   makeHists_fit("B", case)
   makeHists_fit("C", case)
-  inputs_tgt_array, inputs_mnr_array , weight_mnr_array, prediction_array = makeHists_fit("D", case)
+  inputs_tgt_array, inputs_mnr_array , weight_mnr_array, prediction_array, pNet_mnr_array, pNet_src_array, pNetUp_src_array, pNetDn_src_array = makeHists_fit("D", case)
   makeHists_fit("X", case)
   makeHists_fit("Y", case)
 
-  makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, prediction_array)
+  makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, prediction_array, pNet_mnr_array, pNet_src_array, pNetUp_src_array, pNetDn_src_array)
   histFile.Close()
