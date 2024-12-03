@@ -1,4 +1,8 @@
-# python3 makeHist_abcdnn.py -s rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctMajor_all_mc_p100.root -b rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctMinor_all_mc_p100.root -t rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctData_all_data_p100.root -f 1.0 -m logBpMST_mmd2_case14_random104
+# python3 makeHist_abcdnn.py -s rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctMajor_all_mc_p100.root -b rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctMinor_all_mc_p100.root -t rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctData_all_data_p100.root -f 1.0 -m logBpMlogST_mmd1_case14_random104
+
+################
+# NOTE: Temporarily commented out tgt and mnr related lines, becuase exceed memory limit with pNet applied
+################
 
 import numpy as np
 import os, tqdm
@@ -83,19 +87,19 @@ inputs_mnr = mTree.arrays( variables + ["xsecWeight"], library="pd" )
 Bdecay_src = sTree.arrays( ["Bdecay_obs", "pNetTtagWeight", "pNetTtagWeightUp", "pNetTtagWeightDn", "pNetWtagWeight", "pNetWtagWeightUp", "pNetWtagWeightDn"], library="pd" )
 Bdecay_tgt = tTree.arrays( ["Bdecay_obs"], library="pd" )
 Bdecay_mnr = mTree.arrays( ["Bdecay_obs", "pNetTtagWeight", "pNetWtagWeight"], library="pd" )
-#Bdecay_tgt = tTree.arrays( ["Bdecay_obs"], library="pd" )[inputs_tgt["Bprime_mass"]>400]
-#Bdecay_mnr = mTree.arrays( ["Bdecay_obs"], library="pd" )[inputs_mnr["Bprime_mass"]>400]
+##Bdecay_tgt = tTree.arrays( ["Bdecay_obs"], library="pd" )[inputs_tgt["Bprime_mass"]>400]
+##Bdecay_mnr = mTree.arrays( ["Bdecay_obs"], library="pd" )[inputs_mnr["Bprime_mass"]>400]
 
-#inputs_tgt = inputs_tgt[inputs_tgt["Bprime_mass"]>400] # take only BpM>400. pred cut made later.
-#inputs_mnr = inputs_mnr[inputs_mnr["Bprime_mass"]>400]
+##inputs_tgt = inputs_tgt[inputs_tgt["Bprime_mass"]>400] # take only BpM>400. pred cut made later.
+##inputs_mnr = inputs_mnr[inputs_mnr["Bprime_mass"]>400]
 
-inputs_src_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
-inputs_tgt_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
-inputs_mnr_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
+inputs_src_region = { region: None for region in [ "A", "B", "C", "D" ] }
+inputs_tgt_region = { region: None for region in [ "A", "B", "C", "D" ] }
+inputs_mnr_region = { region: None for region in [ "A", "B", "C", "D" ] }
 
-Bdecay_src_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
-Bdecay_tgt_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
-Bdecay_mnr_region = { region: None for region in [ "X", "Y", "A", "B", "C", "D" ] }
+Bdecay_src_region = { region: None for region in [ "A", "B", "C", "D" ] }
+Bdecay_tgt_region = { region: None for region in [ "A", "B", "C", "D" ] }
+Bdecay_mnr_region = { region: None for region in [ "A", "B", "C", "D" ] }
 
 X_MIN = inputs_src[ variables[-1] ].min()
 X_MAX = inputs_src[ variables[-1] ].max()
@@ -109,7 +113,7 @@ for variable in variables:
   inputs_tgt[variable] = inputs_tgt[variable].clip(upper = config.variables[variable]["LIMIT"][1])
   inputs_mnr[variable] = inputs_mnr[variable].clip(upper = config.variables[variable]["LIMIT"][1])
 
-for region in [ "X", "Y", "A", "B", "C", "D" ]:
+for region in [ "A", "B", "C", "D" ]:
   if config.regions["X"][region][0] == ">=":
     select_src = inputs_src[ config.regions["X"]["VARIABLE"] ] >= config.regions[ "X" ][ region ][1]
     select_tgt = inputs_tgt[ config.regions["X"]["VARIABLE"] ] >= config.regions[ "X" ][ region ][1]
@@ -160,7 +164,7 @@ for region in inputs_src_region:
   
 
 #get predictions
-predictions = { region: [] for region in [ "X", "Y", "A", "B", "C", "D" ] }
+predictions = { region: [] for region in [ "A", "B", "C", "D" ] }
 
 NAF = abcdnn.NAF( 
     inputdim = params["INPUTDIM"],
@@ -179,16 +183,16 @@ NAF.load_weights( os.path.join( folder, args.tag ) )
 for region in tqdm.tqdm(predictions):
   NAF_predict = np.asarray( NAF.predict( np.asarray( inputs_nrm_region[ region ] ) ) )
   predictions[ region ] = NAF_predict * inputsigmas[0:2] + inputmeans[0:2]
-  #Bdecay_src_region[region] = Bdecay_src_region[region][predictions[ region ][:,0]>400]
-  #predictions[ region ] = predictions[region][predictions[ region ][:,0]>400] # take only BpM>400
+  ##Bdecay_src_region[region] = Bdecay_src_region[region][predictions[ region ][:,0]>400]
+  ##predictions[ region ] = predictions[region][predictions[ region ][:,0]>400] # take only BpM>400
 del NAF
 
 
 def makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, predict_array, pNet_mnr_array, pNet_src_array, pNetUp_src_array, pNetDn_src_array):
-  #predict_array = predictions["D"]
-  #inputs_tgt_array = inputs_tgt_region["D"].to_numpy(dtype='d')
-  #inputs_mnr_array = inputs_mnr_region["D"].to_numpy(dtype='d')
-  #weight_mnr_array = inputs_mnr_region["D"]["xsecWeight"].to_numpy(dtype='d')
+  ##predict_array = predictions["D"]
+  ##inputs_tgt_array = inputs_tgt_region["D"].to_numpy(dtype='d')
+  ##inputs_mnr_array = inputs_mnr_region["D"].to_numpy(dtype='d')
+  ##weight_mnr_array = inputs_mnr_region["D"]["xsecWeight"].to_numpy(dtype='d')
 
   hist_predict_val        = ROOT.TH1D(f'Bprime_mass_pre_V', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
   hist_predict_val_pNetUp = ROOT.TH1D(f'Bprime_mass_pre_V_pNetUp', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
@@ -197,8 +201,8 @@ def makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, p
   hist_minor_val          = ROOT.TH1D(f'Bprime_mass_mnr_V', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
 
   for i in range(len(inputs_tgt_array)):
-    if inputs_tgt_array[i][1]<validationCut and inputs_tgt_array[i][1]>bin_lo:
-      hist_data_val.Fill(inputs_tgt_array[i][0])
+   if inputs_tgt_array[i][1]<validationCut and inputs_tgt_array[i][1]>bin_lo:
+     hist_data_val.Fill(inputs_tgt_array[i][0])
 
   if case=="case1" or case=="case3":
     print(f'{case}: applying pNet weights')
@@ -210,16 +214,16 @@ def makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, p
         hist_predict_val_pNetDn.Fill(predict_array[i][0], pNetDn_src_array[i]) # pNetSF_Down
     # fill minor hist
     for i in range(len(inputs_mnr_array)):
-      if inputs_mnr_array[i][1]<validationCut and inputs_mnr_array[i][1]>bin_lo:
-        hist_minor_val.Fill(inputs_mnr_array[i][0], weight_mnr_array[i] * pNet_mnr_array[i])
+     if inputs_mnr_array[i][1]<validationCut and inputs_mnr_array[i][1]>bin_lo:
+       hist_minor_val.Fill(inputs_mnr_array[i][0], weight_mnr_array[i] * pNet_mnr_array[i])
   else:
     # untagged cases do not need pNetSFs
     for i in range(len(predict_array)):
       if predict_array[i][1]<validationCut and predict_array[i][1]>bin_lo:
         hist_predict_val.Fill(predict_array[i][0])
     for i in range(len(inputs_mnr_array)):
-      if inputs_mnr_array[i][1]<validationCut and inputs_mnr_array[i][1]>bin_lo:
-        hist_minor_val.Fill(inputs_mnr_array[i][0], weight_mnr_array[i])
+     if inputs_mnr_array[i][1]<validationCut and inputs_mnr_array[i][1]>bin_lo:
+       hist_minor_val.Fill(inputs_mnr_array[i][0], weight_mnr_array[i])
   
   hist_data_val.Write()
   hist_minor_val.Write()
@@ -239,7 +243,7 @@ def makeHists_fit(region, case):
     pNetUp_src_array = Bdecay_src_region[region]["pNetTtagWeightUp"][ Bdecay_src_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d')
     pNetDn_src_array = Bdecay_src_region[region]["pNetTtagWeightDn"][ Bdecay_src_region[region]["Bdecay_obs"]==1 ].to_numpy(dtype='d')
     prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==1 ]
-    #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==1 ], 0, 2500)
+    ##prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==1 ], 0, 2500)
   elif case=="case2":
     inputs_tgt_array = inputs_tgt_region[region][ Bdecay_tgt_region[region]["Bdecay_obs"]==2 ].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region][ Bdecay_mnr_region[region]["Bdecay_obs"]==2 ].to_numpy(dtype='d')[:,:2]
@@ -249,7 +253,7 @@ def makeHists_fit(region, case):
     pNetUp_src_array = np.zeros(1)
     pNetDn_src_array = np.zeros(1)
     prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==2 ]
-    #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==2 ], 0, 2500)
+    ##prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==2 ], 0, 2500)
   elif case=="case3":
     inputs_tgt_array = inputs_tgt_region[region][ Bdecay_tgt_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region][ Bdecay_mnr_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')[:,:2]
@@ -259,7 +263,7 @@ def makeHists_fit(region, case):
     pNetUp_src_array = Bdecay_src_region[region]["pNetWtagWeightUp"][ Bdecay_src_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')
     pNetDn_src_array = Bdecay_src_region[region]["pNetWtagWeightDn"][ Bdecay_src_region[region]["Bdecay_obs"]==3 ].to_numpy(dtype='d')
     prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==3 ]
-    #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==3 ], 0, 2500)
+    ##prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==3 ], 0, 2500)
   elif case=="case4":
     inputs_tgt_array = inputs_tgt_region[region][ Bdecay_tgt_region[region]["Bdecay_obs"]==4 ].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region][ Bdecay_mnr_region[region]["Bdecay_obs"]==4 ].to_numpy(dtype='d')[:,:2]
@@ -269,7 +273,7 @@ def makeHists_fit(region, case):
     pNetUp_src_array = np.zeros(1)
     pNetDn_src_array = np.zeros(1)
     prediction_array = predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==4 ]
-    #prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==4 ], 0, 2500)
+    ##prediction_array = np.clip(predictions[region][ Bdecay_src_region[region]["Bdecay_obs"]==4 ], 0, 2500)
   else:
     inputs_tgt_array = inputs_tgt_region[region].to_numpy(dtype='d')[:,:2]
     inputs_mnr_array = inputs_mnr_region[region].to_numpy(dtype='d')[:,:2]
@@ -279,7 +283,7 @@ def makeHists_fit(region, case):
     pNetUp_src_array = np.zeros(1)
     pNetDn_src_array = np.zeros(1)
     prediction_array = predictions[region]
-    #prediction_array = np.clip(predictions[region], 0, 2500)
+    ##prediction_array = np.clip(predictions[region], 0, 2500)
 
   if not log:
     inputs_tgt_array = np.exp(inputs_tgt_array)
@@ -334,10 +338,10 @@ def makeHists_fit(region, case):
   return inputs_tgt_array, inputs_mnr_array , weight_mnr_array, prediction_array, pNet_mnr_array, pNet_src_array, pNetUp_src_array, pNetDn_src_array
 
 if 'case14' in args.tag:
-  #case_list = ["case14", "case1", "case4"]
+  ##case_list = ["case14", "case1", "case4"]
   case_list = ["case1", "case4"]
 elif 'case23' in args.tag:
-  #case_list = ["case23", "case2", "case3"]
+  ##case_list = ["case23", "case2", "case3"]
   case_list = ["case2", "case3"]
   
 for case in case_list:
@@ -350,8 +354,8 @@ for case in case_list:
   makeHists_fit("B", case)
   makeHists_fit("C", case)
   inputs_tgt_array, inputs_mnr_array , weight_mnr_array, prediction_array, pNet_mnr_array, pNet_src_array, pNetUp_src_array, pNetDn_src_array = makeHists_fit("D", case)
-  makeHists_fit("X", case)
-  makeHists_fit("Y", case)
+  #makeHists_fit("X", case)
+  #makeHists_fit("Y", case)
 
   makeHists_plot(case, inputs_tgt_array, inputs_mnr_array, weight_mnr_array, prediction_array, pNet_mnr_array, pNet_src_array, pNetUp_src_array, pNetDn_src_array)
   histFile.Close()
