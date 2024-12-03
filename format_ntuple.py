@@ -45,13 +45,18 @@ return TMath::Log(Bprime_mass);
 
 class ToyTree:
   def __init__( self, name, trans_var ):
-    # trans_var is transforming variables
     self.name = name
     self.rFile = ROOT.TFile.Open( "{}.root".format( name ), "RECREATE" )
     self.rTree = ROOT.TTree( "Events", name )
     self.variables = { # variables that are used regardless of the transformation variables
       "xsecWeight": { "ARRAY": array( "f", [0] ), "STRING": "xsecWeight/F" },
-      "Bdecay_obs": { "ARRAY": array( "f", [0] ), "STRING": "Bdecay_obs/F" }
+      "Bdecay_obs": { "ARRAY": array( "i", [0] ), "STRING": "Bdecay_obs/I" },
+      "pNetTtagWeight": {"ARRAY": array( "f", [0] ), "STRING": "pNetTtagWeight/F" },
+      "pNetTtagWeightUp": {"ARRAY": array( "f", [0] ), "STRING": "pNetTtagWeightUp/F" },
+      "pNetTtagWeightDn": {"ARRAY": array( "f", [0] ), "STRING": "pNetTtagWeightDn/F" },
+      "pNetWtagWeight": {"ARRAY": array( "f", [0] ), "STRING": "pNetWtagWeight/F" },
+      "pNetWtagWeightUp": {"ARRAY": array( "f", [0] ), "STRING": "pNetWtagWeightUp/F" },
+      "pNetWtagWeightDn": {"ARRAY": array( "f", [0] ), "STRING": "pNetWtagWeightDn/F" },
     }
     for variable in config.variables.keys():
       if not config.variables[ variable ][ "TRANSFORM" ]:
@@ -113,11 +118,12 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
       print( ">> Processing {}".format( samplename ) )
       fChain = getfChain( output, samplename, year )
       #rDF = ROOT.RDataFrame(fChain)
+      # Uncomment the following only if we want to pre-transform BpM. e.g. log(BpM)
       rDF = ROOT.RDataFrame(fChain)\
                 .Redefine("Bprime_mass", "transform(Bprime_mass)")\
                 .Redefine("gcJet_ST", "transform(gcJet_ST)")
       sample_total = rDF.Count().GetValue()
-      filter_string = "(W_MT <= 200) && (isMu || isEl)"
+      filter_string = "(W_MT < 200) && (isMu || isEl)" # Julie has W_MET<200. Trained with <=, but now applying with <. Removed = when addding pNetWeights
       if 'SingleMuon' in samplename:
         filter_string += "&& (isMu==1)"
       elif ('SingleElec' in samplename) or ('EGamma' in samplename):
@@ -128,20 +134,33 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
       rDF_filter = rDF.Filter( filter_string )
       
       if args.doData:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")
-      elif "_WJetsHT"  in samplename:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
-      elif "TTTo" in samplename or 'TTMT' in sample.prefix:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
+        rDF_weight = rDF_filter.Define( "xsecWeight", "1.0")\
+                               .Define("pNetTtagWeight"  , "1.0")\
+                               .Define("pNetTtagWeightUp", "1.0")\
+                               .Define("pNetTtagWeightDn", "1.0")\
+                               .Define("pNetWtagWeight"  , "1.0")\
+                               .Define("pNetWtagWeightUp", "1.0")\
+                               .Define("pNetWtagWeightDn", "1.0")
       else:
-        rDF_weight = rDF_filter.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
+        rDF_pNetWeight = rDF_filter.Define("pNetTtagWeight"  , "gcFatJet_pnetweights[6]")\
+                                   .Define("pNetTtagWeightUp", "gcFatJet_pnetweights[7]")\
+                                   .Define("pNetTtagWeightDn", "gcFatJet_pnetweights[8]")\
+                                   .Define("pNetWtagWeight"  , "gcFatJet_pnetweights[9]")\
+                                   .Define("pNetWtagWeightUp", "gcFatJet_pnetweights[10]")\
+                                   .Define("pNetWtagWeightDn", "gcFatJet_pnetweights[11]")
+        if "_WJetsHT"  in samplename:
+          rDF_weight = rDF_pNetWeight.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
+        elif "TTTo" in samplename or 'TTMT' in sample.prefix:
+          rDF_weight = rDF_pNetWeight.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
+        else:
+          rDF_weight = rDF_pNetWeight.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
 
+        
       if "OS1FatJetProbJ" in config.variables.keys():
         rDF_weight = rDF_weight.Define("OS1FatJetProbJ", "gcOSFatJet_pNetJ[0]")
 
       sample_pass = rDF_filter.Count().GetValue() # number of events passed the selection
-      dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() ) + [ "xsecWeight", "Bdecay_obs" ] )
-      #dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() ) + [ "xsecWeight" ])
+      dict_filter = rDF_weight.AsNumpy( columns = list( ntuple.variables.keys() ) + [ "xsecWeight", "Bdecay_obs", "pNetTtagWeight", "pNetTtagWeightUp", "pNetTtagWeightDn", "pNetWtagWeight", "pNetWtagWeightUp", "pNetWtagWeightDn"] )
       del rDF, rDF_filter, rDF_weight
       n_inc = int( sample_pass * float( args.pEvents ) / 100. ) # get a specified portion of the passed events
  
