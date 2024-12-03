@@ -15,9 +15,11 @@ TH1.SetDefaultSumw2(True)
 
 binlo = 400
 binhi = 2500
-bins = 42 # will be changed to 420 later in the code for the creation of histograms
+bins = 420 # will be changed to 420 later in the code for the creation of histograms
 
 doV2 = False
+withFit = False
+separateUncertCases = True
 
 # store parameters in dictionaries
 # region: A, B, C, D, X, Y
@@ -331,6 +333,8 @@ fitHist("case3", doPlot=False)
 fitHist("case4", doPlot=False)
 
 uncertFile = TFile.Open(f'hists_trainUncert_{binlo}to{binhi}_{bins}.root', "RECREATE")
+getPredUncert("case14") #TEMP
+getPredUncert("case23") #TEMP 
 getPredUncert("case1")
 getPredUncert("case2")
 getPredUncert("case3")
@@ -449,69 +453,105 @@ def targetAgreementPlot(region, case, fit, hist_gen, hist_target, hist_abcdnn):
     c2.Close()
 
 def fillHistogram(hist):
-    hist_new = TH1F("hist_new","hist_new",bins,binlo,binhi)
+    hist_new = TH1D("hist_new","",bins,binlo,binhi)
     for i in range(bins+1):
-        hist_new.SetBinContent(i,hist.GetBinContent(i))
+        if hist.GetBinContent(i)<0:
+            hist_new.SetBinContent(i,0)
+        else:
+            hist_new.SetBinContent(i,hist.GetBinContent(i))
+        hist_new.SetBinError(i,np.sqrt(hist_new.GetBinContent(i)))
     return hist_new
     
 def createHist(case, region):
-    fit = TF1(f'fitFunc', fitFunc,binlo,binhi, nparams)
-    for i in range(nparams):
-        fit.SetParameter(i, params[case]["pre"][region][f'param{i}'][0])
-    
-    #fit.SetRange(0,2500)
-    #fit.SetNpx(50)
-    fit.SetNpx(bins)
-    hist_gen = fit.CreateHistogram()
-    #for j in range(10):
-    #    if hist_gen.GetXaxis().GetBinCenter(j) < 400:
-    #        hist_gen.SetBinContent(j, 0)
-    
     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
-    hist_target = histFile.Get(f'Bprime_mass_dat_{region}').Clone(f'Bprime_mass_tgt_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}').Clone()
-    hist_abcdnn = histFile.Get(f'Bprime_mass_pre_{region}').Clone()
-    hist_abcdnn_shape = hist_abcdnn.Clone()
+    if withFit:
+        fit = TF1(f'fitFunc', fitFunc,binlo,binhi, nparams)
+        for i in range(nparams):
+            fit.SetParameter(i, params[case]["pre"][region][f'param{i}'][0])
+        
+        #fit.SetRange(0,2500)
+        #fit.SetNpx(50)
+        fit.SetNpx(bins)
+        hist_gen = fit.CreateHistogram()
+        #for j in range(10):
+        #    if hist_gen.GetXaxis().GetBinCenter(j) < 400:
+        #        hist_gen.SetBinContent(j, 0)
     
-    shapePlot(region, case, hist_gen, hist_abcdnn_shape, "step1")
-
-    hist_gen.SetBinContent(bins, hist_gen.GetBinContent(bins)+params[case]["pre"][region]["lastbin"])
-    hist_gen.SetBinContent(bins+1, 0) # overflow added to the previous bin
-    hist_abcdnn_shape.SetBinContent(bins, hist_abcdnn_shape.GetBinContent(bins)+hist_abcdnn_shape.GetBinContent(bins+1))
-    hist_abcdnn_shape.SetBinContent(bins+1, 0)
-    hist_abcdnn.SetBinContent(bins, hist_abcdnn.GetBinContent(bins)+hist_abcdnn.GetBinContent(bins+1))
-    hist_abcdnn.SetBinContent(bins+1, 0)
+        hist_target = histFile.Get(f'Bprime_mass_dat_{region}').Clone(f'Bprime_mass_tgt_{region}') - histFile.Get(f'Bprime_mass_mnr_{region}').Clone()
+        hist_abcdnn = histFile.Get(f'Bprime_mass_pre_{region}').Clone()
+        hist_abcdnn_shape = hist_abcdnn.Clone()
     
-    shapePlot(region, case, hist_gen, hist_abcdnn_shape, "step2")
+        shapePlot(region, case, hist_gen, hist_abcdnn_shape, "step1")
 
-    normalization[case][region] = alphaFactors[case][region]["prediction"]/(hist_gen.Integral()) 
-    hist_gen.Scale(normalization[case][region])
-    hist_abcdnn_shape.Scale(normalization[case][region]) 
+        hist_gen.SetBinContent(bins, hist_gen.GetBinContent(bins)+params[case]["pre"][region]["lastbin"])
+        hist_gen.SetBinContent(bins+1, 0) # overflow added to the previous bin
+        hist_abcdnn_shape.SetBinContent(bins, hist_abcdnn_shape.GetBinContent(bins)+hist_abcdnn_shape.GetBinContent(bins+1))
+        hist_abcdnn_shape.SetBinContent(bins+1, 0)
+        hist_abcdnn.SetBinContent(bins, hist_abcdnn.GetBinContent(bins)+hist_abcdnn.GetBinContent(bins+1))
+        hist_abcdnn.SetBinContent(bins+1, 0)
+    
+        shapePlot(region, case, hist_gen, hist_abcdnn_shape, "step2")
 
-    # scale and plot with target and ABCDnn histograms
-    shapePlot(region, case, hist_gen, hist_abcdnn_shape, "step3")
+        normalization[case][region] = alphaFactors[case][region]["prediction"]/(hist_gen.Integral()) 
+        hist_gen.Scale(normalization[case][region])
+        hist_abcdnn_shape.Scale(normalization[case][region]) 
 
-    hist_target.SetBinContent(bins, hist_target.GetBinContent(bins)+hist_target.GetBinContent(bins+1))
-    hist_target.SetBinContent(bins+1, 0)
-    hist_target.Scale(counts[case][region]["data"]/hist_target.Integral())
+        # scale and plot with target and ABCDnn histograms
+        shapePlot(region, case, hist_gen, hist_abcdnn_shape, "step3")
+        
+        hist_target.SetBinContent(bins, hist_target.GetBinContent(bins)+hist_target.GetBinContent(bins+1))
+        hist_target.SetBinContent(bins+1, 0)
+        hist_target.Scale(counts[case][region]["data"]/hist_target.Integral())
 
-    if (case!="case3") and (case!="case4") and (region == "D"):
-        for i in range(bins+1):
-            if hist_target.GetBinCenter(i) > 1000:
-                hist_target.SetBinContent(i,0)
-       
-    targetAgreementPlot(region, case, fit, hist_gen, hist_target, hist_abcdnn_shape)
+        if (case!="case3") and (case!="case4") and (region == "D"):
+            for i in range(bins+1):
+                if hist_target.GetBinCenter(i) > 1000:
+                    hist_target.SetBinContent(i,0)
+                
+        targetAgreementPlot(region, case, fit, hist_gen, hist_target, hist_abcdnn_shape)
 
-    hist_out = fillHistogram(hist_gen)
+        hist_out = fillHistogram(hist_gen)
+    else:
+        hist_original = histFile.Get(f'Bprime_mass_pre_{region}').Clone() #with pNetSF    
+
+        normalization[case][region] = alphaFactors[case][region]["prediction"]/hist_original.Integral()
+        hist_original.Scale(normalization[case][region])
+        
+        modifyOverflow(hist_original,bins)
+        
+        hist_out = fillHistogram(hist_original)
+
+        if case=="case1" or case=="case2":
+            hist_pNetUp = histFile.Get(f'Bprime_mass_pre_{region}_pNetUp').Clone()
+            hist_pNetDn = histFile.Get(f'Bprime_mass_pre_{region}_pNetDn').Clone()
+            hist_pNetUp.Scale(normalization[case][region])
+            hist_pNetDn.Scale(normalization[case][region])
+            modifyOverflow(hist_pNetUp,bins)
+            modifyOverflow(hist_pNetDn,bins)
+            hist_outUp = fillHistogram(hist_pNetUp)
+            hist_outDn = fillHistogram(hist_pNetDn)
     
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
                 outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major')
+                if case=="case1":
+                    hist_outUp.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetTtagUp')
+                    hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetTtagDn')
+                elif case=="case2":
+                    hist_outUp.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetWtagUp')
+                    hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetWtagDn')
                 outFile.Close()
         else:
             outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major')
+            if case=="case1":
+                hist_outUp.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__pNetTtagUp')
+                hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__pNetTtagDn')
+	    elif case=="case2":
+                hist_outUp.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__pNetWtagUp')
+                hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__pNetWtagDn')
             outFile.Close()
     elif binlo==0:
         outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_Julie/templates_BpMass_138fbfb.root', "UPDATE")
@@ -532,26 +572,39 @@ for case in ["case1", "case2", "case3", "case4"]:
 
 # shift
 def shiftTrainingUncert(case, region, shift):
-    fit = TF1(f'fitFunc', fitFunc, binlo,binhi, nparams)
-    for i in range(nparams):
-        fit.SetParameter(i, params[case]["pre"][region][f'param{i}'][0])
-    fit.SetNpx(bins)
+    if withFit:
+        fit = TF1(f'fitFunc', fitFunc, binlo,binhi, nparams)
+        for i in range(nparams):
+            fit.SetParameter(i, params[case]["pre"][region][f'param{i}'][0])
+        fit.SetNpx(bins)
+        hist_bin = fit.CreateHistogram() # fit method
+        hist_bin.SetBinContent(bins+1, params[case]["pre"][region]["lastbin"]) #fit method
+    else:
+        histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ") #TEMP. test using ABCDnn prediction directly
+        hist_bin = histFile.Get(f'Bprime_mass_pre_{region}').Clone() #TEMP. test using ABCDnn prediction directly
+        #hist_bin.Scale(1/hist_bin.Integral()) #TEMP. test using ABCDnn prediction directly
     
-    hist_bin = fit.CreateHistogram()
-    hist_bin.SetBinContent(bins+1, params[case]["pre"][region]["lastbin"])
     modifyOverflow(hist_bin,bins) # take overflow bin and add to last bin. set over flow bin to 0
+    #hist_bin.Scale(normalization[case][region])
 
     uncertFile = TFile.Open(f'hists_trainUncert_{binlo}to{binhi}_{bins}.root', 'READ')
-    uncertHist = uncertFile.Get(f'train_uncert_{case}')
+    if separateUncertCases:
+        uncertHist = uncertFile.Get(f'train_uncert_{case}') # apply separete uncerts
+    else:
+        if case=="case1" or case=="case4": # apply combined uncerts
+            uncertHist = uncertFile.Get("train_uncert_case14")
+        else:
+            uncertHist = uncertFile.Get("train_uncert_case23")
 
     if shift=="Up":
-        for i in range(bins):
+        for i in range(bins+1):
             hist_bin.SetBinContent(i, hist_bin.GetBinContent(i) * (1 + uncertHist.GetBinContent(i)))
     else:
-        for i in range(bins):
+        for i in range(bins+1):
     	    hist_bin.SetBinContent(i, hist_bin.GetBinContent(i) * (1 - uncertHist.GetBinContent(i)))
 
     hist_bin.Scale(normalization[case][region])
+    
     hist_out = fillHistogram(hist_bin)
 
     if binlo==400:
@@ -629,9 +682,11 @@ def shiftParam(case, region, i, shift):
     fit_original = fit.Clone()
     
     if shift=="Up":
-        fit.SetParameter(i, params[case]["pre"][region][f'param{i}'][0]*(1+pred_uncert[case][f'param{i}']))
+        #fit.SetParameter(i, params[case]["pre"][region][f'param{i}'][0]*(1+pred_uncert[case][f'param{i}'])) # param uncert method
+        fit.SetParameter(i, params[case]["pre"][region][f'param{i}'][0]+params[case]["pre"][region][f'param{i}'][1]) #bin uncert method
     else:
-        fit.SetParameter(i, params[case]["pre"][region][f'param{i}'][0]*(1-pred_uncert[case][f'param{i}']))
+        #fit.SetParameter(i, params[case]["pre"][region][f'param{i}'][0]*(1-pred_uncert[case][f'param{i}'])) # param uncert method
+        fit.SetParameter(i, params[case]["pre"][region][f'param{i}'][0]-params[case]["pre"][region][f'param{i}'][1]) #bin uncert method 
         
     hist_param = fit.CreateHistogram()
 
@@ -703,11 +758,11 @@ def shiftFactor(case, region, shift):
 for case in ["case1", "case2", "case3", "case4"]:
     for shift in ["Up", "Down"]:
         shiftTrainingUncert(case, "D", shift)
-        shiftFactor(case, "D", shift)
+        #shiftFactor(case, "D", shift)
         #shiftLastBin(case, "D", shift) # not needed for bin train uncert method
         
         shiftTrainingUncert(case, "V", shift)
-        shiftFactor(case, "V", shift)
+        #shiftFactor(case, "V", shift)
         #shiftLastBin(case, "V", shift)
         # if doV2:
         #     shiftLastBin(case, "V", shift)
@@ -717,10 +772,11 @@ for case in ["case1", "case2", "case3", "case4"]:
         # else:
         #     shiftLastBin(case, "D", shift)
         #     shiftFactor(case, "D", shift)
-            
-        for i in range(nparams):
-            shiftParam(case, "V", i, shift)
-            shiftParam(case, "D", i, shift)
+
+        if withFit:
+            for i in range(nparams):
+                shiftParam(case, "V", i, shift)
+                shiftParam(case, "D", i, shift)
             # if doV2:
             #     shiftParam(case, "V", i, shift)
             #     shiftParam(case, "D", i, shift)
