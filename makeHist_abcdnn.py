@@ -182,7 +182,7 @@ def makeHists_plot(fileName, case, inputs_array, weight_array, pNet_array, pNetU
       hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
   hist.Write()
     
-  if ("Major" in fileName) and (case=="case1" or case=="case3"):
+  if ("Major" in fileName) and (case=="case1" or case=="case2"):
     for i in range(len(inputs_array)):
       if inputs_array[i][1]<validationCut and inputs_array[i][1]>bin_lo:
         hist_pNetUp.Fill(inputs_array[i][0], pNetUp_array[i]) # pNetSF_Up
@@ -209,7 +209,7 @@ def makeHists_fit(fileName, inputs_region, Bdecay_region, region, case):
   #print('weight_array', weight_array)
   #exit()
 
-  if case=="case1" or case=="case3":
+  if case=="case1" or case=="case2":
     if case=="case1":
       pNetTag = "pNetTtagWeight"
     else:
@@ -238,7 +238,7 @@ def makeHists_fit(fileName, inputs_region, Bdecay_region, region, case):
     hist = ROOT.TH1D(f'Bprime_mass_mnr_{region}', "Bprime_mass", Nbins, bin_lo, bin_hi)
   elif "Major" in fileName:
     hist = ROOT.TH1D(f'Bprime_mass_pre_{region}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-    if case=="case1" or case=="case3":
+    if case=="case1" or case=="case2":
       hist_pNetUp = ROOT.TH1D(f'Bprime_mass_pre_{region}_pNetUp', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
       hist_pNetDn = ROOT.TH1D(f'Bprime_mass_pre_{region}_pNetDn', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
   
@@ -250,7 +250,7 @@ def makeHists_fit(fileName, inputs_region, Bdecay_region, region, case):
   #exit()
   hist.Write()
 
-  if ("Major" in fileName) and (case=="case1" or case=="case3"):
+  if ("Major" in fileName) and (case=="case1" or case=="case2"):
     for i in range(len(inputs_array)):
       if inputs_array[i][0]>bin_lo:
         hist_pNetUp.Fill(inputs_array[i][0], pNetUp_array[i])
