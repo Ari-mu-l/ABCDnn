@@ -44,7 +44,7 @@ if log:
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]
 folder_contents = os.listdir( folder )
 
-isTest = False
+isTest = True
 if isTest:
   testDir = args.tag
   if not os.path.exists(testDir):
@@ -73,7 +73,7 @@ for i, variable in enumerate( variables ):
   print( "  + {}: [{},{}], Categorical = {}".format( variable, lowerlimit[i], upperlimit[i], categorical[i] ) )
 
 def processInput(fileName):
-  # fileName: args.source
+  # fileName: args.target, args.minor, args.source
   print( ">> Load the data" )
   fFile = uproot.open( fileName )
   fTree = fFile[ "Events" ]
@@ -204,11 +204,7 @@ def makeHists_fit(fileName, inputs_region, Bdecay_region, region, case):
   else: # data
     inputs_array = inputs_region[region][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')[:,:2]
     weight_array = np.ones(len(inputs_array))
-    
-  #print('inputs_array', inputs_array)
-  #print('weight_array', weight_array)
-  #exit()
-
+  
   if case=="case1" or case=="case2":
     if case=="case1":
       pNetTag = "pNetTtagWeight"
@@ -217,16 +213,11 @@ def makeHists_fit(fileName, inputs_region, Bdecay_region, region, case):
     pNet_array = Bdecay_region[region][pNetTag][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
     pNetUp_array = Bdecay_region[region][f'{pNetTag}Up'][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
     pNetDn_array = Bdecay_region[region][f'{pNetTag}Dn'][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
-  else: # case2,3,14,23
+  else: # case3,4,14,23
     # dummy pNet_array: pNet tag should be implemented for case14 and 23, but we do not need the combined cases for now
     pNet_array   = np.ones(len(inputs_array))
     pNetUp_array = np.ones(len(inputs_array))
     pNetDn_array = np.ones(len(inputs_array))
-  #print(case)
-  #print('pNet_array', pNet_array[pNet_array!=1])
-  #print('pNetUp_array', pNetUp_array[pNetUp_array!=1])
-  #print('pNetDn_array', pNetDn_array[pNetDn_array!=1])
-  #exit()
   
   if not log:
     inputs_array = np.exp(inputs_array)
@@ -246,8 +237,6 @@ def makeHists_fit(fileName, inputs_region, Bdecay_region, region, case):
   for i in range(len(inputs_array)):
     if inputs_array[i][0]>bin_lo:
       hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
-  #hist.Print()
-  #exit()
   hist.Write()
 
   if ("Major" in fileName) and (case=="case1" or case=="case2"):

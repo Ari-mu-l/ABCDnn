@@ -212,13 +212,13 @@ def fit_and_plot(hist, plotname, case, doPlot):
     return fit
 
 def fitHist(case, doPlot):
-    print(f'Fitting hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root...')
+    print(f'Fitting hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}_pNet.root...')
 
     plotDir = f'fit_plots/{case}_{binlo}to{binhi}_{bins}'
     if not os.path.exists(plotDir):
         os.makedirs(plotDir)
 
-    histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+    histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}_pNet.root', "READ")
     #histFile_lastbin = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_420.root', "READ") # 42fit420bins
 
     for region in ["A", "B", "C", "D", "X", "Y", "V"]:
@@ -309,7 +309,12 @@ def modifyOverflow(hist, bins):
     
 #### TRAINING UNCERTAINTY BY BINS ####
 def getPredUncert(case):
-    histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+    # if case=="case1" or case=="case4": # TMEP: test other case14 models
+    #    histFile = TFile.Open(f'logBpMlogST_mmd1_case14_random113/hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+    # else:
+    #    histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+    histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}_pNet.root', "READ")
+    
     hist_dev = TH1D(f'train_uncert_{case}', f'Training Uncertainty ({case})', bins, binlo, binhi)
     for region in ["A", "B", "C"]:
         hist_pre = histFile.Get(f'Bprime_mass_pre_{region}')
@@ -327,14 +332,15 @@ def getPredUncert(case):
 
 #fitHist("case14")
 #fitHist("case23")
-fitHist("case1", doPlot=False) #plotting uncertainty band in ratio panel takes very long. skip plotting unless we need it
-fitHist("case2", doPlot=False)
-fitHist("case3", doPlot=False)
-fitHist("case4", doPlot=False)
+if withFit:
+    fitHist("case1", doPlot=False) #plotting uncertainty band in ratio panel takes very long. skip plotting unless we need it
+    fitHist("case2", doPlot=False)
+    fitHist("case3", doPlot=False)
+    fitHist("case4", doPlot=False)
 
-uncertFile = TFile.Open(f'hists_trainUncert_{binlo}to{binhi}_{bins}.root', "RECREATE")
-getPredUncert("case14") #TEMP
-getPredUncert("case23") #TEMP 
+uncertFile = TFile.Open(f'hists_trainUncert_{binlo}to{binhi}_{bins}_pNet.root', "RECREATE")
+#getPredUncert("case14") #TEMP
+#getPredUncert("case23") #TEMP 
 getPredUncert("case1")
 getPredUncert("case2")
 getPredUncert("case3")
@@ -357,7 +363,7 @@ print("Saved parameter and last bin info to pred_uncert.json")
 #############################
 # create histogram from fit #
 #############################
-bins = 42 # TEMP. test with more bins
+bins = 420 # TEMP. test with more bins
 
 alphaFactors = {}
 with open("alphaRatio_factors.json","r") as alphaFile:
@@ -453,7 +459,7 @@ def targetAgreementPlot(region, case, fit, hist_gen, hist_target, hist_abcdnn):
     c2.Close()
 
 def fillHistogram(hist):
-    hist_new = TH1D("hist_new","",bins,binlo,binhi)
+    hist_new = TH1D(f'{hist.GetName()}_new',"",bins,binlo,binhi)
     for i in range(bins+1):
         if hist.GetBinContent(i)<0:
             hist_new.SetBinContent(i,0)
@@ -463,7 +469,12 @@ def fillHistogram(hist):
     return hist_new
     
 def createHist(case, region):
-    histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+    histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}_pNet.root', "READ")
+    # if case=="case1" or case=="case4":
+    #     histFile = TFile.Open(f'logBpMlogST_mmd1_case14_random113/hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ") #TEMP: test other case14 models
+    # else:
+    #     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+    
     if withFit:
         fit = TF1(f'fitFunc', fitFunc,binlo,binhi, nparams)
         for i in range(nparams):
@@ -512,11 +523,10 @@ def createHist(case, region):
 
         hist_out = fillHistogram(hist_gen)
     else:
-        hist_original = histFile.Get(f'Bprime_mass_pre_{region}').Clone() #with pNetSF    
+        hist_original = histFile.Get(f'Bprime_mass_pre_{region}').Clone() #with pNetSF
 
         normalization[case][region] = alphaFactors[case][region]["prediction"]/hist_original.Integral()
         hist_original.Scale(normalization[case][region])
-        
         modifyOverflow(hist_original,bins)
         
         hist_out = fillHistogram(hist_original)
@@ -549,7 +559,7 @@ def createHist(case, region):
             if case=="case1":
                 hist_outUp.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__pNetTtagUp')
                 hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__pNetTtagDn')
-	    elif case=="case2":
+            elif case=="case2":
                 hist_outUp.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__pNetWtagUp')
                 hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__pNetWtagDn')
             outFile.Close()
@@ -580,20 +590,23 @@ def shiftTrainingUncert(case, region, shift):
         hist_bin = fit.CreateHistogram() # fit method
         hist_bin.SetBinContent(bins+1, params[case]["pre"][region]["lastbin"]) #fit method
     else:
-        histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ") #TEMP. test using ABCDnn prediction directly
-        hist_bin = histFile.Get(f'Bprime_mass_pre_{region}').Clone() #TEMP. test using ABCDnn prediction directly
-        #hist_bin.Scale(1/hist_bin.Integral()) #TEMP. test using ABCDnn prediction directly
+        histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}_pNet.root', "READ")
+        # if case=='case1' or case=="case4":
+        #     histFile = TFile.Open(f'logBpMlogST_mmd1_case14_random113/hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ") #TEMP: test other models
+        # else:
+        #     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
+        
+        hist_bin = histFile.Get(f'Bprime_mass_pre_{region}').Clone()
     
     modifyOverflow(hist_bin,bins) # take overflow bin and add to last bin. set over flow bin to 0
-    #hist_bin.Scale(normalization[case][region])
 
-    uncertFile = TFile.Open(f'hists_trainUncert_{binlo}to{binhi}_{bins}.root', 'READ')
+    uncertFile = TFile.Open(f'hists_trainUncert_{binlo}to{binhi}_{bins}_pNet.root', 'READ')
     if separateUncertCases:
         uncertHist = uncertFile.Get(f'train_uncert_{case}') # apply separete uncerts
     else:
         if case=="case1" or case=="case4": # apply combined uncerts
             uncertHist = uncertFile.Get("train_uncert_case14")
-        else:
+        else: # assumes not applying to combined cases (case14 and 23)
             uncertHist = uncertFile.Get("train_uncert_case23")
 
     if shift=="Up":
