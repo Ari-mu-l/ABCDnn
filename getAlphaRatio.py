@@ -34,13 +34,12 @@ if getAlphaRatio=="True":
               }
 
     for case in counts:
-        #for region in ["A", "B", "C", "D", "X", "Y", "V", "BV"]:
         for region in ["B", "D", "V", "BV", "D2"]:
             counts[case][region] = {}
 
     def getCounts(case, region):
         print(f'Processing {case}')
-        tempFileName  = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Oct2024_42bins/templates_BpMass_138fbfb.root'
+        tempFileName  = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Oct2024_420bins/templates_BpMass_138fbfb.root'
         #tempFileName  = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Oct2024_Julie/templates_BpMass_138fbfb.root'
         tFile = ROOT.TFile.Open(tempFileName, 'READ')
         hist_data  = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__data_obs')
@@ -62,7 +61,7 @@ if getAlphaRatio=="True":
         tFile.Close()
 
     #for region in ["A", "B", "C", "D", "X", "Y", "V", "BV"]:
-    for region in ["B", "D", "V", "BV"]:
+    for region in ["B", "D", "V", "BV", "D2"]:
         print(f'Getting counts for region {region}')
         getCounts("case1", region)
         getCounts("case4", region)
@@ -90,21 +89,26 @@ if getAlphaRatio=="True":
 
         
     # alpha-ratio prediction
-    yield_pred = {"case14":{"D":{}, "V":{}},
-                  "case23":{"D":{}, "V":{}},
-                  "case1":{"D":{}, "V":{}},
-                  "case2":{"D":{}, "V":{}},
-                  "case3":{"D":{}, "V":{}},
-                  "case4":{"D":{}, "V":{}},
+    yield_pred = {"case14":{"D":{}, "V":{}, "D2":{}},
+                  "case23":{"D":{}, "V":{}, "D2":{}},
+                  "case1":{"D":{}, "V":{}, "D2":{}},
+                  "case2":{"D":{}, "V":{}, "D2":{}},
+                  "case3":{"D":{}, "V":{}, "D2":{}},
+                  "case4":{"D":{}, "V":{}, "D2":{}},
                   }
 
     def getPrediction(case, region):
         if region=="V":
             B = "BV"
             D = "V"
-        else:
+        elif region=="D":
             B = "B"
             D = "D"
+        elif region=="D2":
+            B = "B2"
+            D = "D2"
+        else:
+            print(f'Region {region} not set up for alpha ratio calculation')
         print(f'Getting prediction for {case}...')
         target_B    = counts[case][B]["data"] - counts[case][B]["minor"]
         predict_D   = target_B * counts[case][D]["major"] / counts[case][B]["major"]
