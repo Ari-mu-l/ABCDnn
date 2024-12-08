@@ -548,10 +548,10 @@ def createHist(case, region):
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major')
                 if case=="case1":
                     hist_outUp.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetTtagUp')
-                    hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetTtagDn')
+                    hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetTtagDown')
                 elif case=="case2":
                     hist_outUp.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetWtagUp')
-                    hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetWtagDn')
+                    hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetWtagDown')
                 outFile.Close()
         else:
             outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
@@ -573,6 +573,7 @@ def createHist(case, region):
     
 for case in ["case1", "case2", "case3", "case4"]:
     createHist(case, "D")
+    createHist(case, "D2")
     createHist(case, "V")
     # if doV2:
     #     createHist(case, "D")
@@ -771,6 +772,7 @@ def shiftFactor(case, region, shift):
 for case in ["case1", "case2", "case3", "case4"]:
     for shift in ["Up", "Down"]:
         shiftTrainingUncert(case, "D", shift)
+        shiftTrainingUncert(case, "D2", shift)
         #shiftFactor(case, "D", shift)
         #shiftLastBin(case, "D", shift) # not needed for bin train uncert method
         

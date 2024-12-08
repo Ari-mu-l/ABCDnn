@@ -35,7 +35,7 @@ if getAlphaRatio=="True":
 
     for case in counts:
         #for region in ["A", "B", "C", "D", "X", "Y", "V", "BV"]:
-        for region in ["B", "D", "V", "BV"]:
+        for region in ["B", "D", "V", "BV", "D2"]:
             counts[case][region] = {}
 
     def getCounts(case, region):
