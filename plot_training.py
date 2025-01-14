@@ -422,7 +422,8 @@ if plotBest:
     if variable == "OS1FatJetProbJ":
       bins = np.array([0,0.9,1])
     elif variable == "gcJet_ST":
-      bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],700,config.variables[ variable ][ "LIMIT_plot" ][1]])
+      #bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],700,config.variables[ variable ][ "LIMIT_plot" ][1]]) # ANv1-6
+      bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],600,850,config.variables[ variable ][ "LIMIT_plot" ][1]])
     else:
       bins = np.linspace( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1], config.params[ "PLOT" ][ "NBINS" ] )
     #if(variable == "Bprime_mass"):

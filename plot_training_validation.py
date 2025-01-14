@@ -32,6 +32,7 @@ parser.add_argument( "-m", "--tag", required = True )
 
 args = parser.parse_args()
 
+highST = True
 plotBest = True
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]
@@ -283,11 +284,18 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   mc_minor = np.exp(mc_minor)
   data     = np.exp(data)
   # validation cut
-  mc_pred       = mc_pred[mc_pred[:,1]<850]
-  mc_true       = mc_true[mc_true[:,1]<850]
-  weights_minor = weights_minor[mc_minor[:,1]<850] # has to go before making changes to mc_minor
-  mc_minor      = mc_minor[mc_minor[:,1]<850]
-  data          = data[data[:,1]<850]
+  if highST:
+    mc_pred       = mc_pred[mc_pred[:,1]>850]
+    mc_true       = mc_true[mc_true[:,1]>850]
+    weights_minor = weights_minor[mc_minor[:,1]>850] # has to go before making changes to mc_minor
+    mc_minor      = mc_minor[mc_minor[:,1]>850]
+    data          = data[data[:,1]>850]
+  else:
+    mc_pred       = mc_pred[mc_pred[:,1]<850]
+    mc_true       = mc_true[mc_true[:,1]<850]
+    weights_minor = weights_minor[mc_minor[:,1]<850]
+    mc_minor      = mc_minor[mc_minor[:,1]<850]
+    data          = data[data[:,1]<850]
 
   # select variable to plot
   mc_pred       = mc_pred[:,i]
@@ -389,11 +397,18 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
   mc_minor = np.exp(mc_minor)
   data     = np.exp(data)
   # validation cut
-  mc_pred       = mc_pred[mc_pred[:,1]<850]
-  mc_true       = mc_true[mc_true[:,1]<850]
-  weights_minor = weights_minor[mc_minor[:,1]<850]
-  mc_minor      = mc_minor[mc_minor[:,1]<850]
-  data          = data[data[:,1]<850]
+  if highST:
+    mc_pred       = mc_pred[mc_pred[:,1]>850]
+    mc_true       = mc_true[mc_true[:,1]>850]
+    weights_minor = weights_minor[mc_minor[:,1]>850]
+    mc_minor      = mc_minor[mc_minor[:,1]>850]
+    data          = data[data[:,1]>850]
+  else:
+    mc_pred       = mc_pred[mc_pred[:,1]<850]
+    mc_true       = mc_true[mc_true[:,1]<850]
+    weights_minor = weights_minor[mc_minor[:,1]<850]
+    mc_minor      = mc_minor[mc_minor[:,1]<850]
+    data          = data[data[:,1]<850]
   # select variable to plot
   mc_pred       = mc_pred[:,i]
   mc_true       = mc_true[:,i]
@@ -489,7 +504,8 @@ if plotBest:
         blind = False
         if ( not args.unblind and y==1 ):
           if ( x == 4 or x == 5 ):
-            blind = False
+            if highST:
+              blind = True
         if x % 2 == 0:
           plot_hist(
             ax = axs[x,y],

@@ -366,10 +366,10 @@ print("Saved parameter and last bin info to pred_uncert.json")
 bins = 420 # TEMP. test with more bins
 
 alphaFactors = {}
-with open("alphaRatio_factors.json","r") as alphaFile:
+with open("alphaRatio_factors_AN3.json","r") as alphaFile: #TEMP
     alphaFactors = json.load(alphaFile)
 counts = {}
-with open("counts.json","r") as countsFile:
+with open("counts_AN3.json","r") as countsFile: #TEMP
     counts = json.load(countsFile)
     
 if not os.path.exists('application_plots'):
@@ -459,14 +459,17 @@ def targetAgreementPlot(region, case, fit, hist_gen, hist_target, hist_abcdnn):
     c2.Close()
 
 def fillHistogram(hist):
-    hist_new = TH1D(f'{hist.GetName()}_new',"",bins,binlo,binhi)
-    for i in range(bins+1):
-        if hist.GetBinContent(i)<0:
-            hist_new.SetBinContent(i,0)
-        else:
-            hist_new.SetBinContent(i,hist.GetBinContent(i))
-        hist_new.SetBinError(i,np.sqrt(hist_new.GetBinContent(i)))
-    return hist_new
+    # TEMP: xcheck
+    return hist
+
+    # hist_new = TH1D(f'{hist.GetName()}_new',"",bins,binlo,binhi)
+    # for i in range(bins+1):
+    #     if hist.GetBinContent(i)<0:
+    #         hist_new.SetBinContent(i,0)
+    #     else:
+    #         hist_new.SetBinContent(i,hist.GetBinContent(i))
+    #     hist_new.SetBinError(i,np.sqrt(hist_new.GetBinContent(i)))
+    # return hist_new
     
 def createHist(case, region):
     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}_pNet.root', "READ")
@@ -554,7 +557,7 @@ def createHist(case, region):
                     hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetWtagDown')
                 outFile.Close()
         else:
-            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE") # TEMP: for cross check
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major')
             if case=="case1":
                 hist_outUp.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__pNetTtagUp')
@@ -572,9 +575,9 @@ def createHist(case, region):
         print("New binning encounterd. Make up a new name and folder.")
     
 for case in ["case1", "case2", "case3", "case4"]:
-    createHist(case, "D")
-    createHist(case, "D2")
-    createHist(case, "V")
+    createHist(case, "D") #TEMP
+    #createHist(case, "D2") #TEMP
+    createHist(case, "V") #TEMP
     # if doV2:
     #     createHist(case, "D")
     #     createHist(case, "V")
@@ -628,7 +631,7 @@ def shiftTrainingUncert(case, region, shift):
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__train{shift}')
                 outFile.Close()
         else:
-            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE") # TEMP: for cross check
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__train{shift}')
             outFile.Close()
     elif binlo==0:
@@ -771,14 +774,14 @@ def shiftFactor(case, region, shift):
     
 for case in ["case1", "case2", "case3", "case4"]:
     for shift in ["Up", "Down"]:
-        shiftTrainingUncert(case, "D", shift)
-        shiftTrainingUncert(case, "D2", shift)
-        #shiftFactor(case, "D", shift)
-        #shiftLastBin(case, "D", shift) # not needed for bin train uncert method
+        shiftTrainingUncert(case, "D", shift) #TEMP
+        #shiftTrainingUncert(case, "D2", shift) #TEMP
+        ##shiftFactor(case, "D", shift)
+        ##shiftLastBin(case, "D", shift) # not needed for bin train uncert method
         
-        shiftTrainingUncert(case, "V", shift)
-        #shiftFactor(case, "V", shift)
-        #shiftLastBin(case, "V", shift)
+        shiftTrainingUncert(case, "V", shift) #TEMP
+        ##shiftFactor(case, "V", shift)
+        ##shiftLastBin(case, "V", shift)
         # if doV2:
         #     shiftLastBin(case, "V", shift)
         #     shiftLastBin(case, "D", shift)

@@ -34,7 +34,8 @@ if getAlphaRatio=="True":
               }
 
     for case in counts:
-        for region in ["B", "D", "V", "BV", "D2"]:
+        for region in ["B", "D", "V", "BV", "B2", "D2"]:
+        #for region in ["B2", "D2"]:
             counts[case][region] = {}
 
     def getCounts(case, region):
@@ -55,13 +56,13 @@ if getAlphaRatio=="True":
         counts[case][region]["major"] = hist_major.Integral()
         counts[case][region]["minor"] = hist_minor.Integral()
         
-        if region=="D" or region=="V":
+        if "D" in region or "V" in region:
             counts[case][region]["unweighted"] = hist_major.GetEntries()
 
         tFile.Close()
 
-    #for region in ["A", "B", "C", "D", "X", "Y", "V", "BV"]:
-    for region in ["B", "D", "V", "BV", "D2"]:
+    for region in ["B", "D", "V", "BV", "B2", "D2"]:
+    #for region in ["B2", "D2"]:
         print(f'Getting counts for region {region}')
         getCounts("case1", region)
         getCounts("case4", region)
@@ -112,8 +113,13 @@ if getAlphaRatio=="True":
         print(f'Getting prediction for {case}...')
         target_B    = counts[case][B]["data"] - counts[case][B]["minor"]
         predict_D   = target_B * counts[case][D]["major"] / counts[case][B]["major"]
-        predict_val = target_B * counts[case]["V"]["major"] / counts[case][B]["major"]
-        target_val  = counts[case]["V"]["data"] - counts[case]["V"]["minor"]
+        # TEMP: "V" not available for 420. for now use data in SR for uncertainty
+        if region=="D2":
+            predict_val = predict_D
+            target_val = counts[case]["D2"]["data"] - counts[case]["D2"]["minor"]
+        else:
+            predict_val = target_B * counts[case]["V"]["major"] / counts[case][B]["major"]
+            target_val  = counts[case]["V"]["data"] - counts[case]["V"]["minor"]
 
         yield_pred[case][region]["prediction"]  = predict_D
         yield_pred[case][region]["factor"]      = predict_D / counts[case][D]["unweighted"]
@@ -122,12 +128,13 @@ if getAlphaRatio=="True":
         yield_pred[case][region]["closure"]     = abs(predict_val-target_val)
         yield_pred[case][region]["uncertainty"] = np.sqrt(yield_pred[case][region]["systematic"]**2 + yield_pred[case][region]["statistical"]**2 + yield_pred[case][region]["closure"]**2) / predict_D
 
-        print('Data:{}'.format(counts[case]["D"]["data"]))
-        print('Minor:{}'.format(counts[case]["D"]["minor"]))
-        print(f'Data-Minor:{target_val}')
+        # TEMP: commented out for D2, because not generalized yet
+        # print('Data:{}'.format(counts[case]["D"]["data"]))
+        # print('Minor:{}'.format(counts[case]["D"]["minor"]))
+        # print(f'Data-Minor:{target_val}')
 
-        print('Major from MC         :{}'.format(counts[case]["D"]["major"]))
-        print(f'Major from alpha-ratio:{predict_D}')
+        # print('Major from MC         :{}'.format(counts[case]["D"]["major"]))
+        # print(f'Major from alpha-ratio:{predict_D}')
 
         print('Major deviation in MC: {}%'.format(round(100*(abs(counts[case][region]["major"]-target_val)/target_val),2)))
         print(f'Major deviation in alpha-ratio: {round(100*(yield_pred[case][region]["closure"]/target_val),2)}%')
@@ -135,8 +142,9 @@ if getAlphaRatio=="True":
 
 
     print("\nPerforming alpha-ratio estimation.\n")
-    for case in ["case14", "case23", "case1", "case2", "case3", "case4"]:
-        for region in ["V", "D"]:
+    for case in ["case1", "case2", "case3", "case4"]:
+        for region in ["V", "D", "D2"]:
+    #    for region in ["D2"]:
             getPrediction(case, region)
 
     # write alpha-ratio restuls to a json file
