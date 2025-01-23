@@ -50,7 +50,7 @@ if isTest:
   testDir = f'{args.tag}/'
   if not os.path.exists(testDir):
     os.makedirs(testDir)
-else: testDir = './'
+else: testDir = ''
 
 print( ">> Reading in {}.json for hyper parameters...".format( args.tag ) )
 with open( os.path.join( folder, args.tag + ".json" ), "r" ) as f:
