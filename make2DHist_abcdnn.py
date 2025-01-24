@@ -216,7 +216,7 @@ def makeHists2D(fileName, inputs_region, Bdecay_region, region, case):
   elif "Major" in fileName:
     hist = ROOT.TH2D(f'BpMST_pre_{region}', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
     hist_highST = ROOT.TH2D(f'BpMST_pre_{region}highST', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    hist_lowST = ROOT.TH2D(f'BpMST_pre_V', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    hist_lowST = ROOT.TH2D(f'BpMST_pre_V', "BpM_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
     # only need pNet shifts in region D and V
     if region=="D" and (case=="case1" or case=="case2"):
       hist_pNetUp = ROOT.TH2D(f'BpMST_pre_{region}_pNetUp', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
@@ -242,8 +242,9 @@ def makeHists2D(fileName, inputs_region, Bdecay_region, region, case):
         hist_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
         hist_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
         # fill pNetShift for V
-        hist_lowST_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
-        hist_lowST_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
+        if inputs_array[i][1]<validationCut:
+          hist_lowST_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
+          hist_lowST_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
     hist_pNetUp.Write()
     hist_pNetDn.Write()
     hist_lowST_pNetUp.Write()
