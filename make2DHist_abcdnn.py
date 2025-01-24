@@ -215,14 +215,19 @@ def makeHists2D(fileName, inputs_region, Bdecay_region, region, case):
     hist_lowST = ROOT.TH2D(f'BpMST_mnr_{region}lowST', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
   elif "Major" in fileName:
     hist = ROOT.TH2D(f'BpMST_pre_{region}', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    hist_highST = ROOT.TH2D(f'BpMST_pre_{region}highST', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    hist_lowST = ROOT.TH2D(f'BpMST_pre_V', "BpM_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    if region=="D":
+      hist_highST = ROOT.TH2D(f'BpMST_pre_highST', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+      hist_lowST = ROOT.TH2D(f'BpMST_pre_V', "BpM_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    else:
+      hist_highST = ROOT.TH2D(f'BpMST_pre_{region}highST', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+      hist_lowST = ROOT.TH2D(f'BpMST_pre_{region}lowST', "BpM_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+      
     # only need pNet shifts in region D and V
-    if region=="D" and (case=="case1" or case=="case2"):
-      hist_pNetUp = ROOT.TH2D(f'BpMST_pre_{region}_pNetUp', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-      hist_pNetDn = ROOT.TH2D(f'BpMST_pre_{region}_pNetDn', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-      hist_lowST_pNetUp = ROOT.TH2D(f'BpMST_pre_V_pNetUp', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-      hist_lowST_pNetUp = ROOT.TH2D(f'BpMST_pre_V_pNetDn', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    # if region=="D" and (case=="case1" or case=="case2"):
+    #   hist_pNetUp = ROOT.TH2D(f'BpMST_pre_{region}_pNetUp', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    #   hist_pNetDn = ROOT.TH2D(f'BpMST_pre_{region}_pNetDn', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    #   hist_lowST_pNetUp = ROOT.TH2D(f'BpMST_pre_V_pNetUp', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    #   hist_lowST_pNetDn = ROOT.TH2D(f'BpMST_pre_V_pNetDn', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
 
   for i in range(len(inputs_array)):
     if inputs_array[i][0]>bin_lo_BpM and inputs_array[i][1]>bin_lo_ST:
@@ -235,20 +240,20 @@ def makeHists2D(fileName, inputs_region, Bdecay_region, region, case):
       if inputs_array[i][1]<validationCut:
         hist_lowST.Fill(inputs_array[i][0], inputs_array[i][1], weight_array[i] * pNet_array[i])
 
-  if ("Major" in fileName) and (region=="D") and  (case=="case1" or case=="case2"):
-    for i in range(len(inputs_array)):
-      if inputs_array[i][0]>bin_lo_BpM and inputs_array[i][1]>bin_lo_ST:
-        # fill pNetShift for D
-        hist_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
-        hist_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
-        # fill pNetShift for V
-        if inputs_array[i][1]<validationCut:
-          hist_lowST_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
-          hist_lowST_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
-    hist_pNetUp.Write()
-    hist_pNetDn.Write()
-    hist_lowST_pNetUp.Write()
-    hist_lowST_pNetDn.Write()
+  # if ("Major" in fileName) and (region=="D") and  (case=="case1" or case=="case2"):
+  #   for i in range(len(inputs_array)):
+  #     if inputs_array[i][0]>bin_lo_BpM and inputs_array[i][1]>bin_lo_ST:
+  #       # fill pNetShift for D
+  #       hist_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
+  #       hist_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
+  #       # fill pNetShift for V
+  #       if inputs_array[i][1]<validationCut:
+  #         hist_lowST_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
+  #         hist_lowST_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
+    #hist_pNetUp.Write()
+    #hist_pNetDn.Write()
+    #hist_lowST_pNetUp.Write()
+    #hist_lowST_pNetDn.Write()
         
   hist.Write()
   hist_highST.Write()
