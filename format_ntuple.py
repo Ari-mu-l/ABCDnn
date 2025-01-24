@@ -2,7 +2,7 @@
 # formats three types of samples: data (no weights), major MC background (no weights), and minor MC backgrounds (weights)
 # last modified April 11, 2023 by Daniel Li
 
-# python3 format_ntuple.py -y all -n OctMajor -p 100 -c case14 --doMajorMC
+# python3 format_ntuple.py -y all -n JanMajor -p 100 -c case14 --doMajorMC
 
 import os, sys, ROOT
 from array import array

@@ -25,14 +25,14 @@ parser = ArgumentParser()
 parser.add_argument( "-s", "--source", required = True )
 parser.add_argument( "-t", "--target", required = True )
 parser.add_argument( "-b", "--minor", required = True, help = "Minor background to subtract from data. Include with --useMinor" )
-parser.add_argument( "--unblind", action = "store_false" )
+parser.add_argument( "--unblind", action = "store_true" )
 parser.add_argument( "--useMinor", action = "store_true" )
 parser.add_argument( "--transfer", action = "store_true" )
 parser.add_argument( "-m", "--tag", required = True )
 
 args = parser.parse_args()
 
-highST = True
+highST = False
 plotBest = True
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]
@@ -504,8 +504,7 @@ if plotBest:
         blind = False
         if ( not args.unblind and y==1 ):
           if ( x == 4 or x == 5 ):
-            if highST:
-              blind = True
+            blind = True
         if x % 2 == 0:
           plot_hist(
             ax = axs[x,y],

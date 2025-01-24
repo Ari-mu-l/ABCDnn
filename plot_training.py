@@ -9,6 +9,7 @@ import abcdnn
 import tqdm
 from argparse import ArgumentParser
 from json import loads as load_json
+from json import dumps
 from array import array
 import ROOT
 import matplotlib
@@ -25,7 +26,7 @@ parser = ArgumentParser()
 parser.add_argument( "-s", "--source", required = True )
 parser.add_argument( "-t", "--target", required = True )
 parser.add_argument( "-b", "--minor", required = True, help = "Minor background to subtract from data. Include with --useMinor" )
-parser.add_argument( "--unblind", action = "store_true" ) # store_false # TEMP
+parser.add_argument( "--unblind", action = "store_true" )
 parser.add_argument( "--useMinor", action = "store_true" )
 parser.add_argument( "--transfer", action = "store_true" )
 parser.add_argument( "-m", "--tag", required = True )
@@ -237,6 +238,9 @@ region_key = { # the row and column of ABCDXY
   }
 }
 images = { variable: [] for variable in variables_transform }
+metrics = {"Bprime_mass":{"A":{}, "B":{}, "C":{}, "Avg":{}},
+           "gcJet_ST":{"A":{}, "B":{}, "C":{}, "Avg":{}}
+           }
 
 def ratio_err( x, xerr, y, yerr ):
   return np.sqrt( ( yerr * x / y**2 )**2 + ( xerr / y )**2 )
@@ -388,6 +392,14 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
     ratio_std = ratio_std[:20]
   else:
     data_hist1 = data_hist[1]
+
+  # compute metric
+  if region_key[x][y]=="A" or region_key[x][y]=="B" or region_key[x][y]=="C":
+    ratio_std_nonzero = np.where(np.array(ratio_std)==0, 0.001,np.array(ratio_std))
+    metricvalue = np.abs(np.array(ratio)-1)/ratio_std_nonzero
+    metricvalue = np.where(np.array(ratio_std)==0, 0, metricvalue)
+    metrics[variable][region_key[x][y]]["by_bin"] =  metricvalue.tolist()
+    metrics[variable][region_key[x][y]]["overall"] = np.sum(metricvalue)
     
   if not blind:
     ax.scatter(
@@ -423,7 +435,9 @@ if plotBest:
       bins = np.array([0,0.9,1])
     elif variable == "gcJet_ST":
       #bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],700,config.variables[ variable ][ "LIMIT_plot" ][1]]) # ANv1-6
-      bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],600,850,config.variables[ variable ][ "LIMIT_plot" ][1]])
+      #bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],850,config.variables[ variable ][ "LIMIT_plot" ][1]]) # ANv7
+      #bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],600,850,config.variables[ variable ][ "LIMIT_plot" ][1]]) # 3bin
+      bins = np.linspace( 0, 1500, 31 ) # 5 bins
     else:
       bins = np.linspace( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1], config.params[ "PLOT" ][ "NBINS" ] )
     #if(variable == "Bprime_mass"):
@@ -479,6 +493,12 @@ if plotBest:
       
     plt.savefig( "{}/{}/{}_{}.png".format( folder, args.tag, args.tag, variable ) )  
     plt.close()
+
+    metrics[variable]["Avg"]["overall"] = (metrics[variable]["A"]["overall"]+metrics[variable]["B"]["overall"]+metrics[variable]["C"]["overall"])/3
+    
+  metricjson = dumps(metrics, indent=4)
+  with open(f'{folder}/{args.tag}/metrics.json', 'w') as metricfile:
+    metricfile.write(metricjson)
 else:
   print( "Plotting models per epoch:" )
   for epoch in sorted( predictions.keys() ):

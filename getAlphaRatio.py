@@ -34,14 +34,14 @@ if getAlphaRatio=="True":
               }
 
     for case in counts:
-        for region in ["B", "D", "V", "BV", "B2", "D2"]:
+        for region in ["B", "D", "V", "BV", "highST", "BhighST"]: #, "B2", "D2"]:
         #for region in ["B2", "D2"]:
             counts[case][region] = {}
 
     def getCounts(case, region):
         print(f'Processing {case}')
-        tempFileName  = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Oct2024_420bins/templates_BpMass_138fbfb.root'
-        #tempFileName  = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Oct2024_Julie/templates_BpMass_138fbfb.root'
+        #tempFileName  = f'/uscms/home/jmanagan/nobackup/BtoTW/CMSSW_13_0_18/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025/templates_BpMass_138fbfb.root'
+        tempFileName = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025_2100bins/templates_BpMass_138fbfb.root'
         tFile = ROOT.TFile.Open(tempFileName, 'READ')
         hist_data  = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__data_obs')
         hist_major = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__qcd') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__wjets') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__singletop') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ttbar')
@@ -61,7 +61,7 @@ if getAlphaRatio=="True":
 
         tFile.Close()
 
-    for region in ["B", "D", "V", "BV", "B2", "D2"]:
+    for region in ["B", "D", "V", "BV", "highST", "BhighST"]: #, "B2", "D2"]:
     #for region in ["B2", "D2"]:
         print(f'Getting counts for region {region}')
         getCounts("case1", region)
@@ -90,12 +90,12 @@ if getAlphaRatio=="True":
 
         
     # alpha-ratio prediction
-    yield_pred = {"case14":{"D":{}, "V":{}, "D2":{}},
-                  "case23":{"D":{}, "V":{}, "D2":{}},
-                  "case1":{"D":{}, "V":{}, "D2":{}},
-                  "case2":{"D":{}, "V":{}, "D2":{}},
-                  "case3":{"D":{}, "V":{}, "D2":{}},
-                  "case4":{"D":{}, "V":{}, "D2":{}},
+    yield_pred = {"case14":{"D":{}, "V":{}, "highST":{}, "D2":{}},
+                  "case23":{"D":{}, "V":{}, "highST":{}, "D2":{}},
+                  "case1":{"D":{}, "V":{}, "highST":{}, "D2":{}},
+                  "case2":{"D":{}, "V":{}, "highST":{}, "D2":{}},
+                  "case3":{"D":{}, "V":{}, "highST":{}, "D2":{}},
+                  "case4":{"D":{}, "V":{}, "highST":{}, "D2":{}},
                   }
 
     def getPrediction(case, region):
@@ -108,19 +108,22 @@ if getAlphaRatio=="True":
         elif region=="D2":
             B = "B2"
             D = "D2"
+        elif region=="highST":
+            B = "BhighST"
+            D = "highST"
         else:
             print(f'Region {region} not set up for alpha ratio calculation')
         print(f'Getting prediction for {case}...')
         target_B    = counts[case][B]["data"] - counts[case][B]["minor"]
         predict_D   = target_B * counts[case][D]["major"] / counts[case][B]["major"]
-        # TEMP: "V" not available for 420. for now use data in SR for uncertainty
-        if region=="D2":
+        
+        if region=="D2" or region=="highST": # Might need to fix for D2, but highST prediction is only a dummy
             predict_val = predict_D
-            target_val = counts[case]["D2"]["data"] - counts[case]["D2"]["minor"]
+            target_val = counts[case][D]["data"] - counts[case][D]["minor"]
         else:
             predict_val = target_B * counts[case]["V"]["major"] / counts[case][B]["major"]
             target_val  = counts[case]["V"]["data"] - counts[case]["V"]["minor"]
-
+            
         yield_pred[case][region]["prediction"]  = predict_D
         yield_pred[case][region]["factor"]      = predict_D / counts[case][D]["unweighted"]
         yield_pred[case][region]["systematic"]  = predict_D * np.sqrt(1/target_B + 1/counts[case][B]["major"] + 1/counts[case][D]["major"])
@@ -143,7 +146,7 @@ if getAlphaRatio=="True":
 
     print("\nPerforming alpha-ratio estimation.\n")
     for case in ["case1", "case2", "case3", "case4"]:
-        for region in ["V", "D", "D2"]:
+        for region in ["V", "D"]: #, "highST"]: ##, "D2"]:
     #    for region in ["D2"]:
             getPrediction(case, region)
 
@@ -154,65 +157,3 @@ if getAlphaRatio=="True":
         outjson.write(json_object)
 else:
     print("Skipping counts and alpha-ratio estimation...")
-
-
-exit()
-
-# Load histograms and plot validation
-binlo = 0 #400
-binhi = 2500
-bins = 50 #42
-
-def plot_validation(case, shape):
-    histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.root', "READ")
-    
-    hist_data    = histFile.Get(f'Bprime_mass_data_val')
-    hist_minor   = histFile.Get(f'Bprime_mass_minor_val')
-    hist_ABCDnn  = histFile.Get(f'Bprime_mass_ABCDnn_val')
-    
-    c = ROOT.TCanvas("")
-    legend = ROOT.TLegend(0.6,0.6,0.8,0.7)
-    legend.SetBorderSize(0)
-    hist_ABCDnn.SetLineColor(ROOT.kRed)
-    
-    # test shape
-    if shape:
-        hist_dataNominor = hist_data - hist_minor
-        hist_dataNominor.Scale(1/hist_dataNominor.Integral())
-        hist_ABCDnn.Scale(1/hist_ABCDnn.Integral())
-        
-        legend.AddEntry(hist_dataNominor, "data-minor", "l")
-        legend.AddEntry(hist_ABCDnn, "ABCDnn", "l")
-    
-        hist_dataNominor.Draw("HIST")
-        hist_ABCDnn.Draw("HIST SAME")
-        legend.Draw()
-        c.SaveAs(f'validation_plots/hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}_shape.png')
-    else:
-        #hist_predict = hist_minor + hist_ABCDnn
-    
-        #hist_ABCDnn.Scale(yield_pred[case]/hist_ABCDnn.Integral())
-        
-        #ratio = hist_predict/hist_data
-        #ratio.Print("all")
-        print(hist_ABCDnn.Integral())
-        print(hist_dataNominor.Integral())
-        print((hist_ABCDnn.Integral()-hist_dataNominor.Integral())/hist_dataNominor.Integral())
-
-        #legend.AddEntry(hist_data, "data", "l")
-        #legend.AddEntry(hist_predict, "ABCDnn+minor", "l")
-        legend.AddEntry(hist_ABCDnn, "ABCDnn", "l")
-        legend.AddEntry(hist_dataNominor, "data-minor", "l")
-
-        #hist_predict.SetLineColor(ROOT.kRed)
-        #hist_predict.Draw("HIST")
-        hist_ABCDnn.Draw("HIST")
-        hist_dataNominor.Draw("HIST SAME")
-        #hist_data.Draw("HIST SAME")
-        
-        legend.Draw()
-        c.SaveAs(f'validation_plots/hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}.png')
-
-
-#plot_validation("case14")
-plot_validation("case23", False)

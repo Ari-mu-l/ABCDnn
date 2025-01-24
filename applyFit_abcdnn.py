@@ -15,7 +15,7 @@ TH1.SetDefaultSumw2(True)
 
 binlo = 400
 binhi = 2500
-bins = 420 # will be changed to 420 later in the code for the creation of histograms
+bins = 2100 # will be changed to 420 later in the code for the creation of histograms
 
 doV2 = False
 withFit = False
@@ -363,7 +363,7 @@ print("Saved parameter and last bin info to pred_uncert.json")
 #############################
 # create histogram from fit #
 #############################
-bins = 420 # TEMP. test with more bins
+bins = 2100
 
 alphaFactors = {}
 with open("alphaRatio_factors_AN3.json","r") as alphaFile: #TEMP
@@ -459,17 +459,11 @@ def targetAgreementPlot(region, case, fit, hist_gen, hist_target, hist_abcdnn):
     c2.Close()
 
 def fillHistogram(hist):
-    # TEMP: xcheck
+    # TEMP: turned of negative bin adjustment
+    #for i in range(bins+1): # deals with negative bins
+    #    if hist.GetBinContent(i)<0:
+    #        hist.SetBinContent(i,0)
     return hist
-
-    # hist_new = TH1D(f'{hist.GetName()}_new',"",bins,binlo,binhi)
-    # for i in range(bins+1):
-    #     if hist.GetBinContent(i)<0:
-    #         hist_new.SetBinContent(i,0)
-    #     else:
-    #         hist_new.SetBinContent(i,hist.GetBinContent(i))
-    #     hist_new.SetBinError(i,np.sqrt(hist_new.GetBinContent(i)))
-    # return hist_new
     
 def createHist(case, region):
     histFile = TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}_pNet.root', "READ")
@@ -547,7 +541,7 @@ def createHist(case, region):
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
-                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+                outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb_noNegBinAdjust.root', "UPDATE")
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major')
                 if case=="case1":
                     hist_outUp.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetTtagUp')
@@ -557,7 +551,7 @@ def createHist(case, region):
                     hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__pNetWtagDown')
                 outFile.Close()
         else:
-            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE") # TEMP: for cross check
+            outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb_noNegBinAdjust.root', "UPDATE")
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major')
             if case=="case1":
                 hist_outUp.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__pNetTtagUp')
@@ -567,7 +561,7 @@ def createHist(case, region):
                 hist_outDn.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__pNetWtagDn')
             outFile.Close()
     elif binlo==0:
-        outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_Julie/templates_BpMass_138fbfb.root', "UPDATE")
+        outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_Julie/templates_BpMass_138fbfb_noNegBinAdjust.root', "UPDATE")
         hist_out.Write(f'BpMass_138fbfb_isL_{tag[case]}_{region}__major')
         outFile.Close()
     else:
@@ -627,15 +621,15 @@ def shiftTrainingUncert(case, region, shift):
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
-                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+                outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb_noNegBinAdjust.root', "UPDATE")
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__train{shift}')
                 outFile.Close()
         else:
-            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE") # TEMP: for cross check
+            outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb_noNegBinAdjust.root', "UPDATE")
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__train{shift}')
             outFile.Close()
     elif binlo==0:
-        outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_Julie/templates_BpMass_138fbfb.root', "UPDATE")
+        outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_Julie/templates_BpMass_138fbfb_noNegBinAdjust.root', "UPDATE")
         hist_out.Write(f'BpMass_138fbfb_isL_{tag[case]}_{region}__major__train{shift}')
         outFile.Close()
     else:
@@ -672,15 +666,15 @@ def shiftLastBin(case, region, shift):
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
-                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+                outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb_noNegBinAdjust.root', "UPDATE")
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__lastbin{shift}')
                 outFile.Close()
         else:
-            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb_noNegBinAdjust.root', "UPDATE")
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__lastbin{shift}')
             outFile.Close()
     elif binlo==0:
-        outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_Julie/templates_BpMass_138fbfb.root', "UPDATE")
+        outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_Julie/templates_BpMass_138fbfb_noNegBinAdjust.root', "UPDATE")
         hist_out.Write(f'BpMass_138fbfb_isL_{tag[case]}_{region}__major__lastbin{shift}')
         outFile.Close()
     else:
@@ -718,15 +712,15 @@ def shiftParam(case, region, i, shift):
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
-                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+                outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb_noNegBinAdjust.root', "UPDATE")
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__param{i}{shift}')
                 outFile.Close()
         else:
-            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb_noNegBinAdjust.root', "UPDATE")
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__param{i}{shift}')
             outFile.Close()
     elif binlo==0:
-        outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_Julie/templates_BpMass_138fbfb.root', "UPDATE")
+        outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_Julie/templates_BpMass_138fbfb_noNegBinAdjust.root', "UPDATE")
         hist_out.Write(f'BpMass_138fbfb_isL_{tag[case]}_{region}__major__param{i}{shift}')
         outFile.Close()
     else:
@@ -756,15 +750,15 @@ def shiftFactor(case, region, shift):
     if binlo==400:
         if doV2:
             if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
-                outFile = TFile.Open(f'{outDir}/templatesV2_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+                outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb_noNegBinAdjust.root', "UPDATE")
                 hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major__factor{shift}')
                 outFile.Close()
         else:
-            outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb_noNegBinAdjust.root', "UPDATE")
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major__factor{shift}')
             outFile.Close()
     elif binlo==0:
-        outFile = TFile.Open(f'{outDir}/templates{region}_Oct2024_Julie/templates_BpMass_138fbfb.root', "UPDATE")
+        outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_Julie/templates_BpMass_138fbfb_noNegBinAdjust.root', "UPDATE")
         hist_out.Write(f'BpMass_138fbfb_isL_{tag[case]}_{region}__major__factor{shift}')
         outFile.Close()
     else:

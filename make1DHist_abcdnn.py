@@ -210,7 +210,7 @@ def make1DHists(fileName, inputs_region, Bdecay_region, region, case):
       hist_highST = ROOT.TH1D(f'Bprime_mass_pre_highST', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
       hist_lowST = ROOT.TH1D(f'Bprime_mass_pre_V', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
     else:
-      hist_highST = ROOT.TH1D(f'Bprime_mass_pre_highST', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+      hist_highST = ROOT.TH1D(f'Bprime_mass_pre_{region}highST', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
       hist_lowST = ROOT.TH1D(f'Bprime_mass_pre_{region}lowST', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
     # only need pNet shifts in region D and V
     if region=="D" and (case=="case1" or case=="case2"):

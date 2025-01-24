@@ -1,6 +1,7 @@
 import ROOT
 import os
 
+ROOT.TH2.SetDefaultSumw2(True) # Question: is this needed?
 ROOT.gROOT.SetBatch(True) # suppress histogram display
 
 # histogram settings
