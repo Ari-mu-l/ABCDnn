@@ -190,12 +190,20 @@ def make1DHists(fileName, inputs_region, Bdecay_region, region, case):
 
   if "Data" in fileName:
     hist = ROOT.TH1D(f'Bprime_mass_dat_{region}', "Bprime_mass", Nbins, bin_lo, bin_hi)
-    hist_highST = ROOT.TH1D(f'Bprime_mass_dat_{region}highST', "Bprime_mass", Nbins, bin_lo, bin_hi)
-    hist_lowST = ROOT.TH1D(f'Bprime_mass_dat_{region}lowST', "Bprime_mass", Nbins, bin_lo, bin_hi)
+    if region=="D":
+      hist_highST = ROOT.TH1D(f'Bprime_mass_dat_highST', "Bprime_mass", Nbins, bin_lo, bin_hi)
+      hist_lowST = ROOT.TH1D(f'Bprime_mass_dat_V', "Bprime_mass", Nbins, bin_lo, bin_hi)
+    else:
+      hist_highST = ROOT.TH1D(f'Bprime_mass_dat_{region}highST', "Bprime_mass", Nbins, bin_lo, bin_hi)
+      hist_lowST = ROOT.TH1D(f'Bprime_mass_dat_{region}lowST', "Bprime_mass", Nbins, bin_lo, bin_hi)
   elif "Minor" in fileName:
     hist = ROOT.TH1D(f'Bprime_mass_mnr_{region}', "Bprime_mass", Nbins, bin_lo, bin_hi)
-    hist_highST = ROOT.TH1D(f'Bprime_mass_mnr_{region}highST', "Bprime_mass", Nbins, bin_lo, bin_hi)
-    hist_lowST = ROOT.TH1D(f'Bprime_mass_mnr_{region}lowST', "Bprime_mass", Nbins, bin_lo, bin_hi)
+    if region=="D":
+      hist_highST = ROOT.TH1D(f'Bprime_mass_mnr_highST', "Bprime_mass", Nbins, bin_lo, bin_hi)
+      hist_lowST = ROOT.TH1D(f'Bprime_mass_mnr_V', "Bprime_mass", Nbins, bin_lo, bin_hi)
+    else:
+      hist_highST = ROOT.TH1D(f'Bprime_mass_mnr_{region}highST', "Bprime_mass", Nbins, bin_lo, bin_hi)
+      hist_lowST = ROOT.TH1D(f'Bprime_mass_mnr_{region}lowST', "Bprime_mass", Nbins, bin_lo, bin_hi)
   elif "Major" in fileName:
     hist = ROOT.TH1D(f'Bprime_mass_pre_{region}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
     if region=="D":
