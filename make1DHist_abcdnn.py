@@ -157,7 +157,7 @@ def processInput(fileName):
   else:
     return inputs_region, Bdecay_region
 
-def fillNominal(fillpNetShift, inputs_array, weight_array, pNet_array, hist):
+def fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn):
   for i in range(len(inputs_array)):
       if inputs_array[i][0]>bin_lo:
         hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
@@ -171,7 +171,7 @@ def fillNominal(fillpNetShift, inputs_array, weight_array, pNet_array, hist):
     hist_pNetUp.Write()
     hist_pNetDn.Write()
 
-def fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, hist):
+def fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn):
   for i in range(len(inputs_array)):
       if inputs_array[i][0]>bin_lo and inputs_array[i][1]<validationCut:
         hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
@@ -185,7 +185,7 @@ def fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, hist):
     hist_pNetUp.Write()
     hist_pNetDn.Write()
         
-def fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, hist):
+def fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn):
   for i in range(len(inputs_array)):
       if inputs_array[i][0]>bin_lo and inputs_array[i][1]>validationCut:
         hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
@@ -239,8 +239,8 @@ def make1DHists(fileName, inputs_region, Bdecay_region, region, case):
   else:
     subRegionList = [f'{region}', f'{region}V', f'{region}2'] # low ST: append V. high ST: append 2. e.g. B, BV, B2
   
-  fillpNetShift = False
   for regionTag in subRegionList:
+    fillpNetShift = False
     if "Data" in fileName:
       hist = ROOT.TH1D(f'Bprime_mass_dat_{regionTag}', "Bprime_mass", Nbins, bin_lo, bin_hi)
     elif "Minor" in fileName:
@@ -252,9 +252,9 @@ def make1DHists(fileName, inputs_region, Bdecay_region, region, case):
         hist_pNetUp = ROOT.TH1D(f'Bprime_mass_pre_{regionTag}_pNetUp', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
         hist_pNetDn = ROOT.TH1D(f'Bprime_mass_pre_{regionTag}_pNetDn', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
 
-    fillNominal(fillpNetShift, inputs_array, weight_array, pNet_array, hist)
-    fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, hist)
-    fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, hist)
+    fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn)
+    fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn)
+    fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn)
         
 if 'case14' in args.tag:
   case_list = ["case1", "case4"]
