@@ -165,13 +165,13 @@ def processInput(fileName):
 
 def fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn):
   for i in range(len(inputs_array)):
-      if inputs_array[i][0]>bin_lo:
+      if inputs_array[i][0]>bin_lo_BpM:
         hist.Fill(inputs_array[i][0], inputs_array[i][1], weight_array[i] * pNet_array[i])
   hist.Write()
   
   if fillpNetShift:
     for i in range(len(inputs_array)):
-      if inputs_array[i][0]>bin_lo:
+      if inputs_array[i][0]>bin_lo_BpM:
         hist_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
         hist_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
     hist_pNetUp.Write()
@@ -179,13 +179,13 @@ def fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_arr
 
 def fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn):
   for i in range(len(inputs_array)):
-      if inputs_array[i][0]>bin_lo and inputs_array[i][1]<validationCut:
+      if inputs_array[i][0]>bin_lo_BpM and inputs_array[i][1]<validationCut:
         hist.Fill(inputs_array[i][0], inputs_array[i][1], weight_array[i] * pNet_array[i])
   hist.Write()
 
   if fillpNetShift:
     for i in range(len(inputs_array)):
-      if inputs_array[i][0]>bin_lo and inputs_array[i][1]<validationCut:
+      if inputs_array[i][0]>bin_lo_BpM and inputs_array[i][1]<validationCut:
         hist_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
         hist_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
     hist_pNetUp.Write()
@@ -193,13 +193,13 @@ def fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_arra
         
 def fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn):
   for i in range(len(inputs_array)):
-      if inputs_array[i][0]>bin_lo and inputs_array[i][1]>=validationCut:
+      if inputs_array[i][0]>bin_lo_BpM and inputs_array[i][1]>=validationCut:
         hist.Fill(inputs_array[i][0], inputs_array[i][1], weight_array[i] * pNet_array[i])
   hist.Write()
 
   if fillpNetShift:
     for i in range(len(inputs_array)):
-      if inputs_array[i][0]>bin_lo and inputs_array[i][1]>=validationCut:
+      if inputs_array[i][0]>bin_lo_BpM and inputs_array[i][1]>=validationCut:
         hist_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
         hist_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
     hist_pNetUp.Write()
