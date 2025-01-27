@@ -163,111 +163,108 @@ def processInput(fileName):
   else:
     return inputs_region, Bdecay_region
 
+def fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn):
+  for i in range(len(inputs_array)):
+      if inputs_array[i][0]>bin_lo:
+        hist.Fill(inputs_array[i][0], inputs_array[i][1], weight_array[i] * pNet_array[i])
+  hist.Write()
+  
+  if fillpNetShift:
+    for i in range(len(inputs_array)):
+      if inputs_array[i][0]>bin_lo:
+        hist_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
+        hist_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
+    hist_pNetUp.Write()
+    hist_pNetDn.Write()
+
+def fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn):
+  for i in range(len(inputs_array)):
+      if inputs_array[i][0]>bin_lo and inputs_array[i][1]<validationCut:
+        hist.Fill(inputs_array[i][0], inputs_array[i][1], weight_array[i] * pNet_array[i])
+  hist.Write()
+
+  if fillpNetShift:
+    for i in range(len(inputs_array)):
+      if inputs_array[i][0]>bin_lo and inputs_array[i][1]<validationCut:
+        hist_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
+        hist_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
+    hist_pNetUp.Write()
+    hist_pNetDn.Write()
+        
+def fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn):
+  for i in range(len(inputs_array)):
+      if inputs_array[i][0]>bin_lo and inputs_array[i][1]>=validationCut:
+        hist.Fill(inputs_array[i][0], inputs_array[i][1], weight_array[i] * pNet_array[i])
+  hist.Write()
+
+  if fillpNetShift:
+    for i in range(len(inputs_array)):
+      if inputs_array[i][0]>bin_lo and inputs_array[i][1]>=validationCut:
+        hist_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
+        hist_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
+    hist_pNetUp.Write()
+    hist_pNetDn.Write()
   
 def makeHists2D(fileName, inputs_region, Bdecay_region, region, case):
   print(fileName)
   caseValue = int(case[-1])
 
-  # Get BpM+ST arrays, xsecWeight and pNetSF (set to 1 when not needed)
   if "Major" in fileName:
     inputs_array = inputs_region[region][ Bdecay_region[region]["Bdecay_obs"]==caseValue ] # name prediction_array as inputs_array
-    weight_array = np.ones(len(inputs_array))    
-    # only major case 1 and case 2 need pNetSF
-    if case=="case1":
-      pNetTag = "pNetTtagWeight"
-    elif case=="case2":
-      pNetTag = "pNetWtagWeight"
-    else:
-      pNetTag = ""
-    # dummy pNetSF with values of 1 for case3 and 4
-    if pNetTag=="":
-      pNet_array   = np.ones(len(inputs_array))
-      pNetUp_array = np.ones(len(inputs_array))
-      pNetDn_array = np.ones(len(inputs_array))
-    else:
-      pNet_array = Bdecay_region[region][pNetTag][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
-      pNetUp_array = Bdecay_region[region][f'{pNetTag}Up'][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
-      pNetDn_array = Bdecay_region[region][f'{pNetTag}Dn'][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
+    weight_array = np.ones(len(inputs_array))
   elif "Minor" in fileName:
     inputs_array = inputs_region[region][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')[:,:2]
     weight_array = inputs_region[region]["xsecWeight"][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
-    pNet_array   = np.ones(len(inputs_array))
-    pNetUp_array = np.ones(len(inputs_array))
-    pNetDn_array = np.ones(len(inputs_array))
   else: # data
     inputs_array = inputs_region[region][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')[:,:2]
     weight_array = np.ones(len(inputs_array))
+
+  if case=="case1" or case=="case2":
+    if "Data" in fileName:
+      pNet_array   = np.ones(len(inputs_array))
+      pNetUp_array = np.ones(len(inputs_array))
+      pNetDn_array = np.ones(len(inputs_array))
+    else: # minor, major: case 1 or 2
+      if case=="case1":
+        pNetTag = "pNetTtagWeight"
+      else:
+        pNetTag = "pNetWtagWeight"
+      pNet_array = Bdecay_region[region][pNetTag][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
+      pNetUp_array = Bdecay_region[region][f'{pNetTag}Up'][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
+      pNetDn_array = Bdecay_region[region][f'{pNetTag}Dn'][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
+  else: # case3,4
     pNet_array   = np.ones(len(inputs_array))
     pNetUp_array = np.ones(len(inputs_array))
     pNetDn_array = np.ones(len(inputs_array))
-
+  
   if not log:
     inputs_array = np.exp(inputs_array)
     inputs_array = np.clip(inputs_array, 0, 2500)
 
-  if "Data" in fileName:
-    hist = ROOT.TH2D(f'BpMST_dat_{region}', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    if region=="D":
-      hist_highST = ROOT.TH2D(f'BpMST_dat_highST', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-      hist_lowST = ROOT.TH2D(f'BpMST_dat_V', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    else:
-      hist_highST = ROOT.TH2D(f'BpMST_dat_{region}highST', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-      hist_lowST = ROOT.TH2D(f'BpMST_dat_{region}lowST', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-  elif "Minor" in fileName:
-    hist = ROOT.TH2D(f'BpMST_mnr_{region}', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    if region=="D":
-      hist_highST = ROOT.TH2D(f'BpMST_mnr_highST', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-      hist_lowST = ROOT.TH2D(f'BpMST_mnr_V', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    else:
-      hist_highST = ROOT.TH2D(f'BpMST_mnr_{region}highST', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-      hist_lowST = ROOT.TH2D(f'BpMST_mnr_{region}lowST', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-  elif "Major" in fileName:
-    hist = ROOT.TH2D(f'BpMST_pre_{region}', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    if region=="D":
-      hist_highST = ROOT.TH2D(f'BpMST_pre_highST', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-      hist_lowST = ROOT.TH2D(f'BpMST_pre_V', "BpM_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    else:
-      hist_highST = ROOT.TH2D(f'BpMST_pre_{region}highST', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-      hist_lowST = ROOT.TH2D(f'BpMST_pre_{region}lowST', "BpM_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-      
-    # only need pNet shifts in region D and V
-    # if region=="D" and (case=="case1" or case=="case2"):
-    #   hist_pNetUp = ROOT.TH2D(f'BpMST_pre_{region}_pNetUp', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    #   hist_pNetDn = ROOT.TH2D(f'BpMST_pre_{region}_pNetDn', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    #   hist_lowST_pNetUp = ROOT.TH2D(f'BpMST_pre_V_pNetUp', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    #   hist_lowST_pNetDn = ROOT.TH2D(f'BpMST_pre_V_pNetDn', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+  if region=="D":
+    subRegionList = ['D', 'V', 'D2']
+  else:
+    subRegionList = [f'{region}', f'{region}V', f'{region}2'] # low ST: append V. high ST: append 2. e.g. B, BV, B2
 
-  for i in range(len(inputs_array)):
-    if inputs_array[i][0]>bin_lo_BpM and inputs_array[i][1]>bin_lo_ST:
-      # fill fullST
-      hist.Fill(inputs_array[i][0], inputs_array[i][1], weight_array[i] * pNet_array[i])
-      # fill highST
-      if inputs_array[i][1]>validationCut:
-        hist_highST.Fill(inputs_array[i][0], inputs_array[i][1], weight_array[i] * pNet_array[i])
-      # fill lowST
-      if inputs_array[i][1]<validationCut:
-        hist_lowST.Fill(inputs_array[i][0], inputs_array[i][1], weight_array[i] * pNet_array[i])
+  for regionTag in subRegionList:
+    fillpNetShift = False
+    if "Data" in fileName:
+      hist = ROOT.TH2D(f'BpMST_dat_{regionTag}', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    elif "Minor" in fileName:
+      hist = ROOT.TH2D(f'BpMST_mnr_{regionTag}', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    elif "Major" in fileName:
+      hist = ROOT.TH2D(f'BpMST_pre_{regionTag}', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
 
-  # if ("Major" in fileName) and (region=="D") and  (case=="case1" or case=="case2"):
-  #   for i in range(len(inputs_array)):
-  #     if inputs_array[i][0]>bin_lo_BpM and inputs_array[i][1]>bin_lo_ST:
-  #       # fill pNetShift for D
-  #       hist_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
-  #       hist_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
-  #       # fill pNetShift for V
-  #       if inputs_array[i][1]<validationCut:
-  #         hist_lowST_pNetUp.Fill(inputs_array[i][0], inputs_array[i][1], pNetUp_array[i]) # pNetSF_Up
-  #         hist_lowST_pNetDn.Fill(inputs_array[i][0], inputs_array[i][1], pNetDn_array[i]) # pNetSF_Dn
-    #hist_pNetUp.Write()
-    #hist_pNetDn.Write()
-    #hist_lowST_pNetUp.Write()
-    #hist_lowST_pNetDn.Write()
-        
-  hist.Write()
-  hist_highST.Write()
-  hist_lowST.Write()
+  # create for all. but only fill for the necessary cases
+  hist_pNetUp = ROOT.TH2D(f'Bprime_mass_pre_{regionTag}_pNetUp', "BpM_ABCDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+  hist_pNetDn = ROOT.TH2D(f'Bprime_mass_pre_{regionTag}_pNetDn', "BpM_ABCDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
 
-  return inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array    
+  if "V" in regionTag:
+    fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
+  elif "2" in regionTag:
+    fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
+  else:
+    fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
 
     
 if 'case14' in args.tag:
