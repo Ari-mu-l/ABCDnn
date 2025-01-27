@@ -157,7 +157,7 @@ def processInput(fileName):
   else:
     return inputs_region, Bdecay_region
 
-def fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn):
+def fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn):
   for i in range(len(inputs_array)):
       if inputs_array[i][0]>bin_lo:
         hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
@@ -171,7 +171,7 @@ def fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist
     hist_pNetUp.Write()
     hist_pNetDn.Write()
 
-def fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn):
+def fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn):
   for i in range(len(inputs_array)):
       if inputs_array[i][0]>bin_lo and inputs_array[i][1]<validationCut:
         hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
@@ -185,15 +185,15 @@ def fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_
     hist_pNetUp.Write()
     hist_pNetDn.Write()
         
-def fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn):
+def fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn):
   for i in range(len(inputs_array)):
-      if inputs_array[i][0]>bin_lo and inputs_array[i][1]>validationCut:
+      if inputs_array[i][0]>bin_lo and inputs_array[i][1]>=validationCut:
         hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
   hist.Write()
 
   if fillpNetShift:
     for i in range(len(inputs_array)):
-      if inputs_array[i][0]>bin_lo and inputs_array[i][1]>validationCut:
+      if inputs_array[i][0]>bin_lo and inputs_array[i][1]>=validationCut:
         hist_pNetUp.Fill(inputs_array[i][0], pNetUp_array[i]) # pNetSF_Up
         hist_pNetDn.Fill(inputs_array[i][0], pNetDn_array[i]) # pNetSF_Dn
     hist_pNetUp.Write()
@@ -249,12 +249,17 @@ def make1DHists(fileName, inputs_region, Bdecay_region, region, case):
       hist = ROOT.TH1D(f'Bprime_mass_pre_{regionTag}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
       if case=="case1" or case=="case2": # fill pNetShift only for major bkg. mnr is dealt with in SLA
         fillpNetShift = True
-        hist_pNetUp = ROOT.TH1D(f'Bprime_mass_pre_{regionTag}_pNetUp', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-        hist_pNetDn = ROOT.TH1D(f'Bprime_mass_pre_{regionTag}_pNetDn', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
 
-    fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn)
-    fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn)
-    fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, hist, hist_pNetUp, hist_pNetDn)
+    # create for all. but only fill for the necessary cases
+    hist_pNetUp = ROOT.TH1D(f'Bprime_mass_pre_{regionTag}_pNetUp', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+    hist_pNetDn = ROOT.TH1D(f'Bprime_mass_pre_{regionTag}_pNetDn', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+
+    if "V" in regionTag:
+      fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
+    elif "2" in regionTag:
+      fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
+    else:
+      fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
         
 if 'case14' in args.tag:
   case_list = ["case1", "case4"]
