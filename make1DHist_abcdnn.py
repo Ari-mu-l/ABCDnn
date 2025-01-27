@@ -157,7 +157,7 @@ def processInput(fileName):
   else:
     return inputs_region, Bdecay_region
 
-def fillNominal(inputs_array, hist):
+def fillNominal(fileName, inputs_array, weight_array, pNet_array, hist):
   for i in range(len(inputs_array)):
       if inputs_array[i][0]>bin_lo:
         hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
@@ -171,7 +171,7 @@ def fillNominal(inputs_array, hist):
     hist_pNetUp.Write()
     hist_pNetDn.Write()
 
-def fillLowST(inputs_array, hist):
+def fillLowST(fileName, inputs_array, weight_array, pNet_array, hist):
   for i in range(len(inputs_array)):
       if inputs_array[i][0]>bin_lo and inputs_array[i][1]<validationCut:
         hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
@@ -185,7 +185,7 @@ def fillLowST(inputs_array, hist):
     hist_pNetUp.Write()
     hist_pNetDn.Write()
         
-def fillHighST(inputs_array, hist):
+def fillHighST(fileName, inputs_array, weight_array, pNet_array, hist):
   for i in range(len(inputs_array)):
       if inputs_array[i][0]>bin_lo and inputs_array[i][1]>validationCut:
         hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
@@ -213,7 +213,7 @@ def make1DHists(fileName, inputs_region, Bdecay_region, region, case):
     weight_array = np.ones(len(inputs_array))
 
   if case=="case1" or case=="case2":
-    if ("Minor" in fileName) or ("Major" in fileName):
+    if ("Minor" in fileName) or ("Data" in fileName):
       pNet_array   = np.ones(len(inputs_array))
       pNetUp_array = np.ones(len(inputs_array))
       pNetDn_array = np.ones(len(inputs_array))
@@ -249,9 +249,9 @@ def make1DHists(fileName, inputs_region, Bdecay_region, region, case):
         hist_pNetUp = ROOT.TH1D(f'Bprime_mass_pre_{regionTag}_pNetUp', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
         hist_pNetDn = ROOT.TH1D(f'Bprime_mass_pre_{regionTag}_pNetDn', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
 
-    fillNominal(inputs_array, hist)
-    fillLowST(inputs_array, hist)
-    fillHighST(inputs_array, hist)
+    fillNominal(fileName, inputs_array, weight_array, pNet_array, hist)
+    fillLowST(fileName, inputs_array, weight_array, pNet_array, hist)
+    fillHighST(fileName, inputs_array, weight_array, pNet_array, hist)
         
 if 'case14' in args.tag:
   case_list = ["case1", "case4"]
