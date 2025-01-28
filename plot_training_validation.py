@@ -32,7 +32,7 @@ parser.add_argument( "-m", "--tag", required = True )
 
 args = parser.parse_args()
 
-highST = False
+highST = True
 plotBest = True
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]
@@ -502,8 +502,8 @@ if plotBest:
     for x in range(6):
       for y in range(2):
         blind = False
-        if ( not args.unblind and y==1 ):
-          if ( x == 4 or x == 5 ):
+        if not args.unblind:
+          if region_key[int(x/2)][y]=="D":
             blind = True
         if x % 2 == 0:
           plot_hist(

@@ -110,9 +110,11 @@ print( ">> Found {} total minor background entries".format( inputs_mnr.shape[0] 
 #   dfMinor = dfMinor.loc[ dfMinor[ vName[1] ] >= variables[ vName[1] ][ "MIN" ] ]
 #   dfTarget = dfTarget.loc[ dfTarget[ vName[1] ] >= variables[ vName[1] ][ "MIN" ] ]
 
-for variable in variables:
-  inputs_tgt[variable] = inputs_tgt[variable].clip(upper = config.variables[variable]["LIMIT"][1])
-  inputs_mnr[variable] = inputs_mnr[variable].clip(upper = config.variables[variable]["LIMIT"][1])
+# was used until AN-v6
+# tgt and mnr should not be clipped. truncation should be a feature of the plots only
+#for variable in variables:
+#  inputs_tgt[variable] = inputs_tgt[variable].clip(upper = config.variables[variable]["LIMIT"][1])
+#  inputs_mnr[variable] = inputs_mnr[variable].clip(upper = config.variables[variable]["LIMIT"][1])
 #print(inputs_mnr["Bprime_mass"].min()
 
 for region in [ "X", "Y", "A", "B", "C", "D" ]:
@@ -161,8 +163,10 @@ for region in inputs_src_region:
   encoder[region] = abcdnn.OneHotEncoder_int( categorical, lowerlimit = lowerlimit, upperlimit = upperlimit )
   inputs_enc_region[ region ] = encoder[region].encode( inputs_src_region[ region ].to_numpy( dtype = np.float32 ) )
   inputs_nrm_region[ region ] = ( inputs_enc_region[ region ] - inputmeans ) / inputsigmas
-  inputs_src_region[ region ][ variables[0] ] = inputs_src_region[ region ][ variables[0] ].clip(upper=config.variables[variables[0]]["LIMIT"][1])
-  inputs_src_region[ region ][ variables[1] ] = inputs_src_region[ region ][ variables[1] ].clip(upper=config.variables[variables[1]]["LIMIT"][1])
+  # was used until v6
+  # src should not be clipped. truncation should be a feature of the plots only
+  #inputs_src_region[ region ][ variables[0] ] = inputs_src_region[ region ][ variables[0] ].clip(upper=config.variables[variables[0]]["LIMIT"][1])
+  #inputs_src_region[ region ][ variables[1] ] = inputs_src_region[ region ][ variables[1] ].clip(upper=config.variables[variables[1]]["LIMIT"][1])
 
 print( ">> Processing checkpoints" )
 predictions = {}
@@ -436,8 +440,8 @@ if plotBest:
     elif variable == "gcJet_ST":
       #bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],700,config.variables[ variable ][ "LIMIT_plot" ][1]]) # ANv1-6
       #bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],850,config.variables[ variable ][ "LIMIT_plot" ][1]]) # ANv7
-      #bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],600,850,config.variables[ variable ][ "LIMIT_plot" ][1]]) # 3bin
-      bins = np.linspace( 0, 1500, 31 ) # 5 bins
+      bins = np.linspace( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1], 31) # 30 bins
+      #bins = np.linspace( 0, 1500, 31 ) # 30 bins
     else:
       bins = np.linspace( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1], config.params[ "PLOT" ][ "NBINS" ] )
     #if(variable == "Bprime_mass"):

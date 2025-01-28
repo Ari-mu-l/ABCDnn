@@ -97,6 +97,10 @@ def plotHists1D(case):
 
     histFile.Close()
 
+
+STTag = {"fullST": "",
+         "lowST": "V",
+         "highST": "2"}
     
 for case in ["case1", "case2", "case3", "case4"]:
     histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_{binlo}to{binhi}_{bins}_pNet.root', 'UPDATE')
@@ -104,10 +108,10 @@ for case in ["case1", "case2", "case3", "case4"]:
     # training uncert #
     ###################
     # use A,B,C to calculate train uncert with fullST, lowST,highST
-    for STrange in ["","lowST","highST"]:
+    for STrange in ["fullST","lowST","highST"]:
         hist_trainUncert = ROOT.TH1D(f'Bprime_mass_trainUncert{STrange}_{case}', "Bprime_mass", bins, binlo, binhi)
         for region in ["A", "B", "C"]:
-            hist_tgt, hist_pre = getNormalizedTgtPreHists(histFile, f'{region}{STrange}')
+            hist_tgt, hist_pre = getNormalizedTgtPreHists(histFile, f'{region}{STTag[STrange]}')
             
             # PrecentageDiff = (hist_tgt - hist_pre)/hist_pre
             hist_tgt.Add(hist_pre, -1.0)
@@ -125,7 +129,7 @@ for case in ["case1", "case2", "case3", "case4"]:
         hist_trainUncert.Write(f'Bprime_mass_trainUncert{STrange}')
         print(f'Saved Bprime_mass_trainUncert{STrange} to {case}')
             
-    for region in ["V", "highST"]:
+    for region in ["V", "D2"]:
         hist_Correction = ROOT.TH1D(f'Bprime_mass_Correct{region}_{case}', "Bprime_mass", bins, binlo, binhi)
         hist_tgt, hist_pre = getNormalizedTgtPreHists(histFile, f'{region}')
         
@@ -135,7 +139,7 @@ for case in ["case1", "case2", "case3", "case4"]:
         
         hist_Correction.Add(hist_tgt, 1.0)
         
-        if region=="highST": # only keep derivation from case3,4 in region V
+        if region=="D2": # only keep derivation from case3,4 in region V
             # assgin the same correction for case2 and 3
             if case=="case3":
                 hist_Correction.Write(f'Bprime_mass_Correct{region}')
@@ -159,5 +163,5 @@ for case in ["case1", "case2", "case3", "case4"]:
     histFile.Close()
 
 # plot histograms
-for case in ["case1", "case2", "case3", "case4"]:
-    plotHists1D(case)
+#for case in ["case1", "case2", "case3", "case4"]:
+#    plotHists1D(case)

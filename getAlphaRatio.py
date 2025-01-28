@@ -56,8 +56,8 @@ if getAlphaRatio=="True":
         counts[case][region]["major"] = hist_major.Integral()
         counts[case][region]["minor"] = hist_minor.Integral()
         
-        if "D" in region or "V" in region:
-            counts[case][region]["unweighted"] = hist_major.GetEntries()
+        #if "D" in region or "V" in region:
+        counts[case][region]["unweighted"] = hist_major.GetEntries()
 
         tFile.Close()
 
@@ -146,7 +146,7 @@ if getAlphaRatio=="True":
 
     print("\nPerforming alpha-ratio estimation.\n")
     for case in ["case1", "case2", "case3", "case4"]:
-        for region in ["V", "D"]: #, "highST"]: ##, "D2"]:
+        for region in ["V", "D", "highST"]: ##, "D2"]:
     #    for region in ["D2"]:
             getPrediction(case, region)
 

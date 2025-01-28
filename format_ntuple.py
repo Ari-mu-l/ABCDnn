@@ -32,8 +32,8 @@ args = parser.parse_args()
 if args.location not in [ "LPC", "BRUX" ]: quit( "[ERR] Invalid -l (--location) argument used. Quitting..." )
 
 ROOT.gInterpreter.Declare("""
-    float compute_weight( float optionalWeight, float L1PreFiringWeight_Nom, float genWeight, float lumi, float xsec, float nRun, float PileupWeights, float leptonRecoSF, float leptonIDSF, float leptonIsoSF, float leptonHLTSF, float btagWeights, float puJetSF ){
-    return optionalWeight * PileupWeights * L1PreFiringWeight_Nom * leptonIDSF * leptonRecoSF * leptonIsoSF * leptonHLTSF * btagWeights * puJetSF * genWeight * lumi * xsec / (nRun * abs(genWeight));
+    float compute_weight( float optionalWeight, float pNetTagWeight, float L1PreFiringWeight_Nom, float genWeight, float lumi, float xsec, float nRun, float PileupWeights, float leptonRecoSF, float leptonIDSF, float leptonIsoSF, float leptonHLTSF, float btagWeights, float puJetSF ){
+    return optionalWeight * pNetTagWeight * PileupWeights * L1PreFiringWeight_Nom * leptonIDSF * leptonRecoSF * leptonIsoSF * leptonHLTSF * btagWeights * puJetSF * genWeight * lumi * xsec / (nRun * abs(genWeight));
     }
 """)
 
@@ -148,12 +148,20 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
                                    .Define("pNetWtagWeight"  , "gcFatJet_pnetweights[9]")\
                                    .Define("pNetWtagWeightUp", "gcFatJet_pnetweights[10]")\
                                    .Define("pNetWtagWeightDn", "gcFatJet_pnetweights[11]")
-        if "_WJetsHT"  in samplename:
-          rDF_weight = rDF_pNetWeight.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
-        elif "TTTo" in samplename or 'TTMT' in sample.prefix:
-          rDF_weight = rDF_pNetWeight.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
+        if args.case=="case14":
+          pNetTagWeight = "pNetTtagWeight"
+        elif args.case=="case23":
+          pNetTagWeight = "pNetWtagWeight"
         else:
-          rDF_weight = rDF_pNetWeight.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
+          print("Case not considered...")
+          exit()
+          
+        if "_WJetsHT"  in samplename:
+          rDF_weight = rDF_pNetWeight.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_WjetLHE[0]", pNetTagWeight, "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
+        elif "TTTo" in samplename or 'TTMT' in sample.prefix:
+          rDF_weight = rDF_pNetWeight.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("gcHTCorr_top[0]", pNetTagWeight, "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
+        else:
+          rDF_weight = rDF_pNetWeight.Define( "xsecWeight", "compute_weight( {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} )".format("1.0", pNetTagWeight, "L1PreFiringWeight_Nom", "genWeight", targetlumi[year], sample.xsec, sample.nrun, "PileupWeights[0]", "leptonRecoSF[0]", "leptonIDSF[0]", "leptonIsoSF[0]", "leptonHLTSF[0]", "btagWeights[17]", "puJetSF[0]") )
 
         
       if "OS1FatJetProbJ" in config.variables.keys():

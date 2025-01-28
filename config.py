@@ -38,7 +38,7 @@ variables = {
     "CATEGORICAL": False,
     "TRANSFORM": True,
     "LIMIT": [0.,1500.], # was 1500
-    "LIMIT_plot": [0., 1500.],
+    "LIMIT_plot": [0., 2500.], # was 1500
     "MIN": 400,
     "LATEX": "ST_{gcJet}"
   },

@@ -1,4 +1,4 @@
-# python3 makeHist_abcdnn.py -s rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctMajor_all_mc_p100.root -b rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctMinor_all_mc_p100.root -t rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctData_all_data_p100.root -m logBpMlogST_mmd1_case14_random104
+# python3 makeHist_abcdnn.py -s rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctMajor_all_mc_p100.root -b rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctMinor_all_mc_p100.root -t rootFiles_logBpMlogST_Oct2024Run2_pNetWeight/Case14/OctData_all_data_p100.root -f 1.0 -m logBpMlogST_mmd1_case14_random104
 
 ################
 # NOTE: Temporarily commented out tgt and mnr related lines, becuase exceed memory limit with pNet applied
@@ -32,7 +32,7 @@ args = parser.parse_args()
 # histogram settings
 bin_lo = 400 #0
 bin_hi = 2500
-Nbins  = 2100 # 42
+Nbins  = 420 # 42
 validationCut = 850
 
 log = False # set to False if want BpM instead of log(BpM)
@@ -46,9 +46,9 @@ folder_contents = os.listdir( folder )
 
 isTest = True
 if isTest:
-  testDir = f'{args.tag}/'
+  testDir = args.tag
   if not os.path.exists(testDir):
-    os.makedirs(testDir)
+    os.makedirs(testDir+'/')
 else: testDir = ''
 
 print( ">> Reading in {}.json for hyper parameters...".format( args.tag ) )
@@ -162,47 +162,35 @@ def processInput(fileName):
     return inputs_region, Bdecay_region
   
 
-def makeVandHighST(fileName, case, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array):
-  for region in ['V', 'highST']:
-    if "Major" in fileName:
-      hist        = ROOT.TH1D(f'Bprime_mass_pre_{region}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-      hist_pNetUp = ROOT.TH1D(f'Bprime_mass_pre_{region}_pNetUp', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-      hist_pNetDn = ROOT.TH1D(f'Bprime_mass_pre_{region}_pNetDn', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-    elif "Data" in fileName:
-      hist        = ROOT.TH1D(f'Bprime_mass_dat_{region}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
-    elif "Minor" in fileName:
-      hist        = ROOT.TH1D(f'Bprime_mass_mnr_{region}', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+def makeV(fileName, case, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array):
+  ##predict_array = predictions["D"]
+  ##inputs_tgt_array = inputs_tgt_region["D"].to_numpy(dtype='d')
+  ##inputs_mnr_array = inputs_mnr_region["D"].to_numpy(dtype='d')
+  ##weight_mnr_array = inputs_mnr_region["D"]["xsecWeight"].to_numpy(dtype='d')
 
-     if region=='V':
-       # fill nominal V
-       for i in range(len(inputs_array)):
-         if inputs_array[i][1]<validationCut and inputs_array[i][0]>bin_lo:
-           hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
-       hist.Write()
-       # fill pNet shift V
-       if ("Major" in fileName) and (case=="case1" or case=="case2"):
-         for i in range(len(inputs_array)):
-           if inputs_array[i][1]<validationCut and inputs_array[i][0]>bin_lo:
-             hist_pNetUp.Fill(inputs_array[i][0], pNetUp_array[i]) # pNetSF_Up
-             hist_pNetDn.Fill(inputs_array[i][0], pNetDn_array[i]) # pNetSF_Down
-         hist_pNetUp.Write()
-         hist_pNetDn.Write()
-     else: # highST
-       # fill nominal highST
-       for i in range(len(inputs_array)):
-         if inputs_array[i][1]>validationCut and inputs_array[i][0]>bin_lo:
-           hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
-       hist.Write()
-       # fill pNet shift highST
-       if ("Major" in fileName) and (case=="case1" or case=="case2"):
-         for i in range(len(inputs_array)):
-           if inputs_array[i][1]>validationCut and inputs_array[i][0]>bin_lo:
-             hist_pNetUp.Fill(inputs_array[i][0], pNetUp_array[i]) # pNetSF_Up
-             hist_pNetDn.Fill(inputs_array[i][0], pNetDn_array[i]) # pNetSF_Down
-         hist_pNetUp.Write()
-         hist_pNetDn.Write()
+  if "Major" in fileName:
+    hist        = ROOT.TH1D(f'Bprime_mass_pre_V', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+    hist_pNetUp = ROOT.TH1D(f'Bprime_mass_pre_V_pNetUp', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+    hist_pNetDn = ROOT.TH1D(f'Bprime_mass_pre_V_pNetDn', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  elif "Data" in fileName:
+    hist        = ROOT.TH1D(f'Bprime_mass_dat_V', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+  elif "Minor" in fileName:
+    hist        = ROOT.TH1D(f'Bprime_mass_mnr_V', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
+    
+  for i in range(len(inputs_array)):
+    if inputs_array[i][1]<validationCut and inputs_array[i][0]>bin_lo:
+      hist.Fill(inputs_array[i][0], weight_array[i] * pNet_array[i])
+  hist.Write()
+    
+  if ("Major" in fileName) and (case=="case1" or case=="case2"):
+    for i in range(len(inputs_array)):
+      if inputs_array[i][1]<validationCut and inputs_array[i][0]>bin_lo:
+        hist_pNetUp.Fill(inputs_array[i][0], pNetUp_array[i]) # pNetSF_Up
+        hist_pNetDn.Fill(inputs_array[i][0], pNetDn_array[i]) # pNetSF_Down
+    hist_pNetUp.Write()
+    hist_pNetDn.Write()
 
-         
+    
 def makeD2(fileName, case, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array):
   if "Major" in fileName:
     hist        = ROOT.TH1D(f'Bprime_mass_pre_D2', "Bprime_mass_ABCDnn", Nbins, bin_lo, bin_hi)
@@ -227,7 +215,7 @@ def makeD2(fileName, case, inputs_array, weight_array, pNet_array, pNetUp_array,
     hist_pNetDn.Write()
 
     
-def make1DHists(fileName, inputs_region, Bdecay_region, region, case):
+def makeHists_fit(fileName, inputs_region, Bdecay_region, region, case):
   print(fileName)
   caseValue = int(case[-1])
   
@@ -241,7 +229,7 @@ def make1DHists(fileName, inputs_region, Bdecay_region, region, case):
     inputs_array = inputs_region[region][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')[:,:2]
     weight_array = np.ones(len(inputs_array))
   
-  if "Major" in fileName and (case=="case1" or case=="case2"):
+  if case=="case1" or case=="case2":
     if case=="case1":
       pNetTag = "pNetTtagWeight"
     else:
@@ -249,7 +237,8 @@ def make1DHists(fileName, inputs_region, Bdecay_region, region, case):
     pNet_array = Bdecay_region[region][pNetTag][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
     pNetUp_array = Bdecay_region[region][f'{pNetTag}Up'][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
     pNetDn_array = Bdecay_region[region][f'{pNetTag}Dn'][ Bdecay_region[region]["Bdecay_obs"]==caseValue ].to_numpy(dtype='d')
-  else: # case3,4 for major; case1-4 for minor and target
+  else: # case3,4,14,23
+    # dummy pNet_array: pNet tag should be implemented for case14 and 23, but we do not need the combined cases for now
     pNet_array   = np.ones(len(inputs_array))
     pNetUp_array = np.ones(len(inputs_array))
     pNetDn_array = np.ones(len(inputs_array))
@@ -300,16 +289,17 @@ def main(fileName, tfileOption):
     else:
       histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}_pNet.root', tfileOption)
 
-    make1DHists(fileName, inputs_region, Bdecay_region, "A", case)
-    make1DHists(fileName, inputs_region, Bdecay_region, "B", case)
-    make1DHists(fileName, inputs_region, Bdecay_region, "C", case)
+    makeHists_fit(fileName, inputs_region, Bdecay_region, "A", case)
+    makeHists_fit(fileName, inputs_region, Bdecay_region, "B", case)
+    makeHists_fit(fileName, inputs_region, Bdecay_region, "C", case)
     inputs_array , weight_array, pNet_array, pNetUp_array, pNetDn_array = makeHists_fit(fileName, inputs_region, Bdecay_region, "D", case)
-    #make1DHists(fileName, inputs_region, Bdecay_region, "X", case)
-    #make1DHists(fileName, inputs_region, Bdecay_region, "Y", case)
+    #makeHists_fit(fileName, inputs_region, Bdecay_region, "X", case)
+    #makeHists_fit(fileName, inputs_region, Bdecay_region, "Y", case)
 
-    makeVandHighST(fileName, case, inputs_array , weight_array, pNet_array, pNetUp_array, pNetDn_array)
-    #makeD2(fileName, case, inputs_array , weight_array, pNet_array, pNetUp_array, pNetDn_array) # D2 not needed with the current analysis scheme
+    makeV(fileName, case, inputs_array , weight_array, pNet_array, pNetUp_array, pNetDn_array)
+    makeD2(fileName, case, inputs_array , weight_array, pNet_array, pNetUp_array, pNetDn_array)
     histFile.Close()
+
 
 main(args.target, "recreate")
 main(args.minor, "update")

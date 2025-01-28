@@ -206,7 +206,6 @@ def fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_arr
     hist_pNetDn.Write()
   
 def makeHists2D(fileName, inputs_region, Bdecay_region, region, case):
-  print(fileName)
   caseValue = int(case[-1])
 
   if "Major" in fileName:
@@ -239,7 +238,8 @@ def makeHists2D(fileName, inputs_region, Bdecay_region, region, case):
   
   if not log:
     inputs_array = np.exp(inputs_array)
-    inputs_array = np.clip(inputs_array, 0, 2500)
+    inputs_array[:,0] = np.clip(inputs_array[:,0], 0, 2500)
+    inputs_array[:,1] = np.clip(inputs_array[:,1], 0, 1500)
 
   if region=="D":
     subRegionList = ['D', 'V', 'D2']
@@ -254,17 +254,19 @@ def makeHists2D(fileName, inputs_region, Bdecay_region, region, case):
       hist = ROOT.TH2D(f'BpMST_mnr_{regionTag}', "BpM_vs_ST", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
     elif "Major" in fileName:
       hist = ROOT.TH2D(f'BpMST_pre_{regionTag}', "BpM_ABDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+      if case=="case1" or case=="case2": # fill pNetShift only for major bkg. mnr is dealt with in SLA
+        fillpNetShift = True
 
-  # create for all. but only fill for the necessary cases
-  hist_pNetUp = ROOT.TH2D(f'Bprime_mass_pre_{regionTag}_pNetUp', "BpM_ABCDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-  hist_pNetDn = ROOT.TH2D(f'Bprime_mass_pre_{regionTag}_pNetDn', "BpM_ABCDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    # create for all. but only fill for the necessary cases
+    hist_pNetUp = ROOT.TH2D(f'Bprime_mass_pre_{regionTag}_pNetUp', "BpM_ABCDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    hist_pNetDn = ROOT.TH2D(f'Bprime_mass_pre_{regionTag}_pNetDn', "BpM_ABCDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
 
-  if "V" in regionTag:
-    fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
-  elif "2" in regionTag:
-    fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
-  else:
-    fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
+    if "V" in regionTag:
+      fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
+    elif "2" in regionTag:
+      fillHighST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
+    else:
+      fillFullST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
 
     
 if 'case14' in args.tag:
