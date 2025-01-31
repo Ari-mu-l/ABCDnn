@@ -281,14 +281,13 @@ def addHistograms():
             # PrecentageDiff = (hist_tgt - hist_pre)/hist_pre
             hist_Correction = hist_tgt.Clone(f'BpMST_Correct{region}_{case}')
             hist_Correction.Add(hist_pre, -1.0)
+            #hist_Correction.Smooth()
             hist_Correction.Divide(hist_pre)
             
             for i in range(Nbins_BpM_actual+1):
                 for j in range(Nbins_ST+1):
                     if hist_tgt.GetBinContent(i,j)<0:
                         hist_Correction.SetBinContent(i,j,0)
-
-            hist_Correction.Smooth()
 
             histFile.cd()
             hist_Correction.Write(f'BpMST_Correct{region}')
