@@ -16,9 +16,9 @@ Nbins_ST  = 30
 validationCut = 850
 
 unblind_BpM = 700
-unblind_ST = 1000
+unblind_ST = 850
 
-rebin = 5
+rebin = 1
 Nbins_BpM_actual = int(Nbins_BpM/rebin)
 
 plotDir ='2D_plots/'
@@ -205,7 +205,7 @@ def plotHists2D_Separate(case):
     # plot 1D correction derived from 2D
     for STrange in ["fullST"]:
         c6 = ROOT.TCanvas(f'c6_{case}_{STrange}', 'Bprime_mass_ABCDnn correction from 2D ({case})', 600, 600)
-        hist1D = histFile.Get(f'Bprime_mass_pre_Correct{STMap[STrange]}')
+        hist1D = histFile.Get(f'Bprime_mass_pre_Correct{STMap[STrange]}onD')
         hist1D.SetTitle(f'Bprime_mass_ABCDnn correction from {STrange} 2D map ({case})')
         hist1D.GetXaxis().SetTitle('B mass (GeV)')
         hist1D.Draw("HIST")
@@ -297,11 +297,11 @@ def addHistograms():
 
     
 # apply correction
-def applyCorrection(corrType):
+def applyCorrection(corrType, region): # to D and V
     for case in ["case1", "case2", "case3", "case4"]:
         histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet.root', 'UPDATE')
 
-        _, hist_pre = getAlphaRatioTgtPreHists(histFile, 'D', case)
+        _, hist_pre = getAlphaRatioTgtPreHists(histFile, region, case)
 
         # give clone names.
         hist_preUp = hist_pre.Clone('preUp')
@@ -335,17 +335,20 @@ def applyCorrection(corrType):
         hist_cor1D.Add(hist_pre_1DDn, -1.0) # corrected - original
         hist_cor1D.Divide(hist_pre_1DDn)
 
-        hist_pre_1D.Write(f'Bprime_mass_pre_D_withCorrect{corrType}')
-        hist_pre_1DUp.Write(f'Bprime_mass_pre_D_withCorrect{corrType}Up')
-        hist_pre_1DDn.Write(f'Bprime_mass_pre_D_withCorrect{corrType}Dn')
-        hist_cor1D.Write(f'Bprime_mass_pre_Correct{corrType}')
+        hist_pre_1D.Write(f'Bprime_mass_pre_{region}_withCorrect{corrType}')
+        hist_pre_1DUp.Write(f'Bprime_mass_pre_{region}_withCorrect{corrType}Up')
+        hist_pre_1DDn.Write(f'Bprime_mass_pre_{region}_withCorrect{corrType}Dn')
+        hist_cor1D.Write(f'Bprime_mass_pre_Correct{corrType}on{region}')
 
         histFile.Close()
 
+def applyTrainUncert(region):
+    
         
         
 addHistograms()
-applyCorrection('D') # D, V, V2
+applyCorrection('D', 'D')
+applyCorrection('D', 'V') # D, V, V2
 
 
 # plot histograms
