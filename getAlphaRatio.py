@@ -11,6 +11,8 @@ if len(sys.argv)>1:
 else:
     getAlphaRatio = "True"
 
+year = '_2016' # '', '_2016'
+
 if not os.path.exists('validation_plots'):
     os.makedirs('validation_plots')
 
@@ -41,7 +43,7 @@ if getAlphaRatio=="True":
     def getCounts(case, region):
         print(f'Processing {case}')
         #tempFileName  = f'/uscms/home/jmanagan/nobackup/BtoTW/CMSSW_13_0_18/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025/templates_BpMass_138fbfb.root'
-        tempFileName = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025_2100bins/templates_BpMass_138fbfb.root'
+        tempFileName = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025_2100bins/templates_BpMass_138fbfb{year}.root'
         tFile = ROOT.TFile.Open(tempFileName, 'READ')
         hist_data  = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__data_obs')
         hist_major = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__qcd') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__wjets') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__singletop') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ttbar')
@@ -83,9 +85,9 @@ if getAlphaRatio=="True":
             counts["case23"][region]["unweighted"]  = counts["case2"][region]["unweighted"]  + counts["case3"][region]["unweighted"]
 
     # store counts in a json file
-    print("Writing to counts.json...")
+    print(f'Writing to counts{year}.json...')
     json_object = json.dumps(counts, indent=4)
-    with open("counts.json", "w") as outfile:
+    with open(f'counts{year}.json', "w") as outfile:
         outfile.write(json_object)
 
         
@@ -151,9 +153,9 @@ if getAlphaRatio=="True":
             getPrediction(case, region)
 
     # write alpha-ratio restuls to a json file
-    print("Writing to alphaRatio_factors.json...")
+    print('Writing to alphaRatio_factors{year}.json...')
     json_object = json.dumps(yield_pred, indent=4)
-    with open("alphaRatio_factors.json", "w") as outjson:
+    with open(f'alphaRatio_factors{year}.json', "w") as outjson:
         outjson.write(json_object)
 else:
     print("Skipping counts and alpha-ratio estimation...")

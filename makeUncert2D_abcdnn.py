@@ -14,12 +14,17 @@ bin_hi_ST = 1500
 Nbins_BpM = 420 # 2100
 Nbins_ST  = 30
 validationCut = 850
+statCutoff = 0 #10
 
 unblind_BpM = 700
 unblind_ST = 850
 
-rebin = 1
-Nbins_BpM_actual = int(Nbins_BpM/rebin)
+rebinX = 1 #10
+rebinY = 1 #5
+Nbins_BpM_actual = int(Nbins_BpM/rebinX)
+Nbins_ST_actual = int(Nbins_ST/rebinY)
+
+year = '_2016' #'_2016' # '', '_2016', '_2016APV'
 
 plotDir ='2D_plots/'
 if not os.path.exists(plotDir):
@@ -38,71 +43,92 @@ def modifyOverflow2D(hist):
     ## Julie comment: I think we actually need to do the entire right EDGE and the entire top EDGE...
     # top edge should be [imass,Nbins_ST] as the bin number, where imass runs 1 through Nbins_BpM_actual
     for imass in range(1,Nbins_BpM_actual+1):
-        newtotal = hist.GetBinContent(imass,Nbins_ST)+hist.GetBinContent(imass,Nbins_ST+1)
-        hist.SetBinContent(imass,Nbins_ST,newtotal)
-        hist.SetBinContent(imass,Nbins_ST+1,0)
+        newtotal = hist.GetBinContent(imass,Nbins_ST_actual)+hist.GetBinContent(imass,Nbins_ST_actual+1)
+        hist.SetBinContent(imass,Nbins_ST_actual,newtotal)
+        hist.SetBinContent(imass,Nbins_ST_actual+1,0)
     # right edge should be [Nbins_BpM_actual,ist], where ist runs 1 through Nbins_ST
-    for ist in range(1,Nbins_ST+1):
+    for ist in range(1,Nbins_ST_actual+1):
         newtotal = hist.GetBinContent(Nbins_BpM_actual,ist)+hist.GetBinContent(Nbins_BpM_actual+1,ist)
         hist.SetBinContent(Nbins_BpM_actual,ist,newtotal)
         hist.SetBinContent(Nbins_BpM_actual+1,ist,0)
         
 
-def getNormalizedTgtPreHists(histFile, histTag):
-    hist_tgt = histFile.Get(f'BpMST_dat_{histTag}').Clone()
-    hist_mnr = histFile.Get(f'BpMST_mnr_{histTag}').Clone()
-    hist_pre = histFile.Get(f'BpMST_pre_{histTag}').Clone()
-
-    hist_tgt.RebinX(rebin)
-    hist_mnr.RebinX(rebin)
-    hist_pre.RebinX(rebin)
-    
-    # tgt = dat - mnr
-    hist_tgt.Add(hist_mnr, -1.0)
-
-    modifyOverflow2D(hist_tgt)
+def getNormalizedTgtPreHists(histFile, histTag, getTgt=True):
+    # TEMP: Named 2D hist of pNetUp and Dn as Bprime_mass
+    objectName = 'BpMST'
+    if 'pNet' in histTag:
+        objectName = 'Bprime_mass'
+    #hist_pre = histFile.Get(f'BpMST_pre_{histTag}').Clone(f'BpMST_pre_{histTag}')
+    hist_pre = histFile.Get(f'{objectName}_pre_{histTag}').Clone(f'BpMST_pre_{histTag}')
+    hist_pre.RebinX(rebinX)
+    hist_pre.RebinY(rebinY)
     modifyOverflow2D(hist_pre)
-
-    hist_tgt.Scale(1/hist_tgt.Integral())
     hist_pre.Scale(1/hist_pre.Integral())
+    
+    if getTgt:
+        hist_tgt = histFile.Get(f'{objectName}_dat_{histTag}').Clone(f'BpMST_dat_{histTag}')
+        hist_mnr = histFile.Get(f'{objectName}_mnr_{histTag}').Clone(f'BpMST_mnr_{histTag}')
+        hist_tgt.RebinX(rebinX)
+        hist_mnr.RebinX(rebinX)
+        hist_tgt.RebinY(rebinY)
+        hist_mnr.RebinY(rebinY)
+        
+        # tgt = dat - mnr
+        hist_tgt.Add(hist_mnr, -1.0)
 
-    return hist_tgt, hist_pre
+        modifyOverflow2D(hist_tgt)
+        hist_tgt.Scale(1/hist_tgt.Integral())
+
+        return hist_tgt, hist_pre
+    else:
+        return hist_pre
 
 
 alphaFactors = {}
-with open("alphaRatio_factors.json","r") as alphaFile:
+with open(f'alphaRatio_factors{year}.json',"r") as alphaFile:
     alphaFactors = json.load(alphaFile)
     
-def getAlphaRatioTgtPreHists(histFile, histTag, case):
-    _, hist_pre = getNormalizedTgtPreHists(histFile, histTag)
-
-    hist_tgt = histFile.Get(f'BpMST_dat_{histTag}').Clone()
-    hist_mnr = histFile.Get(f'BpMST_mnr_{histTag}').Clone()
-
-    hist_tgt.RebinX(rebin)
-    hist_mnr.RebinX(rebin)
-
-    hist_tgt.Add(hist_mnr, -1.0)
-
-    modifyOverflow2D(hist_tgt)
-
+def getAlphaRatioTgtPreHists(histFile, histTag, case, getTgt=True):
     #TEMP: remove after the naming convention is changed in getAlphaRatio
     if histTag=="D2":
         region = "highST"
     else:
         region = histTag
-    
+        
+    # TEMP: Named 2D hist of pNetUp and Dn as Bprime_mass
+    objectName = 'BpMST'
+    if 'pNet' in histTag:
+        objectName = 'Bprime_mass'
+        region = histTag[0]
+        
+    if getTgt:
+        _, hist_pre = getNormalizedTgtPreHists(histFile, histTag, getTgt)
+    else:
+        hist_pre = getNormalizedTgtPreHists(histFile, histTag, getTgt)
+
     yield_pred = alphaFactors[case][region]["prediction"]
     hist_pre.Scale(yield_pred)
-
-    return hist_tgt, hist_pre
+    
+    if getTgt:
+        hist_tgt = histFile.Get(f'{objectName}_dat_{histTag}').Clone(f'BpMST_dat_{histTag}')
+        hist_mnr = histFile.Get(f'{objectName}_mnr_{histTag}').Clone(f'BpMST_mnr_{histTag}')
+        hist_tgt.RebinX(rebinX)
+        hist_mnr.RebinX(rebinX)
+        hist_tgt.RebinY(rebinY)
+        hist_mnr.RebinY(rebinY)
+        hist_tgt.Add(hist_mnr, -1.0)
+        modifyOverflow2D(hist_tgt)
+                    
+        return hist_tgt, hist_pre
+    else:
+        return hist_pre
     
 
 def plotHists2D_All():
-    histFile1 = ROOT.TFile.Open(f'hists_ABCDnn_case1_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet.root', 'READ')
-    histFile2 = ROOT.TFile.Open(f'hists_ABCDnn_case2_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet.root', 'READ')
-    histFile3 = ROOT.TFile.Open(f'hists_ABCDnn_case3_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet.root', 'READ')
-    histFile4 = ROOT.TFile.Open(f'hists_ABCDnn_case4_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet.root', 'READ')
+    histFile1 = ROOT.TFile.Open(f'hists_ABCDnn_case1_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
+    histFile2 = ROOT.TFile.Open(f'hists_ABCDnn_case2_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
+    histFile3 = ROOT.TFile.Open(f'hists_ABCDnn_case3_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
+    histFile4 = ROOT.TFile.Open(f'hists_ABCDnn_case4_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
 
     for region in ["D", "V", "D2"]:
         hist_tgt1, hist_pre1 = getAlphaRatioTgtPreHists(histFile1, f'{region}', 'case1')
@@ -131,10 +157,10 @@ def plotHists2D_All():
         
     
 def plotHists2D_Separate(case):
-    histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet.root', 'READ')
+    histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
     
     for region in ["D", "V", "D2"]:
-        hist_tgt, hist_pre = getNormalizedTgtPreHists(histFile, f'{region}')
+        hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFile, f'{region}', case)
 
         # plot prediction hist for V,D,D2
         c1 = ROOT.TCanvas(f'c1_{region}', f'ST_ABCDnn vs BpM_ABCDnn in region {region}', 900, 600)
@@ -169,6 +195,8 @@ def plotHists2D_Separate(case):
         hist_trainUncert.SetTitle(f'Percentage training uncertainty from {STrange} ({case})')
         hist_trainUncert.GetXaxis().SetTitle('B mass (GeV)')
         hist_trainUncert.GetYaxis().SetTitle('ST (GeV)')
+        hist_trainUncert.GetYaxis().SetRangeUser(400,1500)
+        hist_trainUncert.GetZaxis().SetRangeUser(-1.0,2.0)
         hist_trainUncert.Draw("COLZ")
         c3.SaveAs(f'{plotDir}BpMST_trainUncertPercent{STrange}_{case}.png')
         c3.Close()
@@ -214,13 +242,13 @@ def plotHists2D_Separate(case):
         
 def addHistograms():
     for case in ["case1", "case2", "case3", "case4"]:
-        histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet.root', 'UPDATE')
+        histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'UPDATE')
         ###################
         # training uncert #
         ###################
         # use A,B,C to calculate train uncert with fullST, lowST,highST
         for STrange in ["fullST","lowST","highST"]:
-            hist_trainUncert = ROOT.TH2D(f'BpMST_trainUncert{STrange}_{case}', "BpM_vs_ST", Nbins_BpM_actual, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+            hist_trainUncert = ROOT.TH2D(f'BpMST_trainUncert{STrange}_{case}', "BpM_vs_ST", Nbins_BpM_actual, bin_lo_BpM, bin_hi_BpM, Nbins_ST_actual, bin_lo_ST, bin_hi_ST)
             for region in ["A", "B", "C"]:
                 hist_tgt, hist_pre = getNormalizedTgtPreHists(histFile, f'{region}{STTag[STrange]}')
 
@@ -229,12 +257,12 @@ def addHistograms():
                 hist_tgt.Divide(hist_pre)
 
                 # take absolute value abs(PercentageDiff) for training uncert
-                # allow negative values for V and highST corrections
-                for i in range(Nbins_BpM_actual+1):
-                    for j in range(Nbins_ST+1):
-                        if hist_tgt.GetBinContent(i,j)<=10:
-                            hist_tgt.SetBinContent(i,j,-hist_tgt.GetBinContent(i,j))
                 # add contribution to training uncert
+                for i in range(Nbins_BpM_actual+1):
+                    for j in range(Nbins_ST_actual+1):
+                        if hist_tgt.GetBinContent(i,j)<0:
+                            hist_tgt.SetBinContent(i,j,-hist_tgt.GetBinContent(i,j))
+                            
                 hist_trainUncert.Add(hist_tgt, 1.0)
             # average over A,B,C
             hist_trainUncert.Scale(1/3)
@@ -256,26 +284,26 @@ def addHistograms():
             #| Derive   |
             # ----------
             ###########################################
-            if region!="V" and (case=="case1" or case=="case2"): # VR can be fully unblinded
+            if region!="V" and (case=="case1" or case=="case2"): # VR can be fully unblinded. unblind one year
                 if case=="case1":
-                    histFilePartner = ROOT.TFile.Open(f'hists_ABCDnn_case4_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet.root', 'READ')
+                    histFilePartner = ROOT.TFile.Open(f'hists_ABCDnn_case4_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
                     hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFilePartner, f'{region}', 'case4')
                 else: # case2 partners with case3
-                    histFilePartner = ROOT.TFile.Open(f'hists_ABCDnn_case3_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet.root', 'READ')
+                    histFilePartner = ROOT.TFile.Open(f'hists_ABCDnn_case3_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
                     hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFilePartner, f'{region}', 'case3')
-
             
                 unblind_BpM_bin = hist_tgt_partner.GetXaxis().FindFixBin(unblind_BpM)
                 unblind_ST_bin = hist_tgt_partner.GetYaxis().FindFixBin(unblind_ST)
 
                 # set case1/2 upper right corner to case3/4
                 for i in range(unblind_BpM_bin, Nbins_BpM_actual+1):
-                    for j in range(unblind_ST_bin, Nbins_ST+1):
+                    for j in range(unblind_ST_bin, Nbins_ST_actual+1):
                         hist_tgt.SetBinContent(i, j, hist_tgt_partner.GetBinContent(i,j))
                         hist_pre.SetBinContent(i, j, hist_pre_partner.GetBinContent(i,j))
                 
                 histFilePartner.Close()
             ##########################################
+
             
             #Then follow the standard way of creating correction hist
             # PrecentageDiff = (hist_tgt - hist_pre)/hist_pre
@@ -283,11 +311,11 @@ def addHistograms():
             hist_Correction.Add(hist_pre, -1.0)
             #hist_Correction.Smooth()
             hist_Correction.Divide(hist_pre)
-            
+
             for i in range(Nbins_BpM_actual+1):
-                for j in range(Nbins_ST+1):
-                    if hist_tgt.GetBinContent(i,j)<0:
-                        hist_Correction.SetBinContent(i,j,0)
+               for j in range(Nbins_ST_actual+1):
+                   if hist_tgt.GetBinContent(i,j)<=statCutoff:
+                       hist_Correction.SetBinContent(i,j,0)
 
             histFile.cd()
             hist_Correction.Write(f'BpMST_Correct{region}')
@@ -299,15 +327,16 @@ def addHistograms():
 # apply correction
 def applyCorrection(corrType, region): # to D and V
     for case in ["case1", "case2", "case3", "case4"]:
-        histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet.root', 'UPDATE')
+        histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'UPDATE')
 
-        _, hist_pre = getAlphaRatioTgtPreHists(histFile, region, case)
+        hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFile, region, case)
 
-        # give clone names.
-        hist_preUp = hist_pre.Clone('preUp')
-        hist_preDn = hist_pre.Clone('preDn')
-        hist_cor = histFile.Get(f'BpMST_Correct{corrType}').Clone('cor')
-
+        # give clone names, so that ProfileX can distinguish them
+        hist_preUp = hist_pre.Clone(f'preUp_{region}')
+        hist_preDn = hist_pre.Clone(f'preDn_{region}')
+        hist_cor = histFile.Get(f'BpMST_Correct{region}').Clone('cor')
+        #hist_cor = histFile.Get(f'BpMST_Correct{corrType}').Clone('cor')
+        
         # For debugging:
         # print(case)
         # unblind_BpM_bin = hist_cor.GetXaxis().FindFixBin(unblind_BpM)
@@ -316,25 +345,35 @@ def applyCorrection(corrType, region): # to D and V
         #    for j in range(unblind_ST_bin, Nbins_ST+1):
         #        if i%10==0 and j%10==0: # print every 10 bins
         #            print(i,j,hist_cor.GetBinContent(i,j))
-
+        
         # pre = pre + pre*correction
         hist_cor.Multiply(hist_pre)
         hist_pre.Add(hist_cor)
-
+        
         # preUp = pre + pre*2*correction
         hist_preUp.Add(hist_cor)
         hist_preUp.Add(hist_cor)
-
-        # preDn = pre + pre*0, so do nothing 
-
+        
+        # preDn = pre + pre*0, so do nothing
+        
+        if region=="V":
+            for i in range(Nbins_BpM_actual+1):
+                for j in range(hist_preUp.GetYaxis().FindFixBin(validationCut),Nbins_ST_actual+1):
+                    hist_pre.SetBinContent(i,j,0)
+                    hist_preUp.SetBinContent(i,j,0)
+                    hist_preDn.SetBinContent(i,j,0)
+                    hist_pre.SetBinError(i,j,0)
+                    hist_preUp.SetBinError(i,j,0)
+                    hist_preDn.SetBinError(i,j,0)
+            
         hist_pre_1DUp = hist_preUp.ProjectionX()
         hist_pre_1DDn = hist_preDn.ProjectionX()
         hist_pre_1D = hist_pre.ProjectionX()
-
+        
         hist_cor1D = hist_pre_1D.Clone()
         hist_cor1D.Add(hist_pre_1DDn, -1.0) # corrected - original
         hist_cor1D.Divide(hist_pre_1DDn)
-
+    
         hist_pre_1D.Write(f'Bprime_mass_pre_{region}_withCorrect{corrType}')
         hist_pre_1DUp.Write(f'Bprime_mass_pre_{region}_withCorrect{corrType}Up')
         hist_pre_1DDn.Write(f'Bprime_mass_pre_{region}_withCorrect{corrType}Dn')
@@ -343,13 +382,54 @@ def applyCorrection(corrType, region): # to D and V
         histFile.Close()
 
 def applyTrainUncert(region):
-    
+    for case in ["case1", "case2", "case3", "case4"]:
+        histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'UPDATE')
         
+        hist_pre = getAlphaRatioTgtPreHists(histFile, region, case, False)
+        hist_preUp = hist_pre.Clone(f'preUp_{region}')
+        hist_preDn = hist_pre.Clone(f'preDn_{region}')
+        
+        hist_trainUncert = histFile.Get(f'BpMST_trainUncertfullST').Clone('trainUncert')
+
+        # pre = pre +/- pre*trainUncert
+        hist_trainUncert.Multiply(hist_preUp)
+        hist_preUp.Add(hist_trainUncert, 1.0)
+        hist_preDn.Add(hist_trainUncert, -1.0)
+
+        if region=="V":
+            for i in range(Nbins_BpM_actual+1):
+                for j in range(hist_preUp.GetYaxis().FindFixBin(validationCut),Nbins_ST_actual+1):
+                    hist_preUp.SetBinContent(i,j,0)
+                    hist_preDn.SetBinContent(i,j,0)
+
+        hist_pre_1DUp = hist_preUp.ProjectionX()
+        hist_pre_1DDn = hist_preDn.ProjectionX()
+        
+        hist_pre_1DUp.Write(f'Bprime_mass_pre_{region}_trainUncertfullSTUp')
+        hist_pre_1DDn.Write(f'Bprime_mass_pre_{region}_trainUncertfullSTDn')
+
+        histFile.Close()
+
+def applypNet(region):
+    for case in ["case1", "case2"]:
+        histFile = ROOT.TFile.Open(f'hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root','UPDATE')
+        
+        hist_preUp = getAlphaRatioTgtPreHists(histFile, f'{region}_pNetUp', case, False)
+        hist_preDn = getAlphaRatioTgtPreHists(histFile, f'{region}_pNetDn', case, False)
+
+        hist_pre_1DUp = hist_preUp.ProjectionX()
+        hist_pre_1DDn = hist_preDn.ProjectionX()
+
+        hist_pre_1DUp.Write(f'Bprime_mass_pre_{region}_pNetUp_1D')
+        hist_pre_1DDn.Write(f'Bprime_mass_pre_{region}_pNetDn_1D')
+
+        histFile.Close()
         
 addHistograms()
-applyCorrection('D', 'D')
-applyCorrection('D', 'V') # D, V, V2
-
+for applyRegion in ['D', 'V']:
+    applyCorrection('D', applyRegion) # D, V, V2
+    applyTrainUncert(applyRegion)
+    applypNet(applyRegion)
 
 # plot histograms
 for case in ["case1", "case2", "case3", "case4"]:
