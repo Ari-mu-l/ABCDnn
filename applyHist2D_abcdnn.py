@@ -12,10 +12,10 @@ TH1.SetDefaultSumw2(True)
 
 binlo = 400
 binhi = 2500
-bins = 84 #210 #420
-year = '_2016' #'_2016' # '', '_2016'
+bins = 210 #210 #420
+year = '_2016' # '', '_2016'
 
-doV2 = True
+doV2 = False
 withFit = False
 separateUncertCases = True
 
@@ -68,6 +68,7 @@ def fillHistogram(hist):
 regionMap = {"A": "A", "B": "B", "C": "C", "D": "D", "V":"V", "highST": "D2"} # TEMP: named highST as D2 in the intermediate file
 def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainUncert, correct (correctDn==original). shift: Up, Dn
     histFile = TFile.Open(f'hists_ABCDnn_{case}_BpM400to2500ST0to1500_420bins30bins_pNet{year}.root', "READ")
+    #histFile = TFile.Open(f'hists_ABCDnn_{case}_BpM400to2500ST0to1530_420bins18bins_pNet{year}.root', "READ")
     if "Nominal" in histType:
         hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrectD').Clone()
         modifyOverflow(hist,bins)
