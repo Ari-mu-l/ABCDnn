@@ -519,14 +519,14 @@ def applypNet(region):
 
         histFile.Close()
 
-addHistograms()
-for applyRegion in ['D', 'V']:
-    applyCorrection('D', applyRegion) # D, V, V2
-    applyTrainUncert(applyRegion)
-    applypNet(applyRegion)
+#addHistograms()
+#for applyRegion in ['D', 'V']:
+#    applyCorrection('D', applyRegion) # D, V, V2
+#    applyTrainUncert(applyRegion)
+#    applypNet(applyRegion)
     
 # plot histograms
-#for case in ["case1", "case2", "case3", "case4"]:
-#    plotHists2D_Separate(case)
+for case in ["case1", "case2", "case3", "case4"]:
+    plotHists2D_Separate(case)
 
 #plotHists2D_All() # this function needs some work. Complains about merging hists with diff bins

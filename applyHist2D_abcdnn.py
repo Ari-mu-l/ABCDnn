@@ -15,7 +15,7 @@ binhi = 2500
 bins = 210 #210 #420
 year = '_2016' # '', '_2016'
 
-doV2 = False
+doV2 = True
 withFit = False
 separateUncertCases = True
 
@@ -106,14 +106,18 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
     if doV2:
         if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
             outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb{year}.root', "UPDATE")
-            hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major{outNameTag}')
+            hist_out.SetTitle("")
+            hist_out.SetName(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major{outNameTag}')
+            hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major{outNameTag}', TObject.kOverwrite)
             outFile.Close()
     else:
         outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb{year}.root', "UPDATE")
         #if region=="highST":
         #    print(hist_out.Integral())
         #    print(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major{outNameTag}')
-        hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major{outNameTag}')
+        hist_out.SetTitle("")
+        hist_out.SetName(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major{outNameTag}')
+        hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major{outNameTag}', TObject.kOverwrite)
         outFile.Close()
 
 histList = ["Nominal", "pNet", "trainUncert", "correct"]
