@@ -24,7 +24,7 @@ rebinY = 1 #5
 Nbins_BpM_actual = int(Nbins_BpM/rebinX)
 Nbins_ST_actual = int(Nbins_ST/rebinY)
 
-year = '' # '', '_2016', '_2016APV'
+year = '_2016' # '', '_2016', '_2016APV'
 varyBinSize = True
 
 plotDir ='2D_plots/'
@@ -208,7 +208,8 @@ def plotHists2D_Separate(case):
             c2.Close()
 
     # plot training uncertainty derived from full ST, low ST, highST
-    for STrange in ['fullST','lowST','highST']:
+    #for STrange in ['fullST','lowST','highST']:
+    for STrange in ['fullST']:
         c3 = ROOT.TCanvas(f'c3_{case}_{STrange}', f'Percentage training uncertainty from {STrange} ({case})', 900, 600)
         hist_trainUncert = histFile.Get(f'BpMST_trainUncert{STrange}')
         hist_trainUncert.SetTitle(f'Percentage training uncertainty from {STrange} ({case})')
@@ -269,64 +270,64 @@ def addHistograms():
         for STrange in ["fullST"]: #,"lowST","highST"]:
             
             # Alternative 1:
-            # for region in ["A", "B", "C"]:
-            #     hist_tgt, hist_pre = getNormalizedTgtPreHists(histFile, f'{region}{STTag[STrange]}')
-                
-            #     modifyBinning(hist_tgt)
-
-            #     # PrecentageDiff = (hist_tgt - hist_pre)/hist_pre
-            #     hist_tgt.Add(hist_pre, -1.0)
-            #     hist_tgt.Divide(hist_pre)
-
-            #     # take absolute value abs(PercentageDiff) for training uncert
-            #     # add contribution to training uncert
-            #     for i in range(Nbins_BpM_actual+1):
-            #         for j in range(Nbins_ST_actual+1):
-            #             hist_tgt.SetBinError(i,j,0) # set bin error to 0, so that it acts as a pure scale factor
-            #             if hist_tgt.GetBinContent(i,j)<0:
-            #                 hist_tgt.SetBinContent(i,j,-hist_tgt.GetBinContent(i,j))
-     
-            # # average over A,B,C
-            # hist_tgt.Scale(1/3)
-            # hist_tgt.Write(f'BpMST_trainUncert{STrange}')
-            # print(f'Saved BpMST_trainUncert{STrange} to {case}')
-            
-            # Alternative 2:
-            # weighted average
-            hist_tgtABC = ROOT.TH2D(f'BpMST_tgt{STrange}_{case}', "BpM_vs_ST", Nbins_BpM_actual, bin_lo_BpM, bin_hi_BpM, Nbins_ST_actual, bin_lo_ST, bin_hi_ST)
-            hist_preABC = ROOT.TH2D(f'BpMST_pre{STrange}_{case}', "BpM_vs_ST", Nbins_BpM_actual, bin_lo_BpM, bin_hi_BpM, Nbins_ST_actual, bin_lo_ST, bin_hi_ST)
             for region in ["A", "B", "C"]:
-                hist_tgt = histFile.Get(f'BpMST_dat_{region}').Clone(f'dat_{region}')
-                hist_mnr = histFile.Get(f'BpMST_mnr_{region}').Clone(f'mnr_{region}')
-                hist_pre = histFile.Get(f'BpMST_pre_{region}').Clone(f'pre_{region}')
+                hist_tgt, hist_pre = getNormalizedTgtPreHists(histFile, f'{region}{STTag[STrange]}')
                 
-                hist_tgt.Add(hist_mnr, -1.0)
+                #modifyBinning(hist_tgt)
 
-                hist_tgt.RebinX(rebinX)
-                hist_pre.RebinX(rebinX)
+                # PrecentageDiff = (hist_tgt - hist_pre)/hist_pre
+                hist_tgt.Add(hist_pre, -1.0)
+                hist_tgt.Divide(hist_pre)
 
-                hist_tgt.RebinY(rebinY)
-                hist_pre.RebinY(rebinY)
-                
-                hist_tgtABC.Add(hist_tgt)
-                hist_preABC.Add(hist_pre)
-
-            modifyOverflow2D(hist_tgtABC)
-            modifyOverflow2D(hist_preABC)
-
-            hist_tgtABC.Scale(1/hist_tgtABC.Integral())
-            hist_preABC.Scale(1/hist_preABC.Integral())
-
-            # PrecentageDiff = (hist_tgt - hist_pre)/hist_pre
-            hist_tgtABC.Add(hist_preABC, -1.0)
-            hist_tgtABC.Divide(hist_preABC)
-
-            for i in range(Nbins_BpM_actual+1):
-                for j in range(Nbins_ST_actual+1):
-                    hist_tgtABC.SetBinError(i,j,0) # set bin error to 0, so that it acts as a pure scale factor
-
-            hist_tgtABC.Write(f'BpMST_trainUncert{STrange}')
+                # take absolute value abs(PercentageDiff) for training uncert
+                # add contribution to training uncert
+                #for i in range(Nbins_BpM_actual+1):
+                #    for j in range(Nbins_ST_actual+1):
+                #        hist_tgt.SetBinError(i,j,0) # set bin error to 0, so that it acts as a pure scale factor
+                #        if hist_tgt.GetBinContent(i,j)<0:
+                #            hist_tgt.SetBinContent(i,j,-hist_tgt.GetBinContent(i,j))
+     
+            # average over A,B,C
+            hist_tgt.Scale(1/3)
+            hist_tgt.Write(f'BpMST_trainUncert{STrange}')
             print(f'Saved BpMST_trainUncert{STrange} to {case}')
+            
+            # # Alternative 2:
+            # # weighted average
+            # hist_tgtABC = ROOT.TH2D(f'BpMST_tgt{STrange}_{case}', "BpM_vs_ST", Nbins_BpM_actual, bin_lo_BpM, bin_hi_BpM, Nbins_ST_actual, bin_lo_ST, bin_hi_ST)
+            # hist_preABC = ROOT.TH2D(f'BpMST_pre{STrange}_{case}', "BpM_vs_ST", Nbins_BpM_actual, bin_lo_BpM, bin_hi_BpM, Nbins_ST_actual, bin_lo_ST, bin_hi_ST)
+            # for region in ["A", "B", "C"]:
+            #     hist_tgt = histFile.Get(f'BpMST_dat_{region}').Clone(f'dat_{region}')
+            #     hist_mnr = histFile.Get(f'BpMST_mnr_{region}').Clone(f'mnr_{region}')
+            #     hist_pre = histFile.Get(f'BpMST_pre_{region}').Clone(f'pre_{region}')
+                
+            #     hist_tgt.Add(hist_mnr, -1.0)
+
+            #     hist_tgt.RebinX(rebinX)
+            #     hist_pre.RebinX(rebinX)
+
+            #     hist_tgt.RebinY(rebinY)
+            #     hist_pre.RebinY(rebinY)
+                
+            #     hist_tgtABC.Add(hist_tgt)
+            #     hist_preABC.Add(hist_pre)
+
+            # modifyOverflow2D(hist_tgtABC)
+            # modifyOverflow2D(hist_preABC)
+
+            # hist_tgtABC.Scale(1/hist_tgtABC.Integral())
+            # hist_preABC.Scale(1/hist_preABC.Integral())
+
+            # # PrecentageDiff = (hist_tgt - hist_pre)/hist_pre
+            # hist_tgtABC.Add(hist_preABC, -1.0)
+            # hist_tgtABC.Divide(hist_preABC)
+
+            # for i in range(Nbins_BpM_actual+1):
+            #     for j in range(Nbins_ST_actual+1):
+            #         hist_tgtABC.SetBinError(i,j,0) # set bin error to 0, so that it acts as a pure scale factor
+
+            # hist_tgtABC.Write(f'BpMST_trainUncert{STrange}')
+            # print(f'Saved BpMST_trainUncert{STrange} to {case}')
 
         ##############
         # Correction #
@@ -376,8 +377,9 @@ def addHistograms():
                    # set bin error to 0, so that the application correctly reflects the propogated change in bin error
                    hist_Correction.SetBinError(i,j,0)
                    # no correction on low stat bins 
-                   if hist_tgt.GetBinContent(i,j)<=statCutoff:
-                       hist_Correction.SetBinContent(i,j,0)
+                   if hist_tgt.GetBinContent(i,j)<=statCutoff: # TEMP
+                   #    hist_Correction.SetBinContent(i,j,0) # TEMP
+                       hist_Correction.SetBinContent(i,j,-1) # TEMP: reduce ABCDnn when mnr overpredicts
 
             histFile.cd()
             hist_Correction.Write(f'BpMST_Correct{region}')
@@ -519,11 +521,11 @@ def applypNet(region):
 
         histFile.Close()
 
-#addHistograms()
-#for applyRegion in ['D', 'V']:
-#    applyCorrection('D', applyRegion) # D, V, V2
-#    applyTrainUncert(applyRegion)
-#    applypNet(applyRegion)
+addHistograms()
+for applyRegion in ['D', 'V']:
+    applyCorrection('D', applyRegion) # D, V, V2
+    applyTrainUncert(applyRegion)
+    applypNet(applyRegion)
     
 # plot histograms
 for case in ["case1", "case2", "case3", "case4"]:
