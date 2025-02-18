@@ -1,5 +1,4 @@
 # python3 make2DHist_abcdnn.py -s rootFiles_logBpMlogST_Jan2025Run2/Case14/JanMajor_all_mc_p100.root -b rootFiles_logBpMlogST_Jan2025Run2/Case14/JanMinor_all_mc_p100.root -t rootFiles_logBpMlogST_Jan2025Run2/Case14/JanData_all_data_p100.root -m logBpMlogST_mmd1_case14_random22
-
 import numpy as np
 import os, tqdm
 import abcdnn
@@ -25,13 +24,24 @@ parser.add_argument( "-m", "--tag"   , required = True  )
 
 args = parser.parse_args()
 
+if '2016' in args.target:
+  year = '_2016'
+elif '2016APV' in args.target:
+  year = '_2016APV'
+elif '2017' in args.target:
+  year = '_2017'
+elif '2018' in	args.target:
+  year = '_2018'
+elif 'all' in args.target:
+  year = ''
+
 # histogram settings
 bin_lo_BpM = 400 #0
 bin_hi_BpM = 2500
 bin_lo_ST = 0
-bin_hi_ST = 1500
+bin_hi_ST = 1500 #1500
 Nbins_BpM = 420 # 2100
-Nbins_ST  = 30
+Nbins_ST  = 30 # 30
 validationCut = 850
 
 log = False # set to False if want BpM instead of log(BpM)
@@ -258,8 +268,8 @@ def makeHists2D(fileName, inputs_region, Bdecay_region, region, case):
         fillpNetShift = True
 
     # create for all. but only fill for the necessary cases
-    hist_pNetUp = ROOT.TH2D(f'Bprime_mass_pre_{regionTag}_pNetUp', "BpM_ABCDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
-    hist_pNetDn = ROOT.TH2D(f'Bprime_mass_pre_{regionTag}_pNetDn', "BpM_ABCDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    hist_pNetUp = ROOT.TH2D(f'BpMST_pre_{regionTag}_pNetUp', "BpM_ABCDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
+    hist_pNetDn = ROOT.TH2D(f'BpMST_pre_{regionTag}_pNetDn', "BpM_ABCDnn_vs_ST_ABCDnn", Nbins_BpM, bin_lo_BpM, bin_hi_BpM, Nbins_ST, bin_lo_ST, bin_hi_ST)
 
     if "V" in regionTag:
       fillLowST(fillpNetShift, inputs_array, weight_array, pNet_array, pNetUp_array, pNetDn_array, hist, hist_pNetUp, hist_pNetDn)
@@ -279,9 +289,9 @@ def main(fileName, tfileOption):
 
   for case in case_list:
     if log:
-      histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}_log_pNet.root', tfileOption)
+      histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_{bin_lo}to{bin_hi}_{Nbins}_log_pNet{year}.root', tfileOption)
     else:
-      histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet.root', tfileOption)
+      histFile = ROOT.TFile.Open(f'{testDir}hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', tfileOption)
 
     makeHists2D(fileName, inputs_region, Bdecay_region, "A", case)
     makeHists2D(fileName, inputs_region, Bdecay_region, "B", case)

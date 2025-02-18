@@ -10,10 +10,16 @@ gStyle.SetOptStat(0)
 gROOT.SetBatch(True) # suppress histogram display
 TH1.SetDefaultSumw2(True)
 
+model_case14 = "22"
+model_case23 = "33"
+
+rootDir_case14 = f'logBpMlogST_mmd1_case14_random{model_case14}'
+rootDir_case23 = f'logBpMlogST_mmd1_case23_random{model_case23}'
+
 binlo = 400
 binhi = 2500
-bins = 210 #210 #420
-year = '_2016' # '', '_2016'
+bins = 210 #105 for 2016 and 210 for full Run2
+year = '' # '', '_2016'
 
 doV2 = True
 withFit = False
@@ -65,12 +71,18 @@ def fillHistogram(hist):
     #        hist.SetBinContent(i,0)
     return hist
 
-regionMap = {"A": "A", "B": "B", "C": "C", "D": "D", "V":"V", "highST": "D2"} # TEMP: named highST as D2 in the intermediate file
+regionMap = {"A": "A", "B": "B", "C": "C", "D": "D", "V":"V", "BV":"BV","highST": "D2"} # TEMP: named highST as D2 in the intermediate file
 def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainUncert, correct (correctDn==original). shift: Up, Dn
-    histFile = TFile.Open(f'hists_ABCDnn_{case}_BpM400to2500ST0to1500_420bins30bins_pNet{year}.root', "READ")
-    #histFile = TFile.Open(f'hists_ABCDnn_{case}_BpM400to2500ST0to1530_420bins18bins_pNet{year}.root', "READ")
+    if case=="case1" or case=="case4":
+        rootDir = rootDir_case14
+    else:
+        rootDir = rootDir_case23
+    histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM400to2500ST0to1500_420bins30bins_pNet{year}_modified.root', "READ")
     if "Nominal" in histType:
-        hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrectD').Clone()
+        if "B" in region:
+            hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrect{regionMap[region]}').Clone()
+        else:
+            hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrect{regionMap[region]}').Clone()
         modifyOverflow(hist,bins)
         outNameTag = ''
     elif "pNet" in histType:
@@ -96,7 +108,11 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
         modifyOverflow(hist,bins)
         outNameTag = f'__train{shift}'
     elif "correct" in histType:
-        hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrectD{shift}').Clone()
+        if region=="V" or region=="D":
+            hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrect{region}{shift}').Clone()
+        else:
+            print("Please update region in the code. Exit...")
+            exit()
         modifyOverflow(hist,bins)
         outNameTag = f'__correct{shift}'
         
@@ -105,13 +121,19 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
     
     if doV2:
         if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
-            outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb{year}.root', "UPDATE")
+            if year=='':
+                outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins}binsCorr/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            else:
+                outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins}binsCorr{year[1:]}/templates_BpMass_ABCDnn_138fbfb{year}.root', "UPDATE")
             hist_out.SetTitle("")
             hist_out.SetName(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major{outNameTag}')
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major{outNameTag}', TObject.kOverwrite)
             outFile.Close()
     else:
-        outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb{year}.root', "UPDATE")
+        if year=='':
+            outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins}binsCorr/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+        else:
+            outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins}binsCorr{year[1:]}/templates_BpMass_ABCDnn_138fbfb{year}.root', "UPDATE")
         #if region=="highST":
         #    print(hist_out.Integral())
         #    print(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major{outNameTag}')
@@ -119,10 +141,13 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
         hist_out.SetName(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major{outNameTag}')
         hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major{outNameTag}', TObject.kOverwrite)
         outFile.Close()
+    histFile.Close()
 
 histList = ["Nominal", "pNet", "trainUncert", "correct"]
 
 for case in ["case1", "case2", "case3", "case4"]:
+    #createHist(case, "B", "Nominal", "")
+    #createHist(case, "BV", "Nominal", "")
     for histType in histList:
         if histType == "Nominal":
             shiftList = [""]
