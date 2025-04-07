@@ -152,7 +152,8 @@ def getAlphaRatioTgtPreHists(histFile, histTag, case, getTgt=True):
         hist_pre = getNormalizedTgtPreHists(histFile, histTag, getTgt)
 
     if region=="B" or region=="BV": # normalize B and BV with MC
-        yield_pred = counts[case][region]["major"]
+        #yield_pred = counts[case][region]["major"]
+        yield_pred = counts[case][region]["data"]-counts[case][region]["minor"]
     else:
         yield_pred = alphaFactors[case][region]["prediction"]
         
@@ -240,7 +241,8 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
     for STrange in ['fullST']:
         c3 = ROOT.TCanvas(f'c3_{case}_{STrange}', f'Percentage training uncertainty from {STrange} ({case})', 900, 600)
         hist_trainUncert = histFileOut.Get(f'BpMST_trainUncert{STrange}')
-        hist_trainUncert.SetTitle(f'Percentage training uncertainty from {STrange} ({case})')
+        #hist_trainUncert.SetTitle(f'Percentage training uncertainty from {STrange} ({case})')
+        hist_trainUncert.SetTitle(f'')
         hist_trainUncert.GetXaxis().SetTitle('B mass (GeV)')
         hist_trainUncert.GetYaxis().SetTitle('ST (GeV)')
         hist_trainUncert.GetYaxis().SetRangeUser(400,1500)
@@ -252,8 +254,15 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
     for region in ["B", "D", "V", "BV"]:
         # plot 2D correction maps
         c4 = ROOT.TCanvas(f'c4_{case}_{region}', f'Percentage correction from {region} ({case})', 900, 600)
-        hist_Correct = histFileOut.Get(f'BpMST_Correct{region}')
-        hist_Correct.SetTitle(f'Percentage correction from {region} ({case})')
+        hist_Correct = histFileOut.Get(f'BpMST_Correct{region}').Clone(f'BpMST_Correct{region}_Copy')
+        if (case=="case1" or case=="case2") and region=="D": # change in plotting made for ANv7
+            unblind_BpM_bin = hist_Correct.GetXaxis().FindFixBin(unblind_BpM)
+            unblind_ST_bin = hist_Correct.GetYaxis().FindFixBin(unblind_ST)
+            for i in range(unblind_BpM_bin, Nbins_BpM_actual+1):
+                for j in range(unblind_ST_bin, Nbins_ST_actual+1):
+                    hist_Correct.SetBinContent(i,j,0)
+        #hist_Correct.SetTitle(f'Percentage correction from {region} ({case})')
+        hist_Correct.SetTitle(f'')
         hist_Correct.GetXaxis().SetTitle('B mass (GeV)')
         hist_Correct.GetYaxis().SetTitle('ST (GeV)')
         hist_Correct.GetYaxis().SetRangeUser(400,1500)
@@ -276,13 +285,26 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
         c5.Close()
 
         # plot 1D correction derived from 2D
-        c6 = ROOT.TCanvas(f'c6_{case}_{region}', 'Bprime_mass_ABCDnn correction from 2D ({case})', 600, 600)
-        hist1D = histFileOut.Get(f'Bprime_mass_pre_Correct{region}')
-        hist1D.SetTitle(f'Bprime_mass_ABCDnn correction on {region} from 2D map ({case})')
+        c6 = ROOT.TCanvas(f'c6_{case}_{region}', f'Bprime_mass_ABCDnn correction on {region} from {region} ({case})', 600, 600)
+        hist1D = histFileOut.Get(f'Bprime_mass_pre_Correct{region}from{region}')
+        hist1D.SetTitle(f'Bprime_mass_ABCDnn correction on {region} from {region} map ({case})')
         hist1D.GetXaxis().SetTitle('B mass (GeV)')
         hist1D.Draw("HIST")
-        c6.SaveAs(f'{plotDir}Bprime_mass_ABCDnn_1Dcorrectfrom2D_{region}_{case}.png')
+        c6.SaveAs(f'{plotDir}Bprime_mass_ABCDnn_1Dcorrect{region}from2D{region}_{region}_{case}.png')
         c6.Close()
+        
+        if case=="case1" and (region=="D" or region=="V"):
+            if region=="D":
+                corrType="B"
+            else:
+                corrType="BV"
+            c7 = ROOT.TCanvas(f'c7_{case}_{region}', f'Bprime_mass_ABCDnn correction on {region} from {corrType} ({case})', 600, 600)
+            hist1D = histFileOut.Get(f'Bprime_mass_pre_Correct{region}from{corrType}')
+            hist1D.SetTitle(f'Bprime_mass_ABCDnn correction on {region} from {corrType} map ({case})')
+            hist1D.GetXaxis().SetTitle('B mass (GeV)')
+            hist1D.Draw("HIST")
+            c7.SaveAs(f'{plotDir}Bprime_mass_ABCDnn_1Dcorrect{region}from2D{corrType}_{region}_{case}.png')
+            c7.Close()
         
 def addHistograms(histFileIn, histFileOut, case):
     ###################
@@ -317,21 +339,52 @@ def addHistograms(histFileIn, histFileOut, case):
         # weighted average
         hist_tgtABC = ROOT.TH2D(f'BpMST_tgt{STrange}_{case}', "BpM_vs_ST", Nbins_BpM_actual, bin_lo_BpM, bin_hi_BpM, Nbins_ST_actual, bin_lo_ST, bin_hi_ST)
         hist_preABC = ROOT.TH2D(f'BpMST_pre{STrange}_{case}', "BpM_vs_ST", Nbins_BpM_actual, bin_lo_BpM, bin_hi_BpM, Nbins_ST_actual, bin_lo_ST, bin_hi_ST)
+        
         for region in ["B"]: #["A", "B", "C"]:
             hist_tgt = histFileIn.Get(f'BpMST_dat_{region}').Clone(f'dat_{region}')
             hist_mnr = histFileIn.Get(f'BpMST_mnr_{region}').Clone(f'mnr_{region}')
             hist_pre = histFileIn.Get(f'BpMST_pre_{region}').Clone(f'pre_{region}')
-
+            
             hist_tgt.Add(hist_mnr, -1.0)
-
+            
             hist_tgt.RebinX(rebinX)
             hist_pre.RebinX(rebinX)
-
+            
             hist_tgt.RebinY(rebinY)
             hist_pre.RebinY(rebinY)
-
+            
             hist_tgtABC.Add(hist_tgt)
             hist_preABC.Add(hist_pre)
+        
+        # trainB + trainAC in hole only
+        # if case=="case1":
+        #     hist_tgtA = histFileIn.Get(f'BpMST_dat_A').Clone(f'dat_A')
+        #     hist_mnrA = histFileIn.Get(f'BpMST_mnr_A').Clone(f'mnr_A')
+        #     hist_preA = histFileIn.Get(f'BpMST_pre_A').Clone(f'pre_A')
+
+        #     hist_tgtC = histFileIn.Get(f'BpMST_dat_C').Clone(f'dat_C')
+        #     hist_mnrC = histFileIn.Get(f'BpMST_mnr_C').Clone(f'mnr_C')
+        #     hist_preC = histFileIn.Get(f'BpMST_pre_C').Clone(f'pre_C')
+
+        #     hist_tgtA.Add(hist_tgtC)
+        #     hist_mnrA.Add(hist_mnrC)
+        #     hist_preA.Add(hist_preC)
+	
+        #     hist_tgtA.Add(hist_mnrA, -1.0)
+
+        #     hist_tgtA.RebinX(rebinX)
+        #     hist_preA.RebinX(rebinX)
+
+        #     hist_tgtA.RebinY(rebinY)
+        #     hist_preA.RebinY(rebinY)
+            
+        #     unblind_BpM_bin = hist_tgtA.GetXaxis().FindFixBin(unblind_BpM)
+        #     unblind_ST_bin = hist_tgtA.GetYaxis().FindFixBin(unblind_ST)
+            
+        #     for i in range(unblind_BpM_bin, Nbins_BpM_actual+1):
+        #         for j in range(unblind_ST_bin, Nbins_ST_actual+1):
+        #             hist_tgtABC.SetBinContent(i, j, hist_tgtA.GetBinContent(i,j))
+        #             hist_preABC.SetBinContent(i, j, hist_preA.GetBinContent(i,j))
 
         modifyOverflow2D(hist_tgtABC)
         modifyOverflow2D(hist_preABC)
@@ -370,7 +423,8 @@ def addHistograms(histFileIn, histFileOut, case):
         if region=="D" and (case=="case1" or case=="case2"): # VR can be fully unblinded
             if case=="case1":
                 histFilePartner = ROOT.TFile.Open(f'{rootDir}/hists_ABCDnn_case4_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
-                hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFilePartner, f'{region}', 'case4')
+                #hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFilePartner, f'{region}', 'case4')
+                hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFileIn, 'B', 'case1') # fill the hole with B
             else: # case2 partners with case3
                 histFilePartner = ROOT.TFile.Open(f'{rootDir}/hists_ABCDnn_case3_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
                 hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFilePartner, f'{region}', 'case3')
@@ -414,8 +468,8 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
     # give clone names, so that ProfileX can distinguish them
     hist_preUp = hist_pre.Clone(f'CorrpreUp_{region}')
     hist_preDn = hist_pre.Clone(f'CorrpreDn_{region}')
-    hist_cor = histFileOut.Get(f'BpMST_Correct{region}').Clone('cor') # pre-approval response used D(V)_map to correct D(V)
-    #hist_cor = histFile.Get(f'BpMST_Correct{corrType}').Clone('cor')
+    #hist_cor = histFileOut.Get(f'BpMST_Correct{region}').Clone('cor') # pre-approval response used D(V)_map to correct D(V)
+    hist_cor = histFileOut.Get(f'BpMST_Correct{corrType}').Clone('cor')
 
     # pre = pre + pre*correction
     hist_cor.Multiply(hist_pre)
@@ -440,6 +494,20 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
     hist_preUp.Add(hist_cor)
 
     # preDn = pre + pre*0, so do nothing
+
+    # SMOOTH
+    #hist_pre.Smooth()
+    #hist_preUp.Smooth()
+    #hist_preDn.Smooth()
+    # Smoothing introduces negative bins. Set those bins to 0 before projection. Check with Julie
+    # for i in range(Nbins_BpM_actual+1):
+    #     for j in range(Nbins_ST_actual+1):
+    #         if hist_pre.GetBinContent(i,j)<0:
+    #             hist_pre.SetBinContent(i,j,0)
+    #         if hist_preUp.GetBinContent(i,j)<0:
+    #             hist_preUp.SetBinContent(i,j,0)
+    #         if hist_preDn.GetBinContent(i,j)<0:
+    #             hist_preDn.SetBinContent(i,j,0)
 
     # make sure that only lowST events are considered
     if ("V" in region) and (case=="case1" or case=="case2"):
@@ -473,7 +541,7 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
     hist_pre_1D.Write(f'Bprime_mass_pre_{region}_withCorrect{corrType}')
     hist_pre_1DUp.Write(f'Bprime_mass_pre_{region}_withCorrect{corrType}Up')
     hist_pre_1DDn.Write(f'Bprime_mass_pre_{region}_withCorrect{corrType}Dn')
-    hist_cor1D.Write(f'Bprime_mass_pre_Correct{region}')
+    hist_cor1D.Write(f'Bprime_mass_pre_Correct{region}from{corrType}')
 
 
 def applyTrainUncert(histFileIn, histFileOut, region, case):
@@ -488,6 +556,14 @@ def applyTrainUncert(histFileIn, histFileOut, region, case):
     hist_preUp.Add(hist_trainUncert, 1.0)
     hist_preDn.Add(hist_trainUncert, -1.0)
 
+    #Set negative bins to 0 before projection. Check with Julie                                                       
+    # for i in range(Nbins_BpM_actual+1):
+    #     for j in range(Nbins_ST_actual+1):
+    #         if hist_preUp.GetBinContent(i,j)<0:
+    #             hist_preUp.SetBinContent(i,j,0)
+    #         if hist_preDn.GetBinContent(i,j)<0:
+    #             hist_preDn.SetBinContent(i,j,0)
+
     if region=="V" and (case=="case1" or case=="case2"):
         for i in range(Nbins_BpM_actual+1):
             for j in range(hist_preUp.GetYaxis().FindFixBin(validationCut),Nbins_ST_actual+1):
@@ -498,14 +574,6 @@ def applyTrainUncert(histFileIn, histFileOut, region, case):
 
     hist_pre_1DUp = hist_preUp.ProjectionX(f'Bprime_mass_pre_{region}_trainUncertfullSTUp')
     hist_pre_1DDn = hist_preDn.ProjectionX(f'Bprime_mass_pre_{region}_trainUncertfullSTDn')
-
-    #hist_pre_1DUp.SetName(f'Bprime_mass_pre_{region}_trainUncertfullSTUp')
-    #hist_pre_1DDn.SetName(f'Bprime_mass_pre_{region}_trainUncertfullSTDn')
-    if region=="D" and case=="case1":
-        print('###########################')
-        print(hist_trainUncert.Integral())
-        print(hist_pre_1DUp.Integral())
-        print(hist_pre_1DUp.GetName())
 
     histFileOut.cd()
     hist_pre_1DUp.Write(f'Bprime_mass_pre_{region}_trainUncertfullSTUp')
@@ -575,7 +643,15 @@ for case in ['case1', 'case2', 'case3', 'case4']:
     
     addHistograms(histFileIn, histFileOut, case)
     for region in ['D', 'V']:
-        applyCorrection(histFileIn, histFileOut, region, region, case)
+        #applyCorrection(histFileIn, histFileOut, region, region, case) # Used until preapproval action 5
+        if case=='case1':
+            if region=='D':
+                applyCorrection(histFileIn, histFileOut, 'B', region, case)
+            else:
+                applyCorrection(histFileIn, histFileOut, 'BV', region, case)
+            applyCorrection(histFileIn, histFileOut, region, region, case)
+        else:
+            applyCorrection(histFileIn, histFileOut, region, region, case) # only correct case1 with B. The rest still corrected by V
         applyTrainUncert(histFileIn, histFileOut, region, case)
         if case=="case1" or case=="case2":
             applypNet(histFileIn, histFileOut, region, case)
@@ -585,7 +661,7 @@ for case in ['case1', 'case2', 'case3', 'case4']:
         applyCorrection(histFileIn, histFileOut, region, region, case)
     
     ## plot histograms
-    #plotHists2D_Separate(histFileIn, histFileOut, case)
+    plotHists2D_Separate(histFileIn, histFileOut, case)
 
     histFileIn.Close()
     histFileOut.Close()
