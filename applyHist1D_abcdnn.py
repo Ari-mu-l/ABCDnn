@@ -10,13 +10,18 @@ gStyle.SetOptStat(0)
 gROOT.SetBatch(True) # suppress histogram display
 TH1.SetDefaultSumw2(True)
 
+model_case14 = "22"
+model_case23 = "33"
+
+rootDir_case14 = f'logBpMlogST_mmd1_case14_random{model_case14}'
+rootDir_case23 = f'logBpMlogST_mmd1_case23_random{model_case23}'
+
 binlo = 400
 binhi = 2500
-bins = 420
+bins = 210
+year = '' # '', '_2016'
 
-bins_name = 2100 # template file in the folder has 2100 bins. new abcdnn histogram has 420 bins
-
-doV2 = False
+doV2 = True
 withFit = False
 separateUncertCases = True
 
@@ -61,9 +66,9 @@ with open("alphaRatio_factors.json","r") as alphaFile:
 def fillHistogram(hist):
     # TEMP: turned of negative bin adjustment
     # Need to turn back on if not using smoothing (smoothing script takes care of negative bins)
-    #for i in range(bins+1): # deals with negative bins
-    #    if hist.GetBinContent(i)<0:
-    #        hist.SetBinContent(i,0)
+    for i in range(bins+1): # deals with negative bins
+        if hist.GetBinContent(i)<0:
+            hist.SetBinContent(i,0)
     return hist
 
 regionMap = {"A": "A", "B": "B", "C": "C", "D": "D", "V":"V", "highST": "D2"} # TEMP: named highST as D2 in the intermediate file
@@ -122,11 +127,11 @@ def createHist(case, region, histType): # histType: Nominal, pNetUp, pNetDn, tra
     
     if doV2:
         if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
-            outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins_name}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+            outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
             hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major{outNameTag}')
             outFile.Close()
     else:
-        outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins_name}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
+        outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins}bins/templates_BpMass_ABCDnn_138fbfb.root', "UPDATE")
         #if region=="highST":
         #    print(hist_out.Integral())
         #    print(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major{outNameTag}')
@@ -139,5 +144,5 @@ for case in ["case1", "case2", "case3", "case4"]:
     for histType in histList:
         createHist(case, "D", histType)
         createHist(case, "V", histType)
-        #createHist(case, "V2", histType)
+        createHist(case, "V2", histType)
         #createHist(case, "highST", histType)

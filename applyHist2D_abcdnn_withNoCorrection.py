@@ -1,4 +1,4 @@
-# copy the desired rootfiles to working directory first
+# Makes uncorrected V2 plot in AN7
 
 import os
 import numpy as np
@@ -21,13 +21,9 @@ binhi = 2500
 bins = 210 #105 for 2016 and 210 for full Run2
 year = '' # '', '_2016'
 
-if year=='_2016':
-    outDirTag = 'BtargetHoleCorrBTrain2016'
-else:
-    outDirTag = 'BtargetHoleCorrBTrain_smooth_rebin_highSTC2C2'
+outDirTag = '_noCorrection'
 
-doV2 = False #IMPORTANT: REMEMBER TO TURN ON AND OFF!!
-withFit = False
+doV2 = True #IMPORTANT: REMEMBER TO TURN ON AND OFF!!
 separateUncertCases = True
 
 tag = {"case1" : "tagTjet",
@@ -62,22 +58,13 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
         rootDir = rootDir_case23
     histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM400to2500ST0to1500_420bins30bins_pNet{year}_modified.root', "READ")
     if "Nominal" in histType:
-        if "B" in region:
-            hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrect{regionMap[region]}').Clone()
-        else:
-            #hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrect{regionMap[region]}').Clone() # up to preApp action 5
-            if case=="case1":
-                if region=="D":
-                    hist = histFile.Get(f'Bprime_mass_pre_D_withCorrectD').Clone()
-                    print(f'Bprime_mass_pre_D_withCorrectB being used')
-                elif region=="V":
-                    hist = histFile.Get(f'Bprime_mass_pre_V_withCorrectV').Clone()
-                else:
-                    hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrect{regionMap[region]}').Clone()
-            else:
-                hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrect{regionMap[region]}').Clone()
+        histFile2 = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM400to2500ST0to1500_420bins30bins_pNet{year}.root', "READ")
+        hist2D = histFile2.Get(f'BpMST_pre_{regionMap[region]}').Clone(f'Bprime_mass_pre_{regionMap[region]}_1D')
+        hist2D.Scale(alphaFactors[case][region]["prediction"]/hist2D.Integral())
+        hist = hist2D.ProjectionX(f'Bprime_mass_pre_{regionMap[region]}')
         modifyOverflow(hist,bins)
         outNameTag = ''
+        histFile.cd()
     elif "pNet" in histType:
         if case=="case3" or case=="case4":
             return
@@ -100,22 +87,6 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
         hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_trainUncertfullST{shift}').Clone()
         modifyOverflow(hist,bins)
         outNameTag = f'__train{shift}'
-    elif "correct" in histType:
-        if region=="V" or region=="D":
-            if case=="case1":
-                if region=="D":
-                    hist = histFile.Get(f'Bprime_mass_pre_D_withCorrectD{shift}').Clone()
-                elif region=="V":
-                    hist = histFile.Get(f'Bprime_mass_pre_V_withCorrectV{shift}').Clone()
-                else:
-                    hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrect{regionMap[region]}{shift}').Clone()
-            else:
-                hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrect{region}{shift}').Clone()
-        else:
-            print("Please update region in the code. Exit...")
-            exit()
-        modifyOverflow(hist,bins)
-        outNameTag = f'__correct{shift}'
         
     outNameTag = outNameTag.replace('Dn','Down') # naming convention in SLA is Down
     hist_out = fillHistogram(hist)
@@ -137,8 +108,11 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
         hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major{outNameTag}', TObject.kOverwrite)
         outFile.Close()
     histFile.Close()
+    if "Nominal" in histType:
+        histFile2.Close()
+        
 
-histList = ["Nominal", "pNet", "trainUncert", "correct"]
+histList = ["Nominal", "pNet", "trainUncert"]
 
 for case in ["case1", "case2", "case3", "case4"]:
     #createHist(case, "B", "Nominal", "")
@@ -150,6 +124,4 @@ for case in ["case1", "case2", "case3", "case4"]:
             shiftList =	["Up", "Dn"]
         for shift in shiftList:
             createHist(case, "D", histType, shift)
-            #if year=='':
-            #    createHist(case, "V", histType, shift)
-            ##createHist(case, "highST", histType, shift)
+            createHist(case, "V", histType, shift)
