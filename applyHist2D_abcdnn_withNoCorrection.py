@@ -60,6 +60,7 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
     if "Nominal" in histType:
         histFile2 = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM400to2500ST0to1500_420bins30bins_pNet{year}.root', "READ")
         hist2D = histFile2.Get(f'BpMST_pre_{regionMap[region]}').Clone(f'Bprime_mass_pre_{regionMap[region]}_1D')
+        hist2D.RebinX(2)
         hist2D.Scale(alphaFactors[case][region]["prediction"]/hist2D.Integral())
         hist = hist2D.ProjectionX(f'Bprime_mass_pre_{regionMap[region]}')
         modifyOverflow(hist,bins)
@@ -70,7 +71,7 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
             return
         elif case=="case1":
             try:
-                hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_{histType}{shift}_1D').Clone() 
+                hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_{histType}{shift}_1D').Clone()
             except:
                 print(f'pre_{region} does not have pNet shift stored')
                 return
