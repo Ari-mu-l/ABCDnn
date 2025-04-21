@@ -27,12 +27,12 @@ statCutoff = 0 #10
 unblind_BpM = 700
 unblind_ST = 850
 
-rebinX = 2 #4 for 2016 (105bins) and 2 for full run2 (210bins)
+rebinX = 4 #4 for 2016 (105bins) and 2 for full run2 (210bins)
 rebinY = 1
 Nbins_BpM_actual = int(Nbins_BpM/rebinX)
 Nbins_ST_actual = int(Nbins_ST/rebinY)
 
-year = '' # '', '_2016', '_2016APV'
+year = '_2018' # '', '_2016', '_2016APV'
 varyBinSize = True
 
 plotDir ='2D_plots/'
@@ -251,17 +251,18 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
         c3.SaveAs(f'{plotDir}BpMST_trainUncertPercent{STrange}_{case}.png')
         c3.Close()
 
-    for region in ["B", "D", "V", "BV"]:
+    for region in ["B", "D", "V", "BV"]: # general
+    #for region in ["B", "D", "V"]: # year-by-year gof
         # plot 2D correction maps
         c4 = ROOT.TCanvas(f'c4_{case}_{region}', f'Percentage correction from {region} ({case})', 900, 600)
         hist_Correct = histFileOut.Get(f'BpMST_Correct{region}').Clone(f'BpMST_Correct{region}_Copy')
-        if (case=="case1" or case=="case2") and region=="D": # change in plotting made for ANv7
-            unblind_BpM_bin = hist_Correct.GetXaxis().FindFixBin(unblind_BpM)
-            unblind_ST_bin = hist_Correct.GetYaxis().FindFixBin(unblind_ST)
-            for i in range(unblind_BpM_bin, Nbins_BpM_actual+1):
-                for j in range(unblind_ST_bin, Nbins_ST_actual+1):
-                    hist_Correct.SetBinContent(i,j,0)
-        #hist_Correct.SetTitle(f'Percentage correction from {region} ({case})')
+        #if (case=="case1" or case=="case2") and region=="D": # change in plotting made for ANv7
+        #    unblind_BpM_bin = hist_Correct.GetXaxis().FindFixBin(unblind_BpM)
+        #    unblind_ST_bin = hist_Correct.GetYaxis().FindFixBin(unblind_ST)
+        #    for i in range(unblind_BpM_bin, Nbins_BpM_actual+1):
+        #        for j in range(unblind_ST_bin, Nbins_ST_actual+1):
+        #            hist_Correct.SetBinContent(i,j,0)
+        hist_Correct.SetTitle(f'Percentage correction from {region} ({case})')
         hist_Correct.SetTitle(f'')
         hist_Correct.GetXaxis().SetTitle('B mass (GeV)')
         hist_Correct.GetYaxis().SetTitle('ST (GeV)')
@@ -294,16 +295,16 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
         c6.Close()
         
         if case=="case1" and (region=="D" or region=="V"):
-            if region=="D":
-                corrType="B"
-            else:
-                corrType="BV"
-            c7 = ROOT.TCanvas(f'c7_{case}_{region}', f'Bprime_mass_ABCDnn correction on {region} from {corrType} ({case})', 600, 600)
-            hist1D = histFileOut.Get(f'Bprime_mass_pre_Correct{region}from{corrType}')
-            hist1D.SetTitle(f'Bprime_mass_ABCDnn correction on {region} from {corrType} map ({case})')
+            #if region=="D":
+            #    corrType="B"
+            #else:
+            #    corrType="BV"
+            c7 = ROOT.TCanvas(f'c7_{case}_{region}', f'Bprime_mass_ABCDnn correction on {region} from {region} ({case})', 600, 600)
+            hist1D = histFileOut.Get(f'Bprime_mass_pre_Correct{region}from{region}')
+            hist1D.SetTitle(f'Bprime_mass_ABCDnn correction on {region} from {region} map ({case})')
             hist1D.GetXaxis().SetTitle('B mass (GeV)')
             hist1D.Draw("HIST")
-            c7.SaveAs(f'{plotDir}Bprime_mass_ABCDnn_1Dcorrect{region}from2D{corrType}_{region}_{case}.png')
+            c7.SaveAs(f'{plotDir}Bprime_mass_ABCDnn_1Dcorrect{region}from2D{region}_{region}_{case}.png')
             c7.Close()
         
 def addHistograms(histFileIn, histFileOut, case):
@@ -407,7 +408,8 @@ def addHistograms(histFileIn, histFileOut, case):
     ##############
     # Correction #
     ##############
-    for region in ["D", "V", "B","BV"]:
+    for region in ["D", "V", "B","BV"]: #general
+    #for region in ["D", "V", "B"]: # year-by-year gof
         hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFileIn, f'{region}', case)
         #modifyBinning(hist_tgt)
         #exit()
@@ -456,6 +458,18 @@ def addHistograms(histFileIn, histFileOut, case):
                 #if hist_pre.GetBinContent(i,j)<=statCutoff:
                 #    hist_Correction.SetBinContent(i,j,0)
 
+        # check agreement after correction
+        # if case=="case2":
+        #     hist_Correction.Multiply(hist_pre)
+        #     hist_pre.Add(hist_Correction)
+        #     #hist_tgt.Add(hist_tgt, -1.0)
+        #     hist_pre_1D = hist_pre.ProjectionX('hist_pre_1D')
+        #     hist_tgt_1D = hist_tgt.ProjectionX('hist_tgt_1D')
+        #     hist_tgt_1D.Add(hist_pre_1D, -1.0)
+        #     hist_tgt_1D.Print("all")
+        #     #hist_tgt.Print()
+        #     exit()
+
         histFileOut.cd()
         hist_Correction.Write(f'BpMST_Correct{region}')
         print(f'Saved BpMST_Correct{region} to {case}')
@@ -471,9 +485,15 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
     #hist_cor = histFileOut.Get(f'BpMST_Correct{region}').Clone('cor') # pre-approval response used D(V)_map to correct D(V)
     hist_cor = histFileOut.Get(f'BpMST_Correct{corrType}').Clone('cor')
 
+    #print(hist_pre.GetBinContent(50,15), hist_cor.GetBinContent(50,15))
+    
     # pre = pre + pre*correction
     hist_cor.Multiply(hist_pre)
     hist_pre.Add(hist_cor)
+
+    #print(hist_pre.GetBinContent(50,15))
+    #print(hist_tgt.GetBinContent(50,15))
+    
 
     # count=0
     # if case=="case1" and region=="B":
@@ -523,7 +543,7 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
     hist_pre_1DUp = hist_preUp.ProjectionX(f'Bprime_mass_pre_{region}_withCorrect{corrType}')
     hist_pre_1DDn = hist_preDn.ProjectionX(f'Bprime_mass_pre_{region}_withCorrect{corrType}Up')
     hist_pre_1D = hist_pre.ProjectionX(f'Bprime_mass_pre_{region}_withCorrect{corrType}Dn')
-
+        
     # if region=="B" and case=="case1":
     #     hist_tgt_original1D = hist_tgt_original.ProjectionX()
     #     hist_tgt_original1D.Add(hist_pre_1D,-1.0)
@@ -642,21 +662,23 @@ for case in ['case1', 'case2', 'case3', 'case4']:
     print(f'{rootDir}/hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}_modified.root')
     
     addHistograms(histFileIn, histFileOut, case)
-    for region in ['D', 'V']:
+    for region in ['D', 'V']: # general
+    #for region in ['D']: # year-by-year
         #applyCorrection(histFileIn, histFileOut, region, region, case) # Used until preapproval action 5
-        if case=='case1':
-            if region=='D':
-                applyCorrection(histFileIn, histFileOut, 'B', region, case)
-            else:
-                applyCorrection(histFileIn, histFileOut, 'BV', region, case)
-            applyCorrection(histFileIn, histFileOut, region, region, case)
-        else:
-            applyCorrection(histFileIn, histFileOut, region, region, case) # only correct case1 with B. The rest still corrected by V
+        #if case=='case1':
+            #if region=='D':
+            #    applyCorrection(histFileIn, histFileOut, 'B', region, case)
+            #else:
+            #    applyCorrection(histFileIn, histFileOut, 'BV', region, case)
+        #else:
+            #applyCorrection(histFileIn, histFileOut, region, region, case) # only correct case1 with B. The rest still corrected by V
+        applyCorrection(histFileIn, histFileOut, region, region, case)
         applyTrainUncert(histFileIn, histFileOut, region, case)
         if case=="case1" or case=="case2":
             applypNet(histFileIn, histFileOut, region, case)
 
-    for region in ['B', 'BV']:
+    for region in ['B', 'BV']: # general
+    #for region in ['B']: # year-by-year
         applyCorrection(histFileIn, histFileOut, region, region, case)
         applyCorrection(histFileIn, histFileOut, region, region, case)
     
