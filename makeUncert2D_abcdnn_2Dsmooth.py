@@ -424,8 +424,8 @@ def addHistograms(histFileIn, histFileOut, case):
         hist_tgtABC.Add(hist_preABC, -1.0)
         hist_tgtABC.Divide(hist_preABC)
 
-        for i in range(Nbins_BpM_actual+1):
-            for j in range(Nbins_ST_actual+1):
+        for i in range(1,Nbins_BpM_actual+1):
+            for j in range(1,Nbins_ST_actual+1):
                 hist_tgtABC.SetBinError(i,j,0) # set bin error to 0, so that it acts as a pure scale factor
 
         histFileOut.cd()
@@ -475,8 +475,8 @@ def addHistograms(histFileIn, histFileOut, case):
         hist_Correction.Divide(hist_pre)
 
 
-        for i in range(Nbins_BpM_actual+1):
-            for j in range(Nbins_ST_actual+1):
+        for i in range(1,Nbins_BpM_actual+1):
+            for j in range(1,Nbins_ST_actual+1):
                 # set bin error to 0, so that the application correctly reflects the propogated change in bin error
                 hist_Correction.SetBinError(i,j,0)
                 # no correction on low stat bins
@@ -531,27 +531,27 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
     hist_preUp = ROOT.TH2D(f'BpMST_preUp_{case}_corr_truncate', "BpM_vs_ST", Nbins_BpM_eff, bin_lo_BpM_eff, bin_hi_BpM_eff, Nbins_ST_eff, bin_lo_ST_eff, bin_hi_ST_eff)
     hist_preDn = ROOT.TH2D(f'BpMST_preDn_{case}_corr_truncate', "BpM_vs_ST", Nbins_BpM_eff, bin_lo_BpM_eff, bin_hi_BpM_eff, Nbins_ST_eff, bin_lo_ST_eff, bin_hi_ST_eff)
 
-    newLowBinBpM  = hist_pre.GetXaxis().FindFixBin(bin_lo_BpM_eff)
-    newHighBinBpM = hist_pre.GetXaxis().FindFixBin(bin_hi_BpM_eff)
-    newHighBinST  = hist_pre.GetYaxis().FindFixBin(bin_hi_ST_eff)
+    newLowBinBpM  = hist_pre_pad.GetXaxis().FindFixBin(bin_lo_BpM_eff)
+    newHighBinBpM = hist_pre_pad.GetXaxis().FindFixBin(bin_hi_BpM_eff)
+    newHighBinST  = hist_pre_pad.GetYaxis().FindFixBin(bin_hi_ST_eff)
 
     for i in range(newLowBinBpM, newHighBinBpM+1):
-        for j in range(newHighBinST+1):
+        for j in range(1,newHighBinST+1):
             # Smoothing introduces negative bins. Set those bins to 0 before projection.
             if hist_pre_pad.GetBinContent(i,j)<0:
                 hist_pre.SetBinContent(i,j,0)
             else:
-                hist_pre.SetBinContent(hist_pre_pad)
+                hist_pre.SetBinContent(hist_pre_pad.GetBinContent(i,j))
 
             if hist_preUp_pad.GetBinContent(i,j)<0:
                 hist_preUp.SetBinContent(i,j,0)
             else:
-                hist_preUp.SetBinContent(hist_preUp_pad)
+                hist_preUp.SetBinContent(hist_preUp_pad.GetBinContent(i,j))
 
             if hist_preDn_pad.GetBinContent(i,j)<0:
                 hist_preDn.SetBinContent(i,j,0)
             else:
-                hist_preDn.SetBinContent(hist_preDn_pad)
+                hist_preDn.SetBinContent(hist_preDn_pad.GetBinContent(i,j))
                 
             hist_pre.SetBinError(hist_pre_pad)
             hist_preUp.SetBinError(hist_preUp_pad)
@@ -559,8 +559,8 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
 
     # make sure that only lowST events are considered
     if ("V" in region) and (case=="case1" or case=="case2"):
-        for i in range(Nbins_BpM_actual+1):
-            for j in range(hist_preUp.GetYaxis().FindFixBin(validationCut),Nbins_ST_actual+1):
+        for i in range(1,newHighBinBpM+1):
+            for j in range(hist_preUp.GetYaxis().FindFixBin(validationCut),newHighBinST+1):
                 hist_pre.SetBinContent(i,j,0)
                 hist_preUp.SetBinContent(i,j,0)
                 hist_preDn.SetBinContent(i,j,0)
@@ -611,30 +611,30 @@ def applyTrainUncert(histFileIn, histFileOut, region, case):
     hist_preUp = ROOT.TH2D(f'BpMST_preUp_{case}_train_truncate', "BpM_vs_ST", Nbins_BpM_eff, bin_lo_BpM_eff, bin_hi_BpM_eff, Nbins_ST_eff, bin_lo_ST_eff, bin_hi_ST_eff)
     hist_preDn = ROOT.TH2D(f'BpMST_preDn_{case}_train_truncate', "BpM_vs_ST", Nbins_BpM_eff, bin_lo_BpM_eff, bin_hi_BpM_eff, Nbins_ST_eff, bin_lo_ST_eff, bin_hi_ST_eff)
 
-    newLowBinBpM  = hist_pre.GetXaxis().FindFixBin(bin_lo_BpM_eff)
-    newHighBinBpM = hist_pre.GetXaxis().FindFixBin(bin_hi_BpM_eff)
-    newHighBinST  = hist_pre.GetYaxis().FindFixBin(bin_hi_ST_eff)
+    newLowBinBpM  = hist_pre_pad.GetXaxis().FindFixBin(bin_lo_BpM_eff)
+    newHighBinBpM = hist_pre_pad.GetXaxis().FindFixBin(bin_hi_BpM_eff)
+    newHighBinST  = hist_pre_pad.GetYaxis().FindFixBin(bin_hi_ST_eff)
 
     for i in range(newLowBinBpM, newHighBinBpM+1):
-        for j in range(newHighBinST+1):
+        for j in range(1,newHighBinST+1):
             # Smoothing introduces negative bins. Set those bins to 0 before projection.
             if hist_preUp_pad.GetBinContent(i,j)<0:
                 hist_preUp.SetBinContent(i,j,0)
             else:
-                hist_preUp.SetBinContent(hist_preUp_pad)
+                hist_preUp.SetBinContent(hist_preUp_pad.GetBinContent(i,j))
 
             if hist_preDn_pad.GetBinContent(i,j)<0:
                 hist_preDn.SetBinContent(i,j,0)
             else:
-                hist_preDn.SetBinContent(hist_preDn_pad)
+                hist_preDn.SetBinContent(hist_preDn_pad.GetBinContent(i,j))
                 
             hist_pre.SetBinError(hist_pre_pad)
             hist_preUp.SetBinError(hist_preUp_pad)
             hist_preDn.SetBinError(hist_preDn_pad)
             
     if region=="V" and (case=="case1" or case=="case2"):
-        for i in range(Nbins_BpM_actual+1):
-            for j in range(hist_preUp.GetYaxis().FindFixBin(validationCut),Nbins_ST_actual+1):
+        for i in range(1,newHighBinBpM+1):
+            for j in range(hist_preUp.GetYaxis().FindFixBin(validationCut),newHighBinST+1):
                 hist_preUp.SetBinContent(i,j,0)
                 hist_preDn.SetBinContent(i,j,0)
                 hist_preUp.SetBinError(i,j,0)
@@ -667,8 +667,8 @@ def applypNet(histFileIn, histFileOut, region, case):
     hist_preDn_pad.Divide(hist_pre_pad)
 
     # set bin error to 0, so that it acts like a pure scale factor
-    for i in range(Nbins_BpM_actual+1):
-        for j in range(Nbins_ST_actual+1):
+    for i in range(1,Nbins_BpM_actual+1):
+        for j in range(1,Nbins_ST_actual+1):
             hist_preUp_pad.SetBinError(i,j,0)
             hist_preDn_pad.SetBinError(i,j,0)
 
@@ -679,12 +679,36 @@ def applypNet(histFileIn, histFileOut, region, case):
     hist_preUp_pad.Multiply(hist_pre_pad)
     hist_preDn_pad.Multiply(hist_pre_pad)
 
-    hist_preUp.Add(hist_pre)
-    hist_preDn.Add(hist_pre)
+    hist_preUp_pad.Add(hist_pre_pad)
+    hist_preDn_pad.Add(hist_pre_pad)
+    
+    hist_preUp = ROOT.TH2D(f'BpMST_preUp_{case}_pNet_truncate', "BpM_vs_ST", Nbins_BpM_eff, bin_lo_BpM_eff, bin_hi_BpM_eff, Nbins_ST_eff, bin_lo_ST_eff, bin_hi_ST_eff)
+    hist_preDn = ROOT.TH2D(f'BpMST_preDn_{case}_pNet_truncate', "BpM_vs_ST", Nbins_BpM_eff, bin_lo_BpM_eff, bin_hi_BpM_eff, Nbins_ST_eff, bin_lo_ST_eff, bin_hi_ST_eff)
 
-    if region=="V" and (case=="case1" or case=="case2"):
-        for i in range(Nbins_BpM_actual+1):
-            for j in range(hist_preUp.GetYaxis().FindFixBin(validationCut),Nbins_ST_actual+1):
+    newLowBinBpM  = hist_pre_pad.GetXaxis().FindFixBin(bin_lo_BpM_eff)
+    newHighBinBpM = hist_pre_pad.GetXaxis().FindFixBin(bin_hi_BpM_eff)
+    newHighBinST  = hist_pre_pad.GetYaxis().FindFixBin(bin_hi_ST_eff)
+
+    for i in range(newLowBinBpM, newHighBinBpM+1):
+        for j in range(1,newHighBinST+1):
+            if hist_preUp_pad.GetBinContent(i,j)<0:
+                hist_preUp.SetBinContent(i,j,0)
+            else:
+                hist_preUp.SetBinContent(hist_preUp_pad.GetBinContent(i,j))
+
+            if hist_preDn_pad.GetBinContent(i,j)<0:
+                hist_preDn.SetBinContent(i,j,0)
+            else:
+                hist_preDn.SetBinContent(hist_preDn_pad.GetBinContent(i,j))
+                
+            hist_pre.SetBinError(hist_pre_pad)
+            hist_preUp.SetBinError(hist_preUp_pad)
+            hist_preDn.SetBinError(hist_preDn_pad)
+
+    # make sure that only lowST events are considered
+    if ("V" in region) and (case=="case1" or case=="case2"):
+        for i in range(1,newHighBinBpM+1):
+            for j in range(hist_preUp.GetYaxis().FindFixBin(validationCut),newHighBinST+1):
                 hist_preUp.SetBinContent(i,j,0)
                 hist_preDn.SetBinContent(i,j,0)
                 hist_preUp.SetBinError(i,j,0)
