@@ -24,10 +24,10 @@ parser.add_argument( "-m", "--tag"   , required = True  )
 
 args = parser.parse_args()
 
-if '2016' in args.target:
-  year = '_2016'
-elif '2016APV' in args.target:
+if '2016APV' in args.target:
   year = '_2016APV'
+elif '2016' in args.target:
+  year = '_2016'
 elif '2017' in args.target:
   year = '_2017'
 elif '2018' in	args.target:
@@ -36,12 +36,12 @@ elif 'all' in args.target:
   year = ''
 
 # histogram settings
-bin_lo_BpM = 400 #0
-bin_hi_BpM = 2500
+bin_lo_BpM = 300 #400 #0
+bin_hi_BpM = 2600 #2500
 bin_lo_ST = 0
-bin_hi_ST = 1500 #1500
-Nbins_BpM = 420 # 2100
-Nbins_ST  = 30 # 30
+bin_hi_ST = 1600 #1500 #1500
+Nbins_BpM = 460 #420 # 2100
+Nbins_ST  = 32 #30 # 30
 validationCut = 850
 
 log = False # set to False if want BpM instead of log(BpM)

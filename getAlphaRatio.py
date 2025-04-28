@@ -13,9 +13,6 @@ else:
 
 year = '_2016' # '', '_2016'
 
-if not os.path.exists('validation_plots'):
-    os.makedirs('validation_plots')
-
 ###############################
 # calculate correction factor #
 ###############################
@@ -36,14 +33,14 @@ if getAlphaRatio=="True":
               }
 
     for case in counts:
-        for region in ["B", "D", "V", "BV", "highST", "BhighST"]: #, "B2", "D2"]:
-        #for region in ["B2", "D2"]:
+        #for region in ["B", "D", "V", "BV", "highST", "BhighST"]: #, "B2", "D2"]: # general
+        for region in ["B", "D", "V", "BV"]: # for year-by-year gof
             counts[case][region] = {}
 
     def getCounts(case, region):
         print(f'Processing {case}')
         #tempFileName  = f'/uscms/home/jmanagan/nobackup/BtoTW/CMSSW_13_0_18/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025/templates_BpMass_138fbfb.root'
-        tempFileName = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025_2100bins/templates_BpMass_138fbfb{year}.root'
+        tempFileName = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025/templates_BpMass_138fbfb{year}.root'
         tFile = ROOT.TFile.Open(tempFileName, 'READ')
         hist_data  = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__data_obs')
         hist_major = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__qcd') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__wjets') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__singletop') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ttbar')
@@ -63,8 +60,8 @@ if getAlphaRatio=="True":
 
         tFile.Close()
 
-    for region in ["B", "D", "V", "BV", "highST", "BhighST"]: #, "B2", "D2"]:
-    #for region in ["B2", "D2"]:
+    #for region in ["B", "D", "V", "BV", "highST", "BhighST"]: #, "B2", "D2"]: # general
+    for region in ["B", "D", "V", "BV"]: # for year-by-year gof test
         print(f'Getting counts for region {region}')
         getCounts("case1", region)
         getCounts("case4", region)
@@ -148,12 +145,12 @@ if getAlphaRatio=="True":
 
     print("\nPerforming alpha-ratio estimation.\n")
     for case in ["case1", "case2", "case3", "case4"]:
-        for region in ["V", "D", "highST"]: ##, "D2"]:
-    #    for region in ["D2"]:
+        #for region in ["V", "D", "highST"]: ##, "D2"]: # general
+        for region in ["V","D"]: # for year-by-year gof test
             getPrediction(case, region)
 
     # write alpha-ratio restuls to a json file
-    print('Writing to alphaRatio_factors{year}.json...')
+    print(f'Writing to alphaRatio_factors{year}.json...')
     json_object = json.dumps(yield_pred, indent=4)
     with open(f'alphaRatio_factors{year}.json', "w") as outjson:
         outjson.write(json_object)
