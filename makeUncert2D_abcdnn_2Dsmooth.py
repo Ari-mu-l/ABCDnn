@@ -56,13 +56,17 @@ def modifyOverflow2D(hist):
     # top edge should be [imass,Nbins_ST] as the bin number, where imass runs 1 through Nbins_BpM_actual
     for imass in range(1,Nbins_BpM_actual+1):
         newtotal = hist.GetBinContent(imass,Nbins_ST_actual)+hist.GetBinContent(imass,Nbins_ST_actual+1)
+        newError = np.sqrt(hist.GetBinError(imass,Nbins_ST_actual)**2+hist.GetBinError(imass,Nbins_ST_actual+1)**2)
         hist.SetBinContent(imass,Nbins_ST_actual,newtotal)
         hist.SetBinContent(imass,Nbins_ST_actual+1,0)
+        hist.SetBinError(imass,Nbins_ST_actual,newError)
+        hist.SetBinError(imass,Nbins_ST_actual+1,0)
     # right edge should be [Nbins_BpM_actual,ist], where ist runs 1 through Nbins_ST
     for ist in range(1,Nbins_ST_actual+1):
         newtotal = hist.GetBinContent(Nbins_BpM_actual,ist)+hist.GetBinContent(Nbins_BpM_actual+1,ist)
-        hist.SetBinContent(Nbins_BpM_actual,ist,newtotal)
-        hist.SetBinContent(Nbins_BpM_actual+1,ist,0)
+        newError = np.sqrt(hist.GetBinContent(Nbins_BpM_actual,ist)**2+hist.GetBinContent(Nbins_BpM_actual+1,ist)**2)
+        hist.SetBinError(Nbins_BpM_actual,ist,newError)
+        hist.SetBinError(Nbins_BpM_actual+1,ist,0)
         
 def getNormalizedTgtPreHists(histFile, histTag, getTgt=True):
     # outputs rebinned histograms. No need to call rebin if this function is called
@@ -535,8 +539,20 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
 
     # preDn = pre + pre*0, so do nothing
 
+    # To understand the bad agreement in the second to last bin in 1D case 3 and 4
+    # Used the following code to check that the correction is perfect except for bins where tgt<0
+    # if region=="V" and case=="case3":
+    #     hist_2Ddiff = hist_tgt_pad.Clone('2D diff')
+    #     hist_2Ddiff.Add(hist_pre_pad,-1.0)
+    #     hist_2Ddiff.Divide(hist_tgt_pad)
+    #     for i in range(Nbins_BpM_actual-1,Nbins_BpM_actual+1):
+    #         for j in range(1,Nbins_ST_actual+1):
+    #             if hist_2Ddiff.GetBinContent(i,j)!=0:
+    #                 print(i,j,hist_2Ddiff.GetBinContent(i,j), hist_pre_pad.GetBinContent(i,j), hist_tgt_pad.GetBinContent(i,j))
+
     # smooth and truncate the padded histogram into [400,2500]x[0,1500]
     hist_pre, hist_preUp, hist_preDn = smoothAndTruncate(hist_pre_pad, hist_preUp_pad, hist_preDn_pad, 'corr', case, region)
+
 
     # project to 1D
     hist_pre_1D = hist_pre.ProjectionX(f'Bprime_mass_pre_{region}_withCorrect{corrType}')
