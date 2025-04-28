@@ -11,7 +11,15 @@ if len(sys.argv)>1:
 else:
     getAlphaRatio = "True"
 
-year = '_2016' # '', '_2016'
+year = '' # '', '_2016'
+do2Dpad = True
+
+if do2Dpad:
+    iPlot = 'BpMass_pad' # for 2D padding
+    fileNameTag = '_2Dpad'
+else:
+    iPlot = 'BpMass'
+    fileNameTag = ''
 
 ###############################
 # calculate correction factor #
@@ -40,11 +48,11 @@ if getAlphaRatio=="True":
     def getCounts(case, region):
         print(f'Processing {case}')
         #tempFileName  = f'/uscms/home/jmanagan/nobackup/BtoTW/CMSSW_13_0_18/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025/templates_BpMass_138fbfb.root'
-        tempFileName = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025/templates_BpMass_138fbfb{year}.root'
+        tempFileName = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025/templates_{iPlot}_138fbfb{year}.root'
         tFile = ROOT.TFile.Open(tempFileName, 'READ')
-        hist_data  = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__data_obs')
-        hist_major = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__qcd') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__wjets') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__singletop') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ttbar')
-        hist_minor = tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ttx') + tFile.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ewk')
+        hist_data  = tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__data_obs')
+        hist_major = tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__qcd') + tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__wjets') + tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__singletop') + tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__ttbar')
+        hist_minor = tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__ttx') + tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__ewk')
         
         # integrate from the bin where 400 is in to the last bin
         #counts[case][region]["data"]  = hist_data.Integral(hist_data.FindBin(400), 99)
@@ -82,9 +90,9 @@ if getAlphaRatio=="True":
             counts["case23"][region]["unweighted"]  = counts["case2"][region]["unweighted"]  + counts["case3"][region]["unweighted"]
 
     # store counts in a json file
-    print(f'Writing to counts{year}.json...')
+    print(f'Writing to counts{year}{fileNameTag}.json...')
     json_object = json.dumps(counts, indent=4)
-    with open(f'counts{year}.json', "w") as outfile:
+    with open(f'counts{year}{fileNameTag}.json', "w") as outfile:
         outfile.write(json_object)
 
         
@@ -150,9 +158,9 @@ if getAlphaRatio=="True":
             getPrediction(case, region)
 
     # write alpha-ratio restuls to a json file
-    print(f'Writing to alphaRatio_factors{year}.json...')
+    print(f'Writing to alphaRatio_factors{year}{fileNameTag}.json...')
     json_object = json.dumps(yield_pred, indent=4)
-    with open(f'alphaRatio_factors{year}.json', "w") as outjson:
+    with open(f'alphaRatio_factors{year}{fileNameTag}.json', "w") as outjson:
         outjson.write(json_object)
 else:
     print("Skipping counts and alpha-ratio estimation...")

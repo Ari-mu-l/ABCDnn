@@ -15,12 +15,12 @@ rootDir_case14 = f'logBpMlogST_mmd1_case14_random{model_case14}'
 rootDir_case23 = f'logBpMlogST_mmd1_case23_random{model_case23}'
 
 # histogram settings
-bin_lo_BpM = 300 #400 #0
-bin_hi_BpM = 2600 #2500
+bin_lo_BpM = 300
+bin_hi_BpM = 2600
 bin_lo_ST = 0
-bin_hi_ST = 1600 #1500 #1530
-Nbins_BpM = 460 #420 # 2100
-Nbins_ST  = 32 #30 #18
+bin_hi_ST = 1600
+Nbins_BpM = 460
+Nbins_ST  = 32
 
 bin_lo_BpM_eff = 400
 bin_hi_BpM_eff = 2500
@@ -37,6 +37,7 @@ unblind_ST = 850
 
 rebinX = 2 #4 for 2016 (105bins) and 2 for full run2 (210bins)
 rebinY = 1
+
 Nbins_BpM_actual = int(Nbins_BpM/rebinX)
 Nbins_ST_actual = int(Nbins_ST/rebinY)
 Nbins_BpM_eff = int(Nbins_BpM_eff/rebinX)
@@ -45,57 +46,9 @@ Nbins_ST_eff = int(Nbins_ST_eff/rebinY)
 year = '' # '', '_2016', '_2016APV'
 varyBinSize = True
 
-plotDir ='2D_plots/'
+plotDir ='2D_plots_2Dsmooth/'
 if not os.path.exists(plotDir):
     os.makedirs(plotDir)
-
-STTag = {"fullST": "",
-         "lowST":  "V",
-         "highST": "2"}
-
-STMap = {"fullST": "D",
-         "lowST":  "V",
-         "highST": "D2"}
-
-def mergeBin(i, j, nEvt, hist):
-    while i<Nbins_BpM_actual+1 and nEvt<1:
-        i+=1 # the last bin to include
-        if hist.GetBinContent(i,j)>0:
-            nEvt += hist.GetBinContent(i,j)
-    return i, hist.GetXaxis().GetBinLowEdge(i)
-
-def modifyBinning(hist):
-    # scan across BpM
-    xbinsDict = {}
-    nXbins = 0
-    shortestBpM = []
-    
-    for j in range(1,Nbins_ST_actual+1): # bin 0 is underflow
-    #for j in [10]:
-        i = 0
-        nEvt = 0
-        xbinsList = [hist.GetXaxis().GetBinLowEdge(0)]
-        while i<Nbins_BpM_actual: # TODO: consider the last bin
-            i, binLowEdge = mergeBin(i, j, nEvt, hist)
-            xbinsList.append(binLowEdge)
-        xbinsDict[f'ST bin {j}'] = np.array(xbinsList)
-
-        if nXbins==0 or nXbins>len(xbinsList):
-            nXbins = len(xbinsList)
-            shortestBpM = xbinsList
-
-    for j in range(1,Nbins_ST_actual+1):
-        binTemp = 0
-        for k in range(1,nXbins): # the low edge is always the same
-            print(shortestBpM[k])
-            closestBin = np.argmin(np.abs(xbinsDict[f'ST bin {j}']-shortestBpM[k]))
-            if binTemp==0 or closestBin>binTemp:
-                binTemp = closestBin
-            print(closestBin)
-            exit()
-    print(shortestBpM)
-    exit()
-
         
 def modifyOverflow2D(hist):
     ## Julie comment: ROOT counts bins from 1, I think we need to be using 1 in place of 0 here
@@ -111,8 +64,8 @@ def modifyOverflow2D(hist):
         hist.SetBinContent(Nbins_BpM_actual,ist,newtotal)
         hist.SetBinContent(Nbins_BpM_actual+1,ist,0)
         
-
 def getNormalizedTgtPreHists(histFile, histTag, getTgt=True):
+    # outputs rebinned histograms. No need to call rebin if this function is called
     hist_pre = histFile.Get(f'BpMST_pre_{histTag}').Clone(f'BpMST_pre_{histTag}')
     hist_pre.RebinX(rebinX)
     hist_pre.RebinY(rebinY)
@@ -147,14 +100,12 @@ with open(f'counts{year}_2Dpad.json',"r") as countsFile:
     counts = json.load(countsFile)
     
 def getAlphaRatioTgtPreHists(histFile, histTag, case, getTgt=True):
+    # outputs rebinned histograms. No need to call rebin if this function is called
     #TEMP: remove after the naming convention is changed in getAlphaRatio
     if histTag=="D2":
         region = "highST"
     else:
         region = histTag
-        
-    if 'pNet' in histTag:
-        region = histTag[0]
         
     if getTgt:
         _, hist_pre = getNormalizedTgtPreHists(histFile, histTag, getTgt)
@@ -190,7 +141,7 @@ def plotHists2D_All():
     histFile3 = ROOT.TFile.Open(f'{rootDir_case23}/hists_ABCDnn_case3_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}_modified.root', 'READ')
     histFile4 = ROOT.TFile.Open(f'{rootDir_case14}/hists_ABCDnn_case4_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}_modified.root', 'READ')
 
-    for region in ["D", "V", "D2"]:
+    for region in ["D", "V"]: # , "D2"]:
         hist_tgt1, hist_pre1 = getAlphaRatioTgtPreHists(histFile1, f'{region}', 'case1')
         hist_tgt2, hist_pre2 = getAlphaRatioTgtPreHists(histFile2, f'{region}', 'case2')
         hist_tgt3, hist_pre3 = getAlphaRatioTgtPreHists(histFile3, f'{region}', 'case3')
@@ -217,7 +168,7 @@ def plotHists2D_All():
         
     
 def plotHists2D_Separate(histFileIn, histFileOut, case):
-    for region in ["D", "B"]: # high/low ST regions are just part of these plots
+    for region in ["D", "B"]:
         hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFileIn, f'{region}', case)
 
         # plot ABCDnn prediction
@@ -229,7 +180,9 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
         hist_pre.Draw("COLZ")
         c1.SaveAs(f'{plotDir}BpMST_ABCDnn_{region}_{case}.png')
         c1.Close()
-  
+
+        
+        # plot target hist for non-blinded cases in V,D,VhighST
         # blind for D and highST case1 and 2
         blind = False
         if year=='' and (region=='D' or region=='D2'):
@@ -237,7 +190,6 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
                 blind = True
 
         if not blind:
-            # plot target hist for non-blinded cases in V,D,VhighST
             c2 = ROOT.TCanvas(f'c2_{region}', f'ST_target vs BpM_target in region {region}', 900, 600)
             hist_tgt.SetTitle(f'ST_target vs BpM_target in region {region}')
             hist_tgt.GetXaxis().SetTitle('B mass (GeV)')
@@ -317,22 +269,15 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
             c7.SaveAs(f'{plotDir}Bprime_mass_ABCDnn_1Dcorrect{region}from2D{region}_{region}_{case}.png')
             c7.Close()
 
-
-        # # plot corrected region D BpM (2D)
-        # c8 = ROOT.TCanvas(f'c8_{case}_{region}', f'BpMST_ABCDnn corrected with 2D ({case})', 600, 600)
-        # hist_Corrected2D = histFileOut.Get(f'BpMST_pre_{region}_withCorrect{region}').Clone()
-        # if region=="D" or region=="V":
-        #     hist_Corrected2D.Scale(alphaFactors[case][region]["prediction"]/hist_Corrected2D.Integral())
-        # else:
-        #     hist_Corrected2D.Scale(counts[case][region]["major"]/hist_Corrected2D.Integral())
-        # hist_Corrected2D.SetTitle(f'BpMST_ABCDnn corrected with {region} 2D map ({case})') # fix lowST label
-        # hist_Corrected2D.GetXaxis().SetTitle('B mass (GeV)')
-        # hist_Corrected2D.GetYaxis().SetTitle('ST (GeV)')
-        # hist_Corrected2D.GetYaxis().SetRangeUser(400,1500)
-        # hist_Corrected2D.GetZaxis().SetRangeUser(-1.0,2.0)
-        # hist_Corrected2D.Draw("HIST")
-        # c5.SaveAs(f'{plotDir}BpMST_ABCDnn_correctedfrom{region}_{case}.png')
-        # c5.Close()
+        # plot corrected region D BpM (2D)
+        c8 = ROOT.TCanvas(f'c8_{case}_{region}', f'BpMST_ABCDnn corrected with 2D ({case})', 900, 600)
+        hist_Corrected2D = histFileOut.Get(f'BpMST_pre_{region}_withCorrect{region}').Clone()
+        hist_Corrected2D.SetTitle(f'BpMST_ABCDnn corrected with {region} 2D map ({case})') # fix lowST label
+        hist_Corrected2D.GetXaxis().SetTitle('B mass (GeV)')
+        hist_Corrected2D.GetYaxis().SetTitle('ST (GeV)')
+        hist_Corrected2D.Draw("COLZ")
+        c8.SaveAs(f'{plotDir}BpMST_ABCDnn_correctedfrom{region}_{case}.png')
+        c8.Close()
         
 def addHistograms(histFileIn, histFileOut, case):
     ###################
@@ -504,11 +449,11 @@ def addHistograms(histFileIn, histFileOut, case):
     
 # apply correction
 def applyCorrection(histFileIn, histFileOut, corrType, region, case):
-    hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFileIn, region, case)
+    hist_tgt_pad, hist_pre_pad = getAlphaRatioTgtPreHists(histFileIn, region, case)
 
     # give clone names, so that ProfileX can distinguish them
-    hist_preUp_pad = hist_pre.Clone(f'CorrpreUp_{region}')
-    hist_preDn_pad = hist_pre.Clone(f'CorrpreDn_{region}')
+    hist_preUp_pad = hist_pre_pad.Clone(f'CorrpreUp_{region}')
+    hist_preDn_pad = hist_pre_pad.Clone(f'CorrpreDn_{region}')
     hist_cor_pad = histFileOut.Get(f'BpMST_Correct{corrType}').Clone('cor')
     
     # pre = pre + pre*correction
@@ -541,21 +486,21 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
             if hist_pre_pad.GetBinContent(i,j)<0:
                 hist_pre.SetBinContent(i,j,0)
             else:
-                hist_pre.SetBinContent(hist_pre_pad.GetBinContent(i,j))
+                hist_pre.SetBinContent(i,j,hist_pre_pad.GetBinContent(i,j))
 
             if hist_preUp_pad.GetBinContent(i,j)<0:
                 hist_preUp.SetBinContent(i,j,0)
             else:
-                hist_preUp.SetBinContent(hist_preUp_pad.GetBinContent(i,j))
+                hist_preUp.SetBinContent(i,j,hist_preUp_pad.GetBinContent(i,j))
 
             if hist_preDn_pad.GetBinContent(i,j)<0:
                 hist_preDn.SetBinContent(i,j,0)
             else:
-                hist_preDn.SetBinContent(hist_preDn_pad.GetBinContent(i,j))
+                hist_preDn.SetBinContent(i,j,hist_preDn_pad.GetBinContent(i,j))
                 
-            hist_pre.SetBinError(hist_pre_pad)
-            hist_preUp.SetBinError(hist_preUp_pad)
-            hist_preDn.SetBinError(hist_preDn_pad)
+            hist_pre.SetBinError(i,j,hist_pre_pad.GetBinError(i,j))
+            hist_preUp.SetBinError(i,j,hist_preUp_pad.GetBinError(i,j))
+            hist_preDn.SetBinError(i,j,hist_preDn_pad.GetBinError(i,j))
 
     # make sure that only lowST events are considered
     if ("V" in region) and (case=="case1" or case=="case2"):
@@ -593,8 +538,8 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
 
 def applyTrainUncert(histFileIn, histFileOut, region, case):
     hist_pre_pad = getAlphaRatioTgtPreHists(histFileIn, region, case, False)
-    hist_preUp_pad = hist_pre.Clone(f'TrainpreUp_{region}')
-    hist_preDn_pad = hist_pre.Clone(f'TrainpreDn_{region}')
+    hist_preUp_pad = hist_pre_pad.Clone(f'TrainpreUp_{region}')
+    hist_preDn_pad = hist_pre_pad.Clone(f'TrainpreDn_{region}')
 
     hist_trainUncert_pad = histFileOut.Get(f'BpMST_trainUncertfullST').Clone('trainUncert')
 
@@ -621,16 +566,15 @@ def applyTrainUncert(histFileIn, histFileOut, region, case):
             if hist_preUp_pad.GetBinContent(i,j)<0:
                 hist_preUp.SetBinContent(i,j,0)
             else:
-                hist_preUp.SetBinContent(hist_preUp_pad.GetBinContent(i,j))
+                hist_preUp.SetBinContent(i,j,hist_preUp_pad.GetBinContent(i,j))
 
             if hist_preDn_pad.GetBinContent(i,j)<0:
                 hist_preDn.SetBinContent(i,j,0)
             else:
-                hist_preDn.SetBinContent(hist_preDn_pad.GetBinContent(i,j))
+                hist_preDn.SetBinContent(i,j,hist_preDn_pad.GetBinContent(i,j))
                 
-            hist_pre.SetBinError(hist_pre_pad)
-            hist_preUp.SetBinError(hist_preUp_pad)
-            hist_preDn.SetBinError(hist_preDn_pad)
+            hist_preUp.SetBinError(i,j,hist_preUp_pad.GetBinError(i,j))
+            hist_preDn.SetBinError(i,j,hist_preDn_pad.GetBinError(i,j))
             
     if region=="V" and (case=="case1" or case=="case2"):
         for i in range(1,newHighBinBpM+1):
@@ -694,16 +638,15 @@ def applypNet(histFileIn, histFileOut, region, case):
             if hist_preUp_pad.GetBinContent(i,j)<0:
                 hist_preUp.SetBinContent(i,j,0)
             else:
-                hist_preUp.SetBinContent(hist_preUp_pad.GetBinContent(i,j))
+                hist_preUp.SetBinContent(i,j,hist_preUp_pad.GetBinContent(i,j))
 
             if hist_preDn_pad.GetBinContent(i,j)<0:
                 hist_preDn.SetBinContent(i,j,0)
             else:
-                hist_preDn.SetBinContent(hist_preDn_pad.GetBinContent(i,j))
-                
-            hist_pre.SetBinError(hist_pre_pad)
-            hist_preUp.SetBinError(hist_preUp_pad)
-            hist_preDn.SetBinError(hist_preDn_pad)
+                hist_preDn.SetBinContent(i,j,hist_preDn_pad.GetBinContent(i,j))
+            
+            hist_preUp.SetBinError(i,j,hist_preUp_pad.GetBinError(i,j))
+            hist_preDn.SetBinError(i,j,hist_preDn_pad.GetBinError(i,j))
 
     # make sure that only lowST events are considered
     if ("V" in region) and (case=="case1" or case=="case2"):
