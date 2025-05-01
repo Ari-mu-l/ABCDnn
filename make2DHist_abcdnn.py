@@ -36,12 +36,12 @@ elif 'all' in args.target:
   year = ''
 
 # histogram settings
-bin_lo_BpM = 300 #400 #0
-bin_hi_BpM = 2600 #2500
+bin_lo_BpM = 0 #400 #0
+bin_hi_BpM = 4000 #2600 #2500
 bin_lo_ST = 0
-bin_hi_ST = 1600 #1500 #1500
-Nbins_BpM = 460 #420 # 2100
-Nbins_ST  = 32 #30 # 30
+bin_hi_ST = 5000 #1600 #1500
+Nbins_BpM = 800 #460 #420 # 2100
+Nbins_ST  = 100 #32 #30 # 30
 validationCut = 850
 
 log = False # set to False if want BpM instead of log(BpM)
@@ -94,11 +94,25 @@ def processInput(fileName):
   elif "Minor" in fileName:
     inputs = fTree.arrays( variables+["xsecWeight"], library="pd" )
     for variable in variables:
-      inputs[variable] = inputs[variable].clip(upper = config.variables[variable]["LIMIT"][1])
+      #inputs[variable] = inputs[variable].clip(upper = config.variables[variable]["LIMIT"][1])
+      # for 2D padding
+      if variable=="Bprime_mass":
+        inputs[variable] = inputs[variable].clip(upper = bin_hi_BpM)
+      elif variable=="gcJet_ST":
+        inputs[variable] = inputs[variable].clip(upper = bin_hi_ST)
+      else:
+        inputs[variable] = inputs[variable].clip(upper = config.variables[variable]["LIMIT"][1])
   elif "Data" in fileName:
     inputs = fTree.arrays( variables, library="pd" )
     for variable in variables:
-      inputs[variable] = inputs[variable].clip(upper = config.variables[variable]["LIMIT"][1])
+      #inputs[variable] = inputs[variable].clip(upper = config.variables[variable]["LIMIT"][1])
+      # for 2D padding
+      if variable=="Bprime_mass":
+        inputs[variable] = inputs[variable].clip(upper = bin_hi_BpM)
+      elif variable=="gcJet_ST":
+        inputs[variable] = inputs[variable].clip(upper = bin_hi_ST)
+      else:
+        inputs[variable] = inputs[variable].clip(upper = config.variables[variable]["LIMIT"][1])
 
   Bdecay = fTree.arrays( ["Bdecay_obs", "pNetTtagWeight", "pNetTtagWeightUp", "pNetTtagWeightDn", "pNetWtagWeight", "pNetWtagWeightUp", "pNetWtagWeightDn"], library="pd" )
 
@@ -140,8 +154,11 @@ def processInput(fileName):
       encoder[region] = abcdnn.OneHotEncoder_int( categorical, lowerlimit = lowerlimit, upperlimit = upperlimit )
       inputs_enc_region[ region ] = encoder[region].encode( inputs_region[ region ].to_numpy( dtype = np.float32 ) )
       inputs_nrm_region[ region ] = ( inputs_enc_region[ region ] - inputmeans ) / inputsigmas
-      inputs_region[ region ][ variables[0] ] = inputs_region[ region ][ variables[0] ].clip(upper=config.variables[variables[0]]["LIMIT"][1])
-      inputs_region[ region ][ variables[1] ] = inputs_region[ region ][ variables[1] ].clip(upper=config.variables[variables[1]]["LIMIT"][1])
+      #inputs_region[ region ][ variables[0] ] = inputs_region[ region ][ variables[0] ].clip(upper=config.variables[variables[0]]["LIMIT"][1])
+      #inputs_region[ region ][ variables[1] ] = inputs_region[ region ][ variables[1] ].clip(upper=config.variables[variables[1]]["LIMIT"][1])
+      # for 2D padding
+      inputs_region[ region ][ variables[0] ] = inputs_region[ region ][ variables[0] ].clip(upper=bin_hi_BpM)
+      inputs_region[ region ][ variables[1] ] = inputs_region[ region ][ variables[1] ].clip(upper=bin_hi_ST)
   
     #get predictions
     predictions = { region: [] for region in [ "X", "Y", "A", "B", "C", "D" ] }
@@ -248,8 +265,8 @@ def makeHists2D(fileName, inputs_region, Bdecay_region, region, case):
   
   if not log:
     inputs_array = np.exp(inputs_array)
-    inputs_array[:,0] = np.clip(inputs_array[:,0], 0, 2500)
-    inputs_array[:,1] = np.clip(inputs_array[:,1], 0, 1500)
+    inputs_array[:,0] = np.clip(inputs_array[:,0], 0, bin_hi_BpM)
+    inputs_array[:,1] = np.clip(inputs_array[:,1], 0, bin_hi_ST)
 
   if region=="D":
     subRegionList = ['D', 'V', 'D2']

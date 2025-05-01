@@ -16,11 +16,11 @@ rootDir_case23 = f'logBpMlogST_mmd1_case23_random{model_case23}'
 
 # histogram settings
 bin_lo_BpM = 400 #0
-bin_hi_BpM = 2500
+bin_hi_BpM = 2600 #2500
 bin_lo_ST = 0
-bin_hi_ST = 1500 #1530 #1500
+bin_hi_ST = 1600 #1500 #1530
 Nbins_BpM = 420 # 2100
-Nbins_ST  = 30 #18 #30
+Nbins_ST  = 30 #18
 validationCut = 850
 statCutoff = 0 #10
 
@@ -28,7 +28,7 @@ unblind_BpM = 700
 unblind_ST = 850
 
 rebinX = 2 #4 for 2016 (105bins) and 2 for full run2 (210bins)
-rebinY = 1
+rebinY = 1#1
 Nbins_BpM_actual = int(Nbins_BpM/rebinX)
 Nbins_ST_actual = int(Nbins_ST/rebinY)
 

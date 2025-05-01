@@ -58,7 +58,8 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
     else:
         rootDir = rootDir_case23
     #print(f'{rootDir}/hists_ABCDnn_{case}_BpM400to2500ST0to1500_420bins30bins_pNet{year}_modified.root')
-    histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM300to2600ST0to1600_460bins32bins_pNet{year}_modified.root', "READ")
+    histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM0to4000ST0to5000_800bins100bins_pNet{year}_modified.root', "READ")
+    #histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM300to2600ST0to1600_460bins32bins_pNet{year}_modified.root', "READ")
     #histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM400to2500ST0to1500_420bins30bins_pNet{year}_modified.root', "READ")
     if "Nominal" in histType:
         if "B" in region:
