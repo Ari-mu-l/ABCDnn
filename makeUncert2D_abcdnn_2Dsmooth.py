@@ -406,35 +406,35 @@ def addHistograms(histFileIn, histFileOut, case):
             hist_tgtABC.Add(hist_tgt)
             hist_preABC.Add(hist_pre)
         
-        # trainB + trainAC in hole only
-        if case=="case1":
-            hist_tgtA = histFileIn.Get(f'BpMST_dat_A').Clone(f'dat_A')
-            hist_mnrA = histFileIn.Get(f'BpMST_mnr_A').Clone(f'mnr_A')
-            hist_preA = histFileIn.Get(f'BpMST_pre_A').Clone(f'pre_A')
+        # # trainB + trainAC in hole only
+        # if case=="case1":
+        #     hist_tgtA = histFileIn.Get(f'BpMST_dat_A').Clone(f'dat_A')
+        #     hist_mnrA = histFileIn.Get(f'BpMST_mnr_A').Clone(f'mnr_A')
+        #     hist_preA = histFileIn.Get(f'BpMST_pre_A').Clone(f'pre_A')
 
-            hist_tgtC = histFileIn.Get(f'BpMST_dat_C').Clone(f'dat_C')
-            hist_mnrC = histFileIn.Get(f'BpMST_mnr_C').Clone(f'mnr_C')
-            hist_preC = histFileIn.Get(f'BpMST_pre_C').Clone(f'pre_C')
+        #     hist_tgtC = histFileIn.Get(f'BpMST_dat_C').Clone(f'dat_C')
+        #     hist_mnrC = histFileIn.Get(f'BpMST_mnr_C').Clone(f'mnr_C')
+        #     hist_preC = histFileIn.Get(f'BpMST_pre_C').Clone(f'pre_C')
 
-            hist_tgtA.Add(hist_tgtC)
-            hist_mnrA.Add(hist_mnrC)
-            hist_preA.Add(hist_preC)
+        #     hist_tgtA.Add(hist_tgtC)
+        #     hist_mnrA.Add(hist_mnrC)
+        #     hist_preA.Add(hist_preC)
 	
-            hist_tgtA.Add(hist_mnrA, -1.0)
+        #     hist_tgtA.Add(hist_mnrA, -1.0)
 
-            hist_tgtA.RebinX(rebinX)
-            hist_preA.RebinX(rebinX)
+        #     hist_tgtA.RebinX(rebinX)
+        #     hist_preA.RebinX(rebinX)
 
-            hist_tgtA.RebinY(rebinY)
-            hist_preA.RebinY(rebinY)
+        #     hist_tgtA.RebinY(rebinY)
+        #     hist_preA.RebinY(rebinY)
             
-            unblind_BpM_bin = hist_tgtA.GetXaxis().FindFixBin(unblind_BpM)
-            unblind_ST_bin = hist_tgtA.GetYaxis().FindFixBin(unblind_ST)
+        #     unblind_BpM_bin = hist_tgtA.GetXaxis().FindFixBin(unblind_BpM)
+        #     unblind_ST_bin = hist_tgtA.GetYaxis().FindFixBin(unblind_ST)
             
-            for i in range(unblind_BpM_bin, Nbins_BpM_actual+1):
-                for j in range(unblind_ST_bin, Nbins_ST_actual+1):
-                    hist_tgtABC.SetBinContent(i, j, hist_tgtA.GetBinContent(i,j))
-                    hist_preABC.SetBinContent(i, j, hist_preA.GetBinContent(i,j))
+        #     for i in range(unblind_BpM_bin, Nbins_BpM_actual+1):
+        #         for j in range(unblind_ST_bin, Nbins_ST_actual+1):
+        #             hist_tgtABC.SetBinContent(i, j, hist_tgtA.GetBinContent(i,j))
+        #             hist_preABC.SetBinContent(i, j, hist_preA.GetBinContent(i,j))
 
         modifyOverflow2D(hist_tgtABC)
         modifyOverflow2D(hist_preABC)
