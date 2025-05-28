@@ -414,8 +414,10 @@ def smoothAndTruncate(hist_pre_pad, uncertType, case, region, yBinLowEdge): # un
     hist_pre2D_out = hist_pre_pad.Clone(f'BpMST_pre_{case}_{uncertType}_{region}_full')
     if region=="D":
         #if case=="case1" or case=="case2":
-        if case=="case1" or case=="case2":
+        if case=="case1":
             hist_pre_pad.Smooth(ntimes=1,option="k3a")
+            #hist_pre_pad.Smooth(ntimes=1,option="k3a")
+        elif case=="case2":
             hist_pre_pad.Smooth(ntimes=1,option="k3a")
         else:
             hist_pre_pad.Smooth(ntimes=1,option="k5a") #k5b

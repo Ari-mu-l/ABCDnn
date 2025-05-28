@@ -18,10 +18,11 @@ rootDir_case23 = f'logBpMlogST_mmd1_case23_random{model_case23}'
 
 binlo = 400
 binhi = 2500
-bins = 210 #105 for 2016 and 210 for full Run2
+bins = 105 #210 #105 for 2016 and 210 for full Run2
 year = '' # '', '_2016'
 
-outDirTag = f'BtargetHoleCorrBTrain_2Dsmooth_rebin{year}'
+#outDirTag = f'BtargetHoleCorrBTrain_smooth_rebin{year}'
+outDirTag = f'BtargetHoleCorrABCpABCTrain_2Dsmooth_rebin{year}'
 
 doV2 = False #IMPORTANT: REMEMBER TO TURN ON AND OFF!!
 withFit = False
@@ -57,9 +58,10 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
         rootDir = rootDir_case14
     else:
         rootDir = rootDir_case23
-    #print(f'{rootDir}/hists_ABCDnn_{case}_BpM400to2500ST0to1500_420bins30bins_pNet{year}_modified.root')
-    histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM0to4000ST0to5000_800bins100bins_pNet{year}_modified.root', "READ")
+        
+    #histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM0to4000ST0to5000_800bins100bins_pNet{year}_modified.root', "READ")
     #histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM300to2600ST0to1600_460bins32bins_pNet{year}_modified.root', "READ")
+    histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM300to3000ST0to2000_540bins40bins_pNet{year}_modified.root', "READ")
     #histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM400to2500ST0to1500_420bins30bins_pNet{year}_modified.root', "READ")
     if "Nominal" in histType:
         if "B" in region:
