@@ -50,7 +50,7 @@ statCutoff = 0 #10
 unblind_BpM = 700
 unblind_ST = 850
 
-rebinX = 2 #4 for 2016 (105bins) and 2 for full run2 (210bins)
+rebinX = 4 #4 for 2016 (105bins) and 2 for full run2 (210bins)
 rebinY = 1 #1
 
 Nbins_BpM_actual = int(Nbins_BpM/rebinX)
@@ -715,17 +715,6 @@ def addHistograms(histFileIn, histFileOut, case):
             print(f'Saved BpMST_trainUncert{STrange}_{applicationRegion} to {case}')
 
 
-# add pre-correction histograms
-def histBeforeCorrection(histFileIn, histFileOut, corrType, region, case):
-    hist_tgt_pad_raw, hist_pre_pad_raw = getAlphaRatioTgtPreHists(histFileIn, region, case)
-
-    hist_pre_pad = modifyBinning(hist_pre_pad_raw,yBinLowEdges[f'{case}_{region}'])
-    #hist_tgt_pad = modifyBinning(hist_tgt_pad_raw,yBinLowEdges[f'{case}_{region}'])
-
-    hist_pre, hist_pre_1D = smoothAndTruncate(hist_pre_pad, 'nom', case, region, yBinLowEdges[f'{case}_{region}'])
-
-    histFileOut.cd()
-    hist_pre_1D.Write(f'Bprime_mass_pre_{region}_noCorrect')
 
 # apply correction
 def applyCorrection(histFileIn, histFileOut, corrType, region, case):
@@ -785,27 +774,27 @@ def applyTrainUncert(histFileIn, histFileOut, region, case):
     
     hist_pre_pad = modifyBinning(hist_pre_pad_raw,yBinLowEdges[f'{case}_{region}'])
     
-    #hist_preUp_pad = hist_pre_pad.Clone(f'TrainpreUp_{region}_{case}')
+    hist_preUp_pad = hist_pre_pad.Clone(f'TrainpreUp_{region}_{case}')
     hist_preDn_pad = hist_pre_pad.Clone(f'TrainpreDn_{region}_{case}')
-    hist_pre_1D = histFileOut.Get(f'Bprime_mass_pre_{region}_withCorrect{region}').Clone(f'Nominal_{region}_{case}_1D')
-    hist_pre_1DUp = hist_pre_1D.Clone(f'TrainpreUp_{region}_{case}_1D')
+    #hist_pre_1D = histFileOut.Get(f'Bprime_mass_pre_{region}_withCorrect{region}').Clone(f'Nominal_{region}_{case}_1D')
+    #hist_pre_1DUp = hist_pre_1D.Clone(f'TrainpreUp_{region}_{case}_1D')
     
     hist_trainUncert_pad = histFileOut.Get(f'BpMST_trainUncertfullST_{region}').Clone('trainUncert')
     
     # pre = pre +/- pre*trainUncert
     hist_trainUncert_pad.Multiply(hist_pre_pad)
-    #hist_preUp_pad.Add(hist_trainUncert_pad, 1.0)
+    hist_preUp_pad.Add(hist_trainUncert_pad, 1.0)
     hist_preDn_pad.Add(hist_trainUncert_pad, -1.0)
     
     # smooth and truncate the padded histogram into [400,2500]x[0,1500]
-    #hist_preUp, hist_pre_1DUp = smoothAndTruncate(hist_preUp_pad, 'trainUp', case, region, yBinLowEdges[f'{case}_{region}'])
+    hist_preUp, hist_pre_1DUp = smoothAndTruncate(hist_preUp_pad, 'trainUp', case, region, yBinLowEdges[f'{case}_{region}'])
     hist_preDn, hist_pre_1DDn = smoothAndTruncate(hist_preDn_pad, 'trainDn', case, region, yBinLowEdges[f'{case}_{region}'])
 
     # 2D smoothing might act funky when seeing a bunch of very large bins, so get trainUp from trainDn
     # del_shift = pre - dn
     # up = pre + del_shift
-    hist_pre_1D.Add(hist_pre_1DDn,-1.0)
-    hist_pre_1DUp.Add(hist_pre_1D,1.0)
+    #hist_pre_1D.Add(hist_pre_1DDn,-1.0)
+    #hist_pre_1DUp.Add(hist_pre_1D,1.0)
 
     histFileOut.cd()
     hist_pre_1DUp.Write(f'Bprime_mass_pre_{region}_trainUncertfullSTUp')
@@ -898,8 +887,6 @@ for case in ['case1', 'case2', 'case3', 'case4']:
         applyTrainUncert(histFileIn, histFileOut, region, case)
         if case=="case1" or case=="case2":
             applypNet(histFileIn, histFileOut, region, case)
-
-        histBeforeCorrection(histFileIn, histFileOut, region, region, case)
 
     #for region in ['B', 'BV']: # general
     #for region in ['B']: # year-by-year

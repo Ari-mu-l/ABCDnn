@@ -16,9 +16,9 @@ rootDir_case23 = f'logBpMlogST_mmd1_case23_random{model_case23}'
 
 # histogram settings
 bin_lo_BpM = 400 #0
-bin_hi_BpM = 2600 #2500
+bin_hi_BpM = 2500
 bin_lo_ST = 0
-bin_hi_ST = 1600 #1500 #1530
+bin_hi_ST = 1500 #1530
 Nbins_BpM = 420 # 2100
 Nbins_ST  = 30 #18
 validationCut = 850
@@ -27,8 +27,8 @@ statCutoff = 0 #10
 unblind_BpM = 700
 unblind_ST = 850
 
-rebinX = 2 #4 for 2016 (105bins) and 2 for full run2 (210bins)
-rebinY = 1#1
+rebinX = 4 #4 for 2016 (105bins) and 2 for full run2 (210bins)
+rebinY = 2 #1
 Nbins_BpM_actual = int(Nbins_BpM/rebinX)
 Nbins_ST_actual = int(Nbins_ST/rebinY)
 
@@ -533,18 +533,18 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
     # preDn = pre + pre*0, so do nothing
 
     # SMOOTH
-    hist_pre.Smooth()
-    hist_preUp.Smooth()
-    hist_preDn.Smooth()
+    #hist_pre.Smooth()
+    #hist_preUp.Smooth()
+    #hist_preDn.Smooth()
     # Smoothing introduces negative bins. Set those bins to 0 before projection. Check with Julie
-    for i in range(Nbins_BpM_actual+1):
-        for j in range(Nbins_ST_actual+1):
-            if hist_pre.GetBinContent(i,j)<0:
-                hist_pre.SetBinContent(i,j,0)
-            if hist_preUp.GetBinContent(i,j)<0:
-                hist_preUp.SetBinContent(i,j,0)
-            if hist_preDn.GetBinContent(i,j)<0:
-                hist_preDn.SetBinContent(i,j,0)
+    #for i in range(Nbins_BpM_actual+1):
+    #    for j in range(Nbins_ST_actual+1):
+    #        if hist_pre.GetBinContent(i,j)<0:
+    #            hist_pre.SetBinContent(i,j,0)
+    #        if hist_preUp.GetBinContent(i,j)<0:
+    #            hist_preUp.SetBinContent(i,j,0)
+    #        if hist_preDn.GetBinContent(i,j)<0:
+    #            hist_preDn.SetBinContent(i,j,0)
 
     # make sure that only lowST events are considered
     if ("V" in region) and (case=="case1" or case=="case2"):

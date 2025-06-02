@@ -12,13 +12,13 @@ else:
     getAlphaRatio = "True"
 
 year = '' # '', '_2016'
-do2Dpad = True
+iPlot = 'BpMass_pad_full' # BpMass, BpMass_pad, BpMass_padfull
 
-if do2Dpad:
-    iPlot = 'BpMass_pad' # for 2D padding
+if iPlot == 'BpMass_pad':
     fileNameTag = '_2Dpad'
-else:
-    iPlot = 'BpMass'
+elif iPlot == 'BpMass_padfull':
+    fileNameTag = '_2Dpadfull'
+elif iPlot == 'BpMass':
     fileNameTag = ''
 
 ###############################
@@ -152,7 +152,7 @@ if getAlphaRatio=="True":
 
 
     print("\nPerforming alpha-ratio estimation.\n")
-    for case in ["case1", "case2", "case3", "case4"]:
+    for case in ["case14", "case23","case1", "case2", "case3", "case4"]:
         #for region in ["V", "D", "highST"]: ##, "D2"]: # general
         for region in ["V","D"]: # for year-by-year gof test
             getPrediction(case, region)

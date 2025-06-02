@@ -36,12 +36,12 @@ elif 'all' in args.target:
   year = ''
 
 # histogram settings
-bin_lo_BpM = 0 #400 #0
-bin_hi_BpM = 4000 #2600 #2500
+bin_lo_BpM = 300 #0 #300 #400
+bin_hi_BpM = 3000 #4000 #2600 #2500
 bin_lo_ST = 0
-bin_hi_ST = 5000 #1600 #1500
-Nbins_BpM = 800 #460 #420 # 2100
-Nbins_ST  = 100 #32 #30 # 30
+bin_hi_ST = 2000 #5000 #1600 #1500
+Nbins_BpM = 540 #800 #460 #420
+Nbins_ST  = 40 #100 #32 #30
 validationCut = 850
 
 log = False # set to False if want BpM instead of log(BpM)

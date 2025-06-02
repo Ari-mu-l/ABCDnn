@@ -50,7 +50,7 @@ statCutoff = 0 #10
 unblind_BpM = 700
 unblind_ST = 850
 
-rebinX = 2 #4 for 2016 (105bins) and 2 for full run2 (210bins)
+rebinX = 4 #4 for 2016 (105bins) and 2 for full run2 (210bins)
 rebinY = 1 #1
 
 Nbins_BpM_actual = int(Nbins_BpM/rebinX)
@@ -99,7 +99,7 @@ def getNewBinning(hist, region):
                     yBinLowEdge[i-1].append(hist.GetYaxis().GetBinLowEdge(j))
                     j+=1
 
-            if len(yBinLowEdge[i-1])<yBinFewestLen and len(yBinLowEdge[i-1])>4:
+            if len(yBinLowEdge[i-1])<yBinFewestLen and len(yBinLowEdge[i-1])>2:
                 yBinFewestLen = len(yBinLowEdge[i-1])
                 yBinFewestNo = i-1
         if yBinLowEdge[yBinFewestNo][-1]!=bin_hi_ST:
@@ -122,7 +122,7 @@ def getNewBinning(hist, region):
 
                 yBinLowEdge[i-1].append(hist.GetYaxis().GetBinLowEdge(j))
                 j+=1
-            if len(yBinLowEdge[i-1])<yBinFewestLen and len(yBinLowEdge[i-1])>4:
+            if len(yBinLowEdge[i-1])<yBinFewestLen and len(yBinLowEdge[i-1])>2:
                 yBinFewestLen = len(yBinLowEdge[i-1])
                 yBinFewestNo = i-1
         if yBinLowEdge[yBinFewestNo][-1]!=validationCut:
@@ -414,8 +414,10 @@ def smoothAndTruncate(hist_pre_pad, uncertType, case, region, yBinLowEdge): # un
     hist_pre2D_out = hist_pre_pad.Clone(f'BpMST_pre_{case}_{uncertType}_{region}_full')
     if region=="D":
         #if case=="case1" or case=="case2":
-        if case=="case1" or case=="case2":
+        if case=="case1":
             hist_pre_pad.Smooth(ntimes=1,option="k3a")
+            #hist_pre_pad.Smooth(ntimes=1,option="k3a")
+        elif case=="case2":
             hist_pre_pad.Smooth(ntimes=1,option="k3a")
         else:
             hist_pre_pad.Smooth(ntimes=1,option="k5a") #k5b
@@ -715,17 +717,6 @@ def addHistograms(histFileIn, histFileOut, case):
             print(f'Saved BpMST_trainUncert{STrange}_{applicationRegion} to {case}')
 
 
-# add pre-correction histograms
-def histBeforeCorrection(histFileIn, histFileOut, corrType, region, case):
-    hist_tgt_pad_raw, hist_pre_pad_raw = getAlphaRatioTgtPreHists(histFileIn, region, case)
-
-    hist_pre_pad = modifyBinning(hist_pre_pad_raw,yBinLowEdges[f'{case}_{region}'])
-    #hist_tgt_pad = modifyBinning(hist_tgt_pad_raw,yBinLowEdges[f'{case}_{region}'])
-
-    hist_pre, hist_pre_1D = smoothAndTruncate(hist_pre_pad, 'nom', case, region, yBinLowEdges[f'{case}_{region}'])
-
-    histFileOut.cd()
-    hist_pre_1D.Write(f'Bprime_mass_pre_{region}_noCorrect')
 
 # apply correction
 def applyCorrection(histFileIn, histFileOut, corrType, region, case):
@@ -898,8 +889,6 @@ for case in ['case1', 'case2', 'case3', 'case4']:
         applyTrainUncert(histFileIn, histFileOut, region, case)
         if case=="case1" or case=="case2":
             applypNet(histFileIn, histFileOut, region, case)
-
-        histBeforeCorrection(histFileIn, histFileOut, region, region, case)
 
     #for region in ['B', 'BV']: # general
     #for region in ['B']: # year-by-year

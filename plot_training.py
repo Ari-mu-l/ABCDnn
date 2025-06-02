@@ -339,13 +339,13 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   else:
     title_text += "{}={}".format( config.variables[ config.regions[ "Y" ][ "VARIABLE" ] ][ "LATEX" ], int(config.regions[ "Y" ][ region ][1]) )
   title_text += "$"
-  ax.set_title( "Region {}: {}".format( region, title_text ), ha = "right", x = 1.0, fontsize = 10 )
-  print("Region {}: {}".format( region, title_text ))
+  #ax.set_title( "Region {}: {}".format( region, title_text ), ha = "right", x = 1.0, fontsize = 10 )
+  #print("Region {}: {}".format( region, title_text ))
   ax.text(
-    0.02, 0.95, str(epoch),
-    ha = "left", va = "top", transform = ax.transAxes
+    0.02, 0.95, f'Region {region}',
+    ha = "left", va = "top", transform = ax.transAxes, fontsize = 12
   )
-  ax.legend( loc = "upper right", ncol = 2, fontsize = 8 )
+  ax.legend( loc = "upper right", ncol = 2, fontsize = 10 )
 
 def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
 

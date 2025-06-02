@@ -21,12 +21,16 @@ binhi = 2500
 bins = 105 #210 #105 for 2016 and 210 for full Run2
 year = '' # '', '_2016'
 
-#outDirTag = f'BtargetHoleCorrBTrain_smooth_rebin{year}'
-outDirTag = f'BtargetHoleCorrABCpABCTrain_2Dsmooth_rebin{year}'
-
 doV2 = False #IMPORTANT: REMEMBER TO TURN ON AND OFF!!
+withoutCorrection = False
 withFit = False
 separateUncertCases = True
+
+if withoutCorrection:
+    outDirTag = ''
+else:
+    outDirTag = f'BtargetHoleCorrBTrain_smooth_rebin{year}_dynamicST' #1D
+    #outDirTag = f'BtargetHoleCorrABCpABCTrain_2Dsmooth_rebin{year}' #2D
 
 tag = {"case1" : "tagTjet",
        "case2" : "tagWjet",
@@ -37,8 +41,15 @@ tag = {"case1" : "tagTjet",
 outDir = '/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates'
 
 def modifyOverflow(hist, bins):
-    hist.SetBinContent(bins, hist.GetBinContent(bins)+hist.GetBinContent(bins+1))
+    content = hist.GetBinContent(bins)+hist.GetBinContent(bins+1)
+    error = np.sqrt(hist.GetBinError(bins)**2+hist.GetBinError(bins+1)**2)
+    
+    hist.SetBinContent(bins, content)
     hist.SetBinContent(bins+1, 0)
+
+    hist.SetBinError(bins, error)
+    hist.SetBinError(bins+1, 0)
+    
 
 alphaFactors = {}
 with open("alphaRatio_factors.json","r") as alphaFile:
@@ -142,16 +153,50 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
 
 histList = ["Nominal", "pNet", "trainUncert", "correct"]
 
-for case in ["case1", "case2", "case3", "case4"]:
-    #createHist(case, "B", "Nominal", "")
-    #createHist(case, "BV", "Nominal", "")
-    for histType in histList:
-        if histType == "Nominal":
-            shiftList = [""]
-        else:
-            shiftList =	["Up", "Dn"]
-        for shift in shiftList:
-            createHist(case, "D", histType, shift)
-            #if year=='':
-            createHist(case, "V", histType, shift)
-            ##createHist(case, "highST", histType, shift)
+def addWithoutCorrection(case, region):
+    if case=="case1" or case=="case4":
+        rootDir = rootDir_case14
+    else:
+        rootDir = rootDir_case23
+
+    histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM300to3000ST0to2000_540bins40bins_pNet{year}_modified.root', "READ")
+
+    hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_noCorrect')
+    modifyOverflow(hist,bins)
+    hist_out = fillHistogram(hist)
+
+    if doV2:
+        if (region=="V" and (case=="case1" or case=="case2")) or (region=="D" and (case=="case3" or case=="case4")):
+            outFile = TFile.Open(f'{outDir}/templatesV2_Jan2025_{bins}bins{outDirTag}/templates_BpMass_ABCDnn_138fbfb{year}.root', "UPDATE")
+            hist_out.SetTitle("")
+            hist_out.SetName(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major')
+            hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_V2__major', TObject.kOverwrite)
+            outFile.Close()
+    else:
+        outFile = TFile.Open(f'{outDir}/templates{region}_Jan2025_{bins}bins{outDirTag}/templates_BpMass_ABCDnn_138fbfb{year}.root', "UPDATE")
+        hist_out.SetTitle("")
+        hist_out.SetName(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major')
+        hist_out.Write(f'BpMass_ABCDnn_138fbfb_isL_{tag[case]}_{region}__major', TObject.kOverwrite)
+        outFile.Close()
+    histFile.Close()
+    
+    
+
+if withoutCorrection:
+    for case in ["case1", "case2", "case3", "case4"]:
+        addWithoutCorrection(case, "D")
+        addWithoutCorrection(case, "V")
+else:
+    for case in ["case1", "case2", "case3", "case4"]:
+        #createHist(case, "B", "Nominal", "")
+        #createHist(case, "BV", "Nominal", "")
+        for histType in histList:
+            if histType == "Nominal":
+                shiftList = [""]
+            else:
+                shiftList =	["Up", "Dn"]
+            for shift in shiftList:
+                createHist(case, "D", histType, shift)
+                #if year=='':
+                createHist(case, "V", histType, shift)
+                ##createHist(case, "highST", histType, shift)
