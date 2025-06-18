@@ -421,7 +421,8 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
 
 def smoothAndTruncate(hist_pre_pad, uncertType, case, region, yBinLowEdge, smooth): # uncertType: nom, corrUp/Dn, trainUp/Dn, pNetUp/Dn
     # SMOOTH
-    hist_pre2D_out = hist_pre_pad.Clone(f'BpMST_pre_{case}_{uncertType}_{region}_full')
+    hist_pre2D_out = hist_pre_pad.Clone(f'BpMST_pre_{case}_{uncertType}_{region}_full_{smooth}')
+    #hist_pre2D_out.SetDirectory(0)
 
     if smooth:
         if region=="D":
@@ -495,7 +496,7 @@ def smoothAndTruncate(hist_pre_pad, uncertType, case, region, yBinLowEdge, smoot
                 hist_pre.SetBinError(i,j,0)
                 #exit()
     
-    hist_pre1D_out = hist_pre.ProjectionX(f'1D_output_{case}_{uncertType}_{region}')
+    hist_pre1D_out = hist_pre.ProjectionX(f'1D_output_{case}_{uncertType}_{region}_{smooth}')
 
     return hist_pre2D_out, hist_pre1D_out
         
