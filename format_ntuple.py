@@ -58,6 +58,7 @@ class ToyTree:
       "pNetWtagWeight": {"ARRAY": array( "f", [0] ), "STRING": "pNetWtagWeight/F" },
       "pNetWtagWeightUp": {"ARRAY": array( "f", [0] ), "STRING": "pNetWtagWeightUp/F" },
       "pNetWtagWeightDn": {"ARRAY": array( "f", [0] ), "STRING": "pNetWtagWeightDn/F" },
+      "sampleCategory": { "ARRAY": array( "i", [0] ), "STRING": "sampleCategory/I" },
     }
     for variable in config.variables.keys():
       if not config.variables[ variable ][ "TRANSFORM" ]:
@@ -110,12 +111,31 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
   for year in years:
     print("Year {}".format(year))
     for sample in inputs[year][doMCdata]:
+
       if (args.doData):
         samplename = sample.samplename.split('/')[1]+sample.samplename.split('-')[0][-1]
+        sampleCategory = -1
       else:
         samplename = sample.samplename.split('/')[1]
         #if "JetHT" in samplename:  # not using JetHT in ABCDnn
         #  samplename += sample.samplename.split('-')[0][-1]
+
+        # Requested by ARC: Plot separate backgrounds
+        if sample.prefix in samples_ttbar_abcdnn:
+          print(sample.prefix, 'ttbar')
+          sampleCategory = 1
+        elif sample.prefix in samples_wjets:
+          print(sample.prefix, 'wjets')
+          sampleCategory = 2
+        elif sample.prefix in samples_qcd:
+          print(sample.prefix, 'qcd')
+          sampleCategory = 3
+        elif sample.prefix in samples_singletop:
+          print(sample.prefix, 'singletop')
+          sampleCategory = 4
+        else:
+          sampleCategory = 0
+          
       print( ">> Processing {}".format( samplename ) )
       fChain = getfChain( output, samplename, year )
       #rDF = ROOT.RDataFrame(fChain)
@@ -141,14 +161,16 @@ def format_ntuple( inputs, output, trans_var, doMCdata ):
                                .Define("pNetTtagWeightDn", "1.0")\
                                .Define("pNetWtagWeight"  , "1.0")\
                                .Define("pNetWtagWeightUp", "1.0")\
-                               .Define("pNetWtagWeightDn", "1.0")
+                               .Define("pNetWtagWeightDn", "1.0")\
+                               .Define("sampleCategory", f'{sampleCategory}')
       else:
         rDF_pNetWeight = rDF_filter.Define("pNetTtagWeight"  , "gcFatJet_pnetweights[6]")\
                                    .Define("pNetTtagWeightUp", "gcFatJet_pnetweights[7]")\
                                    .Define("pNetTtagWeightDn", "gcFatJet_pnetweights[8]")\
                                    .Define("pNetWtagWeight"  , "gcFatJet_pnetweights[9]")\
                                    .Define("pNetWtagWeightUp", "gcFatJet_pnetweights[10]")\
-                                   .Define("pNetWtagWeightDn", "gcFatJet_pnetweights[11]")
+                                   .Define("pNetWtagWeightDn", "gcFatJet_pnetweights[11]")\
+                                   .Define("sampleCategory", f'{sampleCategory}')
         # if args.case=="case14":
         #   pNetTagWeight = "pNetTtagWeight"
         # elif args.case=="case23":
