@@ -25,6 +25,7 @@ parser.add_argument( "--doMajorMC", action = "store_true", help = "Major MC back
 parser.add_argument( "--doMinorMC", action = "store_true", help = "Minor MC background to be weighted using traditional SF" )
 parser.add_argument( "--doClosureMC", action = "store_true", help = "Closure MC background weighted using traditional SF" )
 parser.add_argument( "--doData", action = "store_true" )
+parser.add_argument( "--doSignalMC", action = "store_true" )
 parser.add_argument( "--JECup", action = "store_true", help = "Create an MC dataset using the JECup shift for ttbar" )
 parser.add_argument( "--JECdown", action = "store_true", help = "Create an MC dataset using the JECdown shift for ttbar" )
 args = parser.parse_args()
@@ -213,3 +214,5 @@ elif args.doClosureMC:
   format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_mc_p" + args.pEvents + "_" + args.case, trans_var = args.variables, doMCdata = "CLOSURE" )
 elif args.doData:
   format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_data_p" + args.pEvents + "_" + args.case, trans_var = args.variables, doMCdata = "DATA" )
+elif args.doSignalMC:
+  format_ntuple( inputs = config.samples_input, output = args.name + "_" + args.year + "_mc_p" + args.pEvents + "_" + args.case, trans_var = args.variables, doMCdata = "SIGNAL MC" )
