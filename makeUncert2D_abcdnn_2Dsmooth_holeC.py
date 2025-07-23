@@ -512,11 +512,11 @@ def addHistograms(histFileIn, histFileOut, case):
             if case=="case1":
                 histFilePartner = ROOT.TFile.Open(f'{rootDir}/hists_ABCDnn_case4_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
                 #hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFilePartner, f'{region}', 'case4') # trying original
-                hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFileIn, 'B', 'case1') # fill the hole with B
+                hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFileIn, 'C', 'case1') # fill the hole with B
             else: # case2 partners with case3
                 histFilePartner = ROOT.TFile.Open(f'{rootDir}/hists_ABCDnn_case3_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
                 #hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFilePartner, f'{region}', 'case3')
-                hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFileIn, 'B', 'case2') # fill the hole with B
+                hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFileIn, 'C', 'case2') # fill the hole with B
 
             unblind_BpM_bin = hist_tgt_partner.GetXaxis().FindFixBin(unblind_BpM)
             unblind_ST_bin = hist_tgt_partner.GetYaxis().FindFixBin(unblind_ST)

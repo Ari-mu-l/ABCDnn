@@ -50,7 +50,7 @@ statCutoff = 0 #10
 unblind_BpM = 700
 unblind_ST = 850
 
-rebinX = 4 #4 for 2016 (105bins) and 2 for full run2 (210bins)
+rebinX = 2 #4 for 2016 (105bins) and 2 for full run2 (210bins)
 rebinY = 1 #1
 
 Nbins_BpM_actual = int(Nbins_BpM/rebinX)
@@ -413,19 +413,22 @@ def smoothAndTruncate(hist_pre_pad, uncertType, case, region, yBinLowEdge): # un
     # SMOOTH
     hist_pre2D_out = hist_pre_pad.Clone(f'BpMST_pre_{case}_{uncertType}_{region}_full')
     
-    # if region=="D":
-    #     if case=="case1" or case=="case2":
-    #         hist_pre_pad.Smooth(ntimes=1,option="k3a")
-    #     else:
-    #         hist_pre_pad.Smooth(ntimes=1,option="k5a") #k5b
-    #         hist_pre_pad.Smooth(ntimes=1,option="k5a")
-    # else:
-    #     if (case=="case1"):
-    #         hist_pre_pad.Smooth(ntimes=1,option="k5a") # k7b
-    #         hist_pre_pad.Smooth(ntimes=1,option="k5a")
-    #     else:
-    #         hist_pre_pad.Smooth(ntimes=1,option="k5a") # k7b
-    #         hist_pre_pad.Smooth(ntimes=1,option="k5a")
+    if region=="D":
+        if case=="case1" or case=="case2":
+            hist_pre_pad.Smooth(ntimes=1,option="k3b")
+        else:
+            hist_pre_pad.Smooth(ntimes=1,option="k7b") #k5b
+            hist_pre_pad.Smooth(ntimes=1,option="k7b")
+    else:
+        if (case=="case1"): 
+            hist_pre_pad.Smooth(ntimes=1,option="k7b") # k7b
+            #hist_pre_pad.Smooth(ntimes=1,option="k7b")
+        elif (case=="case2"):
+            hist_pre_pad.Smooth(ntimes=1,option="k7b")
+            #hist_pre_pad.Smooth(ntimes=1,option="k5b")
+        else:
+            hist_pre_pad.Smooth(ntimes=1,option="k7b") # k7b
+            hist_pre_pad.Smooth(ntimes=1,option="k7b")
 
     # Take only the needed part
     #hist_pre = ROOT.TH2D(f'BpMST_pre_{case}_{uncertType}_{region}_truncate', "BpM_vs_ST", Nbins_BpM_eff, bin_lo_BpM_eff, bin_hi_BpM_eff, Nbins_ST_eff, bin_lo_ST_eff, bin_hi_ST_eff)

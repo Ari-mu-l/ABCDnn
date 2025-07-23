@@ -503,7 +503,7 @@ if plotBest:
       for y in range(2):
         blind = False
         if not args.unblind:
-          if region_key[int(x/2)][y]=="D":
+          if region_key[int(x/2)][y]=="D" and highST:
             blind = True
         if x % 2 == 0:
           plot_hist(

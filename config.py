@@ -250,7 +250,18 @@ samples_input = {
       ZZ2016APV
     ],
     "CLOSURE": [
-      
+    ],
+    "SIGNAL MC":[
+      #Bprime_M800_2016APV,
+      #Bprime_M1000_2016APV,
+      #Bprime_M1200_2016APV,
+      #Bprime_M1300_2016APV,
+      Bprime_M1400_2016APV,
+      #Bprime_M1500_2016APV,
+      #Bprime_M1600_2016APV,
+      #Bprime_M1700_2016APV,
+      #Bprime_M1800_2016APV,
+      #Bprime_M2000_2016APV
     ]
   },
   "2016": {
@@ -303,7 +314,19 @@ samples_input = {
       WZ2016,
       ZZ2016
     ],
-    "CLOSURE": []
+    "CLOSURE": [],
+    "SIGNAL MC":[
+      #Bprime_M800_2016,
+      #Bprime_M1000_2016,
+      #Bprime_M1200_2016,
+      #Bprime_M1300_2016,
+      Bprime_M1400_2016,
+      #Bprime_M1500_2016,
+      #Bprime_M1600_2016,
+      #Bprime_M1700_2016,
+      #Bprime_M1800_2016,
+      #Bprime_M2000_2016
+    ]
   },
   "2017": {
     "DATA": [
@@ -358,7 +381,19 @@ samples_input = {
       WZ2017,
       ZZ2017
     ],
-    "CLOSURE": []
+    "CLOSURE": [],
+    "SIGNAL MC":[
+      #Bprime_M800_2017,
+      #Bprime_M1000_2017,
+      #Bprime_M1200_2017,
+      #Bprime_M1300_2017,
+      Bprime_M1400_2017,
+      #Bprime_M1500_2017,
+      #Bprime_M1600_2017,
+      #Bprime_M1700_2017,
+      #Bprime_M1800_2017,
+      #Bprime_M2000_2017
+    ]
   },
   "2018": {
     "DATA": [
@@ -413,7 +448,19 @@ samples_input = {
       WZ2018,
       ZZ2018
     ],
-    "CLOSURE": []
+    "CLOSURE": [],
+    "SIGNAL MC":[
+      #Bprime_M800_2018,
+      #Bprime_M1000_2018,
+      #Bprime_M1200_2018,
+      #Bprime_M1300_2018,
+      Bprime_M1400_2018,
+      #Bprime_M1500_2018,
+      #Bprime_M1600_2018,
+      #Bprime_M1700_2018,
+      #Bprime_M1800_2018,
+      #Bprime_M2000_2018
+    ]
   }
 }
 

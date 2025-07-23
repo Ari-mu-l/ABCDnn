@@ -18,7 +18,7 @@ rootDir_case23 = f'logBpMlogST_mmd1_case23_random{model_case23}'
 
 binlo = 400
 binhi = 2500
-bins = 105 #210 #105 for 2016 and 210 for full Run2
+bins = 210 #210 #105 for 2016 and 210 for full Run2 # ANv7 2D: 105 bins
 year = '' # '', '_2016'
 
 doV2 = False #IMPORTANT: REMEMBER TO TURN ON AND OFF!!
@@ -27,7 +27,7 @@ withFit = False
 separateUncertCases = True
 
 if withoutCorrection:
-    outDirTag = ''
+    outDirTag = '_noCorrection'
 else:
     outDirTag = f'BtargetHoleCorrBTrain_smooth_rebin{year}_dynamicST' #1D
     #outDirTag = f'BtargetHoleCorrABCpABCTrain_2Dsmooth_rebin{year}' #2D
@@ -70,10 +70,11 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
     else:
         rootDir = rootDir_case23
         
-    #histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM0to4000ST0to5000_800bins100bins_pNet{year}_modified.root', "READ")
-    #histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM300to2600ST0to1600_460bins32bins_pNet{year}_modified.root', "READ")
+    ##histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM0to4000ST0to5000_800bins100bins_pNet{year}_modified.root', "READ")
+    ##histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM300to2600ST0to1600_460bins32bins_pNet{year}_modified.root', "READ")
     histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM300to3000ST0to2000_540bins40bins_pNet{year}_modified.root', "READ")
     #histFile = TFile.Open(f'{rootDir}/hists_ABCDnn_{case}_BpM400to2500ST0to1500_420bins30bins_pNet{year}_modified.root', "READ")
+    
     if "Nominal" in histType:
         if "B" in region:
             hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrect{regionMap[region]}').Clone()
@@ -129,6 +130,10 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
             exit()
         modifyOverflow(hist,bins)
         outNameTag = f'__correct{shift}'
+    elif "smooth" in histType:
+        hist = histFile.Get(f'Bprime_mass_pre_{regionMap[region]}_withCorrect{regionMap[region]}_Smoothed').Clone()
+        modifyOverflow(hist,bins)
+        outNameTag = f'__smooth{shift}' # smoothUp and smoothDown are the same for now
         
     outNameTag = outNameTag.replace('Dn','Down') # naming convention in SLA is Down
     hist_out = fillHistogram(hist)
@@ -151,7 +156,8 @@ def createHist(case, region, histType, shift): # histType: Nominal, pNet, trainU
         outFile.Close()
     histFile.Close()
 
-histList = ["Nominal", "pNet", "trainUncert", "correct"]
+#histList = ["Nominal", "pNet", "trainUncert", "correct"]
+histList = ["Nominal", "pNet", "trainUncert", "correct", "smooth"]
 
 def addWithoutCorrection(case, region):
     if case=="case1" or case=="case4":
