@@ -32,7 +32,7 @@ parser.add_argument( "-m", "--tag", required = True )
 
 args = parser.parse_args()
 
-highST = False
+highST = True
 plotBest = True
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]

@@ -34,6 +34,7 @@ parser.add_argument( "-m", "--tag", required = True )
 args = parser.parse_args()
 
 plotBest = True # TEMP
+plotLog = True
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]
 folder_contents = os.listdir( folder )
@@ -252,10 +253,12 @@ def ratio_err( x, xerr, y, yerr ):
 def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
   #if variable=="Bprime_mass": # TEMP. add if log in directory
   # TEMP. add if log in directory
-  mc_pred  = np.exp(mc_pred)
-  mc_true  = np.exp(mc_true)
-  mc_minor = np.exp(mc_minor)
-  data  = np.exp(data)
+  if not plotLog:
+    mc_pred  = np.exp(mc_pred)
+    mc_true  = np.exp(mc_true)
+    mc_minor = np.exp(mc_minor)
+    data  = np.exp(data)
+    
   mc_minor = np.clip(mc_minor, bins[0], bins[-1])
   data = np.clip(data, bins[0], bins[-1])
     
@@ -315,8 +318,11 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
     interpolate = False, step = "mid",
     color = "red", alpha = 0.2
   )
-  
-  ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
+
+  if plotLog:
+    ax.set_xlim( 5, np.log(config.variables[ variable ][ "LIMIT_plot" ][1]) )
+  else:
+    ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
   y_max = max( [ max( data_mod ) / data_mod_scale, max( mc_true_hist[0] ) / mc_true_scale ] )
   ax.set_ylim( 0, 1.4 * y_max )
   ax.set_yscale( config.params[ "PLOT" ][ "YSCALE" ] )
@@ -350,10 +356,12 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
 def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
 
   #if variable=="Bprime_mass": # TEMP
-  mc_pred  = np.exp(mc_pred)
-  mc_true  = np.exp(mc_true)
-  mc_minor = np.exp(mc_minor)
-  data  = np.exp(data)
+  if not plotLog:
+    mc_pred  = np.exp(mc_pred)
+    mc_true  = np.exp(mc_true)
+    mc_minor = np.exp(mc_minor)
+    data  = np.exp(data)
+    
   mc_minor = np.clip(mc_minor, bins[0], bins[-1])
   data = np.clip(data, bins[0], bins[-1])
     
@@ -423,8 +431,12 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
     y = 1.0, color = "r", linestyle = "-", zorder = 1
   )
 
-  ax.set_xlabel( "${}$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 10 )
-  ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
+  if plotLog:
+    ax.set_xlabel( "$log({})$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 10 )
+    ax.set_xlim( 5, np.log(config.variables[ variable ][ "LIMIT_plot" ][1]) )
+  else:
+    ax.set_xlabel( "${}$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 10 )
+    ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
   ax.set_ylabel( "Target/ABCDnn", ha = "right", y = 1.0, fontsize = 8 )
   ax.set_ylim( config.params[ "PLOT" ][ "RATIO" ][0], config.params[ "PLOT" ][ "RATIO" ][1] )
   ax.set_yticks( [ 0.80, 0.90, 1.0, 1.10, 1.20 ] )
@@ -444,6 +456,11 @@ if plotBest:
       #bins = np.linspace( 0, 1500, 31 ) # 30 bins
     else:
       bins = np.linspace( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1], config.params[ "PLOT" ][ "NBINS" ] )
+
+    if plotLog:
+      bins = np.log(bins)
+      bins[0] = 2.5
+      
     #if(variable == "Bprime_mass"):
     #  bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], 5000, config.params[ "PLOT" ][ "NBINS" ] )
     #  bins = np.concatenate((bins[bins<2500], np.array([2750, 3750, 5000])), axis=0)

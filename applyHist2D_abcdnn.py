@@ -29,7 +29,7 @@ separateUncertCases = True
 if withoutCorrection:
     outDirTag = '_noCorrection'
 else:
-    outDirTag = f'BtargetHoleCorrBTrain_smooth_rebin{year}_dynamicST' #1D
+    outDirTag = f'BtargetHoleCorrBTrain_smooth_rebin{year}_dynamicST_2DsmoothUncert' #1D
     #outDirTag = f'BtargetHoleCorrABCpABCTrain_2Dsmooth_rebin{year}' #2D
 
 tag = {"case1" : "tagTjet",
@@ -204,5 +204,5 @@ else:
             for shift in shiftList:
                 createHist(case, "D", histType, shift)
                 #if year=='':
-                createHist(case, "V", histType, shift)
+                #createHist(case, "V", histType, shift)
                 ##createHist(case, "highST", histType, shift)
