@@ -66,7 +66,7 @@ Nbins_BpM_eff = int(Nbins_BpM_eff/rebinX)
 Nbins_ST_eff = int(Nbins_ST_eff/rebinY)
 
 year = '' # '', '_2016', '_2016APV'
-varyBinSize = True
+varyBinSize = False
 
 plotDir ='2D_plots_2Dsmooth/'
 if not os.path.exists(plotDir):
@@ -294,12 +294,15 @@ def plotHists2D_All():
         
     
 def plotHists2D_Separate(histFileIn, histFileOut, case):
-    for region in ["D", "B"]:
+    for region in ["D"]:
         hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFileIn, f'{region}', case)
 
-        if region=="D":
+        if region=="D" and varyBinSize:
             hist_pre_modified = modifyBinning(hist_pre,yBinLowEdges[f'{case}_{region}'])
             hist_tgt_modified = modifyBinning(hist_tgt,yBinLowEdges[f'{case}_{region}'])
+        else:
+            hist_pre_modified = hist_pre.Clone()
+            hist_tgt_modified = hist_tgt.Clone()
 
         # plot ABCDnn prediction
         c1 = ROOT.TCanvas(f'c1_{region}', f'ST_ABCDnn vs BpM_ABCDnn in region {region}', 900, 600)
@@ -354,7 +357,7 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
 
     #for region in ["B", "D", "V", "BV"]: # general
     #for region in ["B", "D", "V"]: # year-by-year gof
-    for region in ["D"]:
+    for region in ["B","D"]:
         # plot 2D correction maps
         c4 = ROOT.TCanvas(f'c4_{case}_{region}', f'Percentage correction from {region} ({case})', 900, 600)
         hist_Correct = histFileOut.Get(f'BpMST_Correct{region}').Clone(f'BpMST_Correct{region}_Copy')
@@ -369,6 +372,7 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
         hist_Correct.GetXaxis().SetTitle('B mass (GeV)')
         hist_Correct.GetYaxis().SetTitle('ST (GeV)')
         hist_Correct.GetYaxis().SetRangeUser(400,1500)
+        #hist_Correct.GetYaxis().SetRangeUser(400,850) # ARC review compare B and D
         hist_Correct.GetZaxis().SetRangeUser(-1.0,2.0)
         hist_Correct.Draw("COLZ")
         c4.SaveAs(f'{plotDir}BpMST_correctionPercent{region}_{case}.png')
@@ -504,7 +508,7 @@ def addHistograms(histFileIn, histFileOut, case):
     ##############
     # Correction #
     ##############
-    for region in ["D","V"]:
+    for region in ["D","V","B"]:
     #for region in ["D", "V", "B","BV"]: #general
     #for region in ["D", "V", "B"]: # year-by-year gof
         hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFileIn, f'{region}', case)
@@ -558,9 +562,13 @@ def addHistograms(histFileIn, histFileOut, case):
         #yBinLowEdges[f'{case}_{region}'] = getNewBinning(hist_pre,region)
 
         #yBinLowEdges[f'{case}_{region}'] = getNewBinning(hist_tgt,region)
-            
-        hist_pre_modified = modifyBinning(hist_pre,yBinLowEdges[f'{case}_{region}'])
-        hist_tgt_modified = modifyBinning(hist_tgt,yBinLowEdges[f'{case}_{region}'])
+
+        if varyBinSize:
+            hist_pre_modified = modifyBinning(hist_pre,yBinLowEdges[f'{case}_{region}'])
+            hist_tgt_modified = modifyBinning(hist_tgt,yBinLowEdges[f'{case}_{region}'])
+        else:
+            hist_pre_modified = hist_pre.Clone()
+            hist_tgt_modified = hist_tgt.Clone()
         
         hist_Correction = hist_tgt_modified.Clone(f'BpMST_Correct{region}_{case}')
         hist_Correction.Add(hist_pre_modified, -1.0)
@@ -670,8 +678,12 @@ def addHistograms(histFileIn, histFileOut, case):
             modifyOverflow2D(hist_tgtABC_raw)
             modifyOverflow2D(hist_preABC_raw)
 
-            hist_tgtABC = modifyBinning(hist_tgtABC_raw,yBinLowEdges[f'{case}_{applicationRegion}']) # train uncert from full ST
-            hist_preABC = modifyBinning(hist_preABC_raw,yBinLowEdges[f'{case}_{applicationRegion}'])
+            if varyBinSize:
+                hist_tgtABC = modifyBinning(hist_tgtABC_raw,yBinLowEdges[f'{case}_{applicationRegion}']) # train uncert from full ST
+                hist_preABC = modifyBinning(hist_preABC_raw,yBinLowEdges[f'{case}_{applicationRegion}'])
+            else:
+                hist_tgtABC = hist_tgtABC_raw.Clone()
+                hist_preABC = hist_preABC_raw.Clone()
 
             hist_devABC = hist_tgtABC.Clone(f'percentage deviation_{case}_{applicationRegion}')
             #hist_preOriginal = hist_preABC.Clone('pre_original')
@@ -708,8 +720,12 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
     #if case=="case4":
     #    print(hist_pre_pad_raw.Integral())
 
-    hist_pre_pad = modifyBinning(hist_pre_pad_raw,yBinLowEdges[f'{case}_{region}'])
-    hist_tgt_pad = modifyBinning(hist_tgt_pad_raw,yBinLowEdges[f'{case}_{region}'])
+    if varyBinSize:
+        hist_pre_pad = modifyBinning(hist_pre_pad_raw,yBinLowEdges[f'{case}_{region}'])
+        hist_tgt_pad = modifyBinning(hist_tgt_pad_raw,yBinLowEdges[f'{case}_{region}'])
+    else:
+        hist_pre_pad = hist_pre_pad_raw.Clone()
+        hist_tgt_pad = hist_tgt_pad_raw.Clone()
 
     # give clone names, so that ProfileX can distinguish them
     #hist_preUp_pad = hist_pre_pad.Clone(f'CorrpreUp_{region}')
@@ -760,8 +776,11 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
 
 def applyTrainUncert(histFileIn, histFileOut, region, case):
     hist_pre_pad_raw =  histFileOut.Get(f'BpMST_pre_{region}_withCorrect{region}').Clone(f'trainPre_{region}_{case}') # shift on the corrected hist
-    
-    hist_pre_pad = modifyBinning(hist_pre_pad_raw,yBinLowEdges[f'{case}_{region}'])
+
+    if varyBinSize:
+        hist_pre_pad = modifyBinning(hist_pre_pad_raw,yBinLowEdges[f'{case}_{region}'])
+    else:
+        hist_pre_pad = hist_pre_pad_raw.Clone()
     
     #hist_preUp_pad = hist_pre_pad.Clone(f'TrainpreUp_{region}_{case}')
     hist_preDn_pad = hist_pre_pad.Clone(f'TrainpreDn_{region}_{case}')
@@ -807,9 +826,14 @@ def applypNet(histFileIn, histFileOut, region, case):
     modifyOverflow2D(hist_preUp_pad_raw)
     modifyOverflow2D(hist_preDn_pad_raw)
 
-    hist_pre_pad   = modifyBinning(hist_pre_pad_raw,yBinLowEdges[f'{case}_{region}'])
-    hist_preUp_pad = modifyBinning(hist_preUp_pad_raw,yBinLowEdges[f'{case}_{region}'])
-    hist_preDn_pad = modifyBinning(hist_preDn_pad_raw,yBinLowEdges[f'{case}_{region}'])
+    if varyBinSize:
+        hist_pre_pad   = modifyBinning(hist_pre_pad_raw,yBinLowEdges[f'{case}_{region}'])
+        hist_preUp_pad = modifyBinning(hist_preUp_pad_raw,yBinLowEdges[f'{case}_{region}'])
+        hist_preDn_pad = modifyBinning(hist_preDn_pad_raw,yBinLowEdges[f'{case}_{region}'])
+    else:
+        hist_pre_pad   = hist_pre_pad_raw.Clone()
+        hist_preUp_pad = hist_preUp_pad_raw.Clone()
+        hist_preDn_pad = hist_preDn_pad_raw.Clone()
 
     # Upshift = (Upshifted - original)/original
     # Dnshift = (Dnshifted - original)/original
@@ -829,7 +853,10 @@ def applypNet(histFileIn, histFileOut, region, case):
     hist_pre_pad_corrected_raw = histFileOut.Get(f'BpMST_pre_{region}_withCorrect{region}').Clone('pNetpre') # shift on the corrected hist
     #hist_pre_pad_corrected_raw.Scale(alphaFactors[case][region]["prediction"]/hist_pre_pad_corrected_raw.Integral())
 
-    hist_pre_pad_corrected = modifyBinning(hist_pre_pad_corrected_raw,yBinLowEdges[f'{case}_{region}'])
+    if varyBinSize:
+        hist_pre_pad_corrected = modifyBinning(hist_pre_pad_corrected_raw,yBinLowEdges[f'{case}_{region}'])
+    else:
+        hist_pre_pad_corrected = hist_pre_pad_corrected_raw.Clone()
 
     # shifted = shift*original + original (allow both shape and yield to change)
     hist_preUp_pad.Multiply(hist_pre_pad_corrected)
@@ -876,6 +903,7 @@ for case in ['case1', 'case2', 'case3', 'case4']:
         applyTrainUncert(histFileIn, histFileOut, region, case)
         if case=="case1" or case=="case2":
             applypNet(histFileIn, histFileOut, region, case)
+    applyCorrection(histFileIn, histFileOut, "B", "B", case)
 
     #for region in ['B', 'BV']: # general
     #for region in ['B']: # year-by-year

@@ -112,19 +112,19 @@ regions = {
 
 params = {
   "MODEL": { # parameters for setting up the NAF model
-    "NODES_COND": 11,
-    "HIDDEN_COND": 10,
-    "NODES_TRANS": 8,
+    "NODES_COND": 9,
+    "HIDDEN_COND": 4,
+    "NODES_TRANS": 4,
     "LRATE": 0.01,
     "DECAY": 1.0,
-    "GAP": 400,
-    "DEPTH": 6,
-    "REGULARIZER": "L1+L2", # DROPOUT, BATCHNORM, ALL, NONE
+    "GAP": 1000,
+    "DEPTH": 10,
+    "REGULARIZER": "L1", # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": "relu", # softplus, relu, swish
+    "ACTIVATION": "swish", # softplus, relu, swish
     "BETA1": 0.9,
-    "BETA2": 0.9,
-    "MMD SIGMAS": [0.4264219337570399, 0.5958933875166427, 0.7039713069831977],
+    "BETA2": 0.99,
+    "MMD SIGMAS": [0.6960726164020109, 0.4330409099943766, 0.8637412521071001],
     "MMD WEIGHTS": None,
     "MINIBATCH": 512,
     "RETRAIN": True,
@@ -135,7 +135,7 @@ params = {
     "VERBOSE": True  
   },
   "TRAIN": {
-    "EPOCHS": 5000, # for ARC review only
+    "EPOCHS": 3000,
     "PATIENCE": 0,
     "MONITOR": 100,
     "MONITOR THRESHOLD": 0,  # only save model past this epoch

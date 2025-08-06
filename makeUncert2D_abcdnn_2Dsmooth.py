@@ -344,7 +344,7 @@ def plotHists2D_Separate(histFileIn, histFileOut, case):
 
     #for region in ["B", "D", "V", "BV"]: # general
     #for region in ["B", "D", "V"]: # year-by-year gof
-    for region in ["D"]:
+    for region in ["D","B"]:
         # plot 2D correction maps
         c4 = ROOT.TCanvas(f'c4_{case}_{region}', f'Percentage correction from {region} ({case})', 900, 600)
         hist_Correct = histFileOut.Get(f'BpMST_Correct{region}').Clone(f'BpMST_Correct{region}_Copy')
@@ -519,7 +519,7 @@ def addHistograms(histFileIn, histFileOut, case):
     ##############
     # Correction #
     ##############
-    for region in ["D","V"]:
+    for region in ["D","V","B"]:
     #for region in ["D", "V", "B","BV"]: #general
     #for region in ["D", "V", "B"]: # year-by-year gof
         hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFileIn, f'{region}', case)
@@ -900,6 +900,8 @@ for case in ['case1', 'case2', 'case3', 'case4']:
             applypNet(histFileIn, histFileOut, region, case)
 
         histBeforeCorrection(histFileIn, histFileOut, region, region, case)
+
+    applyCorrection(histFileIn, histFileOut, "B", "B", case)
 
     #for region in ['B', 'BV']: # general
     #for region in ['B']: # year-by-year

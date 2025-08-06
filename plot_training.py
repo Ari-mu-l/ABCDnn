@@ -34,7 +34,7 @@ parser.add_argument( "-m", "--tag", required = True )
 args = parser.parse_args()
 
 plotBest = True # TEMP
-plotLog = True
+plotLog = False
 
 folder = config.params[ "MODEL" ][ "SAVEDIR" ]
 folder_contents = os.listdir( folder )
@@ -252,12 +252,14 @@ def ratio_err( x, xerr, y, yerr ):
 
 def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
   #if variable=="Bprime_mass": # TEMP. add if log in directory
-  # TEMP. add if log in directory
-  if not plotLog:
+  if (not plotLog) and ('log' in args.source):
     mc_pred  = np.exp(mc_pred)
     mc_true  = np.exp(mc_true)
     mc_minor = np.exp(mc_minor)
     data  = np.exp(data)
+
+    print(mc_pred)
+    exit()
     
   mc_minor = np.clip(mc_minor, bins[0], bins[-1])
   data = np.clip(data, bins[0], bins[-1])
@@ -356,7 +358,7 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
 def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
 
   #if variable=="Bprime_mass": # TEMP
-  if not plotLog:
+  if not plotLog and 'log' in args.source:
     mc_pred  = np.exp(mc_pred)
     mc_true  = np.exp(mc_true)
     mc_minor = np.exp(mc_minor)
