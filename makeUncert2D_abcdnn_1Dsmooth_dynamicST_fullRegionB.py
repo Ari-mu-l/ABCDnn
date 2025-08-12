@@ -83,7 +83,7 @@ def getNewBinning(hist, region):
     yBinLowEdge = [[0] for i in range(Nx+1)]
     yBinFewestLen = Ny+1
     yBinFewestNo = 0
-    if region=="D" or region=="B":
+    if region=="D":
         for i in range(1,Nx+1):
             beforeValCut = True
             j = 1
@@ -511,10 +511,15 @@ def addHistograms(histFileIn, histFileOut, case):
     for region in ["D","V","B"]:
     #for region in ["D", "V", "B","BV"]: #general
     #for region in ["D", "V", "B"]: # year-by-year gof
-        hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFileIn, f'{region}', case)
+        if region=="D":
+            hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFileIn, 'B', case) # correct with full B
+            _, hist_pre_original = getAlphaRatioTgtPreHists(histFileIn, 'D', case)
+        else:
+            hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFileIn, f'{region}', case)
 
-        if case=="case1" or case=="case2":
-            hist_pre_original = hist_pre.Clone(f'pre_{case}')
+        
+        #if case=="case1" or case=="case2":
+        #    hist_pre_original = hist_pre.Clone(f'pre_{case}')
             
         # note: case1 and 2 only apply to low bkg region
         # __________
@@ -524,43 +529,46 @@ def addHistograms(histFileIn, histFileOut, case):
         #| Derive   |
         # ----------
         ###########################################
-        if region=="D" and (case=="case1" or case=="case2"): # VR can be fully unblinded
-            if case=="case1":
-                histFilePartner = ROOT.TFile.Open(f'{rootDir}/hists_ABCDnn_case4_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
-                #hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFilePartner, f'{region}', 'case4') # trying original
-                hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFileIn, 'B', 'case1') # fill the hole with B
-            else: # case2 partners with case3
-                histFilePartner = ROOT.TFile.Open(f'{rootDir}/hists_ABCDnn_case3_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
-                #hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFilePartner, f'{region}', 'case3')
-                hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFileIn, 'B', 'case2') # fill the hole with B
+        # if region=="D" and (case=="case1" or case=="case2"): # VR can be fully unblinded
+            # if case=="case1":
+            #     histFilePartner = ROOT.TFile.Open(f'{rootDir}/hists_ABCDnn_case4_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
+            #     #hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFilePartner, f'{region}', 'case4') # trying original
+            #     hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFileIn, 'B', 'case1') # fill the hole with B
+            # else: # case2 partners with case3
+            #     histFilePartner = ROOT.TFile.Open(f'{rootDir}/hists_ABCDnn_case3_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}.root', 'READ')
+            #     #hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFilePartner, f'{region}', 'case3')
+            #     hist_tgt_partner, hist_pre_partner = getAlphaRatioTgtPreHists(histFileIn, 'B', 'case2') # fill the hole with B
+            
+            # unblind_BpM_bin = hist_tgt_partner.GetXaxis().FindFixBin(unblind_BpM)
+            # unblind_ST_bin = hist_tgt_partner.GetYaxis().FindFixBin(unblind_ST)
 
-            unblind_BpM_bin = hist_tgt_partner.GetXaxis().FindFixBin(unblind_BpM)
-            unblind_ST_bin = hist_tgt_partner.GetYaxis().FindFixBin(unblind_ST)
+            # # set case1/2 upper right corner to region B
+            # # for i in range(unblind_BpM_bin, Nbins_BpM_actual+1):
+            # #     for j in range(unblind_ST_bin, Nbins_ST_actual+1):
+            # for i in range(0, Nbins_BpM_actual+1): # Requested by ARC Full correction map from B
+            #     for j in range(0, Nbins_ST_actual+1):
+            #         hist_tgt.SetBinContent(i, j, hist_tgt_partner.GetBinContent(i,j))
+            #         hist_pre.SetBinContent(i, j, hist_pre_partner.GetBinContent(i,j))
 
-            # set case1/2 upper right corner to case3/4
-            for i in range(unblind_BpM_bin, Nbins_BpM_actual+1):
-                for j in range(unblind_ST_bin, Nbins_ST_actual+1):
-                    hist_tgt.SetBinContent(i, j, hist_tgt_partner.GetBinContent(i,j))
-                    hist_pre.SetBinContent(i, j, hist_pre_partner.GetBinContent(i,j))
-
-            histFilePartner.Close()
+            # histFilePartner.Close()
         ##########################################
 
-        if case=="case1" or case=="case2":
-            # cand1 = getNewBinning(hist_pre_original,region)
-            # cand2 = getNewBinning(hist_pre,region)
+        # if case=="case1" or case=="case2":
+        #     # cand1 = getNewBinning(hist_pre_original,region)
+        #     # cand2 = getNewBinning(hist_pre,region)
 
-            # if len(cand1)>len(cand2):
-            #     yBinLowEdges[f'{case}_{region}'] = cand2
-            # else:
-            #     yBinLowEdges[f'{case}_{region}'] = cand1OA
+        #     # if len(cand1)>len(cand2):
+        #     #     yBinLowEdges[f'{case}_{region}'] = cand2
+        #     # else:
+        #     #     yBinLowEdges[f'{case}_{region}'] = cand1OA
                 
-            yBinLowEdges[f'{case}_{region}'] = getNewBinning(hist_pre_original,region)
-        else:
-            yBinLowEdges[f'{case}_{region}'] = getNewBinning(hist_pre,region)
+        #     yBinLowEdges[f'{case}_{region}'] = getNewBinning(hist_pre_original,region)
+        # else:
+        #     yBinLowEdges[f'{case}_{region}'] = getNewBinning(hist_pre,region)
+        
+        yBinLowEdges[f'{case}_{region}'] = getNewBinning(hist_pre_original,region)
             
         #yBinLowEdges[f'{case}_{region}'] = getNewBinning(hist_pre,region)
-
         #yBinLowEdges[f'{case}_{region}'] = getNewBinning(hist_tgt,region)
 
         if varyBinSize:

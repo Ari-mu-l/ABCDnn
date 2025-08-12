@@ -29,7 +29,9 @@ separateUncertCases = True
 if withoutCorrection:
     outDirTag = '_noCorrection'
 else:
-    outDirTag = f'BtargetHoleCorrBTrain_smooth_rebin{year}_dynamicST_2DsmoothUncert' #1D
+    #outDirTag = f'BtargetHoleCorrBTrain_smooth_rebin{year}_dynamicST_smoothBUncert'
+    #outDirTag = f'BtargetHoleCorrBTrain_smooth_rebin{year}_dynamicST_2DsmoothUncert' #1D
+    outDirTag = f'BtargetHoleCorrBTrain_smooth_rebin{year}_dynamicST'
     #outDirTag = f'BtargetHoleCorrABCpABCTrain_2Dsmooth_rebin{year}' #2D
 
 tag = {"case1" : "tagTjet",
