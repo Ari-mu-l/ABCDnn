@@ -257,9 +257,6 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
     mc_true  = np.exp(mc_true)
     mc_minor = np.exp(mc_minor)
     data  = np.exp(data)
-
-    print(mc_pred)
-    exit()
     
   mc_minor = np.clip(mc_minor, bins[0], bins[-1])
   data = np.clip(data, bins[0], bins[-1])
