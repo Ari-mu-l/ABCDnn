@@ -564,8 +564,12 @@ def addHistograms(histFileIn, histFileOut, case):
         #yBinLowEdges[f'{case}_{region}'] = getNewBinning(hist_tgt,region)
 
         if varyBinSize:
-            hist_pre_modified = modifyBinning(hist_pre,yBinLowEdges[f'{case}_{region}'])
-            hist_tgt_modified = modifyBinning(hist_tgt,yBinLowEdges[f'{case}_{region}'])
+            if region=="B": # for the calculation of BV_factor. Turn this off if want the truthful B correction
+                hist_pre_modified = modifyBinning(hist_pre,yBinLowEdges[f'{case}_D'.replace('4','1').replace('3','2')])
+                hist_tgt_modified = modifyBinning(hist_tgt,yBinLowEdges[f'{case}_D'.replace('4','1').replace('3','2')])
+            else:
+                hist_pre_modified = modifyBinning(hist_pre,yBinLowEdges[f'{case}_{region}'])
+                hist_tgt_modified = modifyBinning(hist_tgt,yBinLowEdges[f'{case}_{region}'])
         else:
             hist_pre_modified = hist_pre.Clone()
             hist_tgt_modified = hist_tgt.Clone()
@@ -711,7 +715,17 @@ def addHistograms(histFileIn, histFileOut, case):
             hist_devABC.Write(f'BpMST_trainUncert{STrange}_{applicationRegion}')
             print(f'Saved BpMST_trainUncert{STrange}_{applicationRegion} to {case}')
 
+# add pre-correction histograms
+def histBeforeCorrection(histFileIn, histFileOut, corrType, region, case):
+    hist_tgt_pad_raw, hist_pre_pad_raw = getAlphaRatioTgtPreHists(histFileIn, region, case)
 
+    hist_pre_pad = modifyBinning(hist_pre_pad_raw,yBinLowEdges[f'{case}_{region}'])
+    #hist_tgt_pad = modifyBinning(hist_tgt_pad_raw,yBinLowEdges[f'{case}_{region}'])
+
+    hist_pre, hist_pre_1D = smoothAndTruncate(hist_pre_pad, 'nom', case, region, yBinLowEdges[f'{case}_{region}'], False)
+
+    histFileOut.cd()
+    hist_pre_1D.Write(f'Bprime_mass_pre_{region}_noCorrect')
 
 # apply correction
 def applyCorrection(histFileIn, histFileOut, corrType, region, case):
@@ -903,6 +917,9 @@ for case in ['case1', 'case2', 'case3', 'case4']:
         applyTrainUncert(histFileIn, histFileOut, region, case)
         if case=="case1" or case=="case2":
             applypNet(histFileIn, histFileOut, region, case)
+
+        histBeforeCorrection(histFileIn, histFileOut, region, region, case)
+        
     applyCorrection(histFileIn, histFileOut, "B", "B", case)
 
     #for region in ['B', 'BV']: # general
