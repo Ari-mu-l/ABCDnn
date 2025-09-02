@@ -446,7 +446,7 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
       interpolate = False, step = "mid",
       color = "gray", alpha = 0.2, label="Stat. Uncert."
     )
-    ax.legend( loc = "best", fontsize = 15 )
+    ax.legend( loc = "upper left", fontsize = 15 )
   ax.axhline(
     y = 1.0, color = "r", linestyle = "-", zorder = 1
   )
