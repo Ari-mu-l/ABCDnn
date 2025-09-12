@@ -32,7 +32,7 @@ variables = {
     "LIMIT": [0., 10], #TEMP
     "LIMIT_plot": [0., 2500.], # was 5000
     "MIN": 400,
-    "LATEX": "M_{reco}"
+    "LATEX": "m_{B} [GeV]"
   },
   "gcJet_ST": {
     "CATEGORICAL": False,
@@ -144,7 +144,7 @@ params = {
     "EARLY STOP": False,      # early stop if validation loss begins diverging
   },
   "PLOT": {
-    "RATIO": [ 0.75, 1.25 ], # y limits for the ratio plot
+    "RATIO": [ 0.5, 1.49 ], # y limits for the ratio plot
     "YSCALE": "linear",      # which y-scale plots to produce
     "NBINS": 51,             # histogram x-bins
     "ERRORBARS": True,       # include errorbars on hist

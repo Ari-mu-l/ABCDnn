@@ -335,10 +335,11 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   #ax.set_yscale( config.params[ "PLOT" ][ "YSCALE" ] )
   ax.set_yticks( [0.02, 0.04, 0.06, 0.08, 0.10] )
   if y==0:
-    ax.set_ylabel(r"$N_{bin}/N_{tot}$", y=0.8, fontsize=15)
+    ax.set_ylabel(r"$N_{bin}/N_{tot}$", y=0.8, fontsize=18)
   ax.tick_params(axis='y', labelsize=15)
+  ax.tick_params(axis='x', which='both', labelbottom=False, labelsize=15)
   #ax.axes.yaxis.set_visible(False)
-  ax.axes.xaxis.set_visible(False)
+  #ax.axes.xaxis.set_visible(False)
   
 
   region = region_key[x][y]
@@ -360,17 +361,17 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   #ax.set_title( "Region {}: {}".format( region, title_text ), ha = "right", x = 1.0, fontsize = 10 )
   #print("Region {}: {}".format( region, title_text ))
   ax.text(
-    0.035, 0.95, f'Region {region}',
-    ha = "left", va = "top", transform = ax.transAxes, fontsize = 15 #, fontweight='bold' # guideline suggest to not use bold
+    0.055, 0.95, f'Region {region}',
+    ha = "left", va = "top", transform = ax.transAxes, fontsize = 18 #, fontweight='bold' # guideline suggest to not use bold
   )
   handles, labels = ax.get_legend_handles_labels()
   if len(handles)>2:
     if useMinor:
-      ax.legend([handles[1], handles[2], handles[0]], ["Data-Minor", "MC", "ABCDnn"], loc = "upper right", ncol = 1, fontsize = 15 )
+      ax.legend([handles[1], handles[2], handles[0]], ["Data-Minor", "MC", "ABCDnn"], loc = "upper right", ncol = 1, fontsize = 16 )
     else:
-      ax.legend([handles[1], handles[2], handles[0]], ["Data", "MC", "ABCDnn"], loc = "upper right", ncol = 1, fontsize = 15 )
+      ax.legend([handles[1], handles[2], handles[0]], ["Data", "MC", "ABCDnn"], loc = "upper right", ncol = 1, fontsize = 16 )
   else:
-      ax.legend([handles[1], handles[0]], ["MC", "ABCDnn"], loc = "upper right", ncol = 1, fontsize = 15 )
+      ax.legend([handles[1], handles[0]], ["MC", "ABCDnn"], loc = "upper right", ncol = 1, fontsize = 16 )
 
 def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, data, bins, useMinor, blind ):
 
@@ -446,23 +447,24 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
       interpolate = False, step = "mid",
       color = "gray", alpha = 0.2, label="Stat. Uncert."
     )
-    ax.legend( loc = "upper left", fontsize = 15 )
+    ax.legend( loc="upper left", bbox_to_anchor=(0,1.1), fontsize = 15 )
   ax.axhline(
     y = 1.0, color = "r", linestyle = "-", zorder = 1
   )
 
   if plotLog:
-    ax.set_xlabel( "$log({})$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 18 )
+    ax.set_xlabel( "$log({})$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20 )
     ax.set_xlim( 5, np.log(config.variables[ variable ][ "LIMIT_plot" ][1]) )
   else:
-    ax.set_xlabel( "${}$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 18 )
+    ax.set_xlabel( "${}$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20 )
     ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
   if y==0:
     ax.set_ylabel( "Target/ABCDnn", loc = "bottom", fontsize = 14 )
   ax.set_ylim( config.params[ "PLOT" ][ "RATIO" ][0], config.params[ "PLOT" ][ "RATIO" ][1] )
-  ax.set_yticks( [ 0.80, 1.0, 1.20 ] )
+  ax.set_yticks( [ 0.60, 0.80, 1.0, 1.20, 1.40 ] )
   #ax.yaxis.set_minor_locator(plt.NullLocator())
   ax.tick_params( axis = "both", labelsize = 15 )
+  ax.tick_params( axis = "x", which = "both", top = False, labelsize = 15 )
   if x != 2: ax.axes.xaxis.set_visible(False)
 
 if plotBest:
@@ -491,8 +493,8 @@ if plotBest:
     fig, axs = plt.subplots( 6, 2, figsize = (12,15), gridspec_kw = { "height_ratios": [3,1,3,1,3,1] } ) # figsize = (9,12)
     plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9)
     #hep.cms.label("Preliminary", lumi=138.0, ax=axs[0][0], loc=0, fontsize=10)
-    hep.cms.text("", ax=axs[0][0], loc=0, fontsize=18)
-    hep.cms.lumitext(text="138 fb$^{-1}$ (13 TeV)", ax=axs[0][1], fontsize=18)
+    hep.cms.text("", ax=axs[0][0], loc=0, fontsize=22)
+    hep.cms.lumitext(text="138 fb$^{-1}$ (13 TeV)", ax=axs[0][1], fontsize=22)
   
     for x in range(6):
       for y in range(2):
