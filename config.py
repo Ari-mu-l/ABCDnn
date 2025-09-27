@@ -32,7 +32,7 @@ variables = {
     "LIMIT": [0., 10], #TEMP
     "LIMIT_plot": [0., 2500.], # was 5000
     "MIN": 400,
-    "LATEX": "m_{B} [GeV]"
+    "LATEX": "m_{tW} [GeV]"
   },
   "gcJet_ST": {
     "CATEGORICAL": False,

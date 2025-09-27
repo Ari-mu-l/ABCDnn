@@ -300,23 +300,24 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
     ax.errorbar(
       0.5 * ( data_hist1[1:] + data_hist1[:-1] ),
       data_mod / data_mod_scale, yerr = np.sqrt( data_mod ) / data_mod_scale,
-      label = "Target - Minor" if args.useMinor else "Target",
+      label = "Data - Minor" if args.useMinor else "Data",
       marker = "o", markersize = 3, markerfacecolor = "black", markeredgecolor = "black",
       elinewidth = 1, ecolor = "black" , capsize = 2, lw = 0
     )
   # plot the mc
   ax.errorbar(
     0.5 * ( mc_true_hist[1][1:] + mc_true_hist[1][:-1] ),
-    mc_true_hist[0] / mc_true_scale, yerr = np.sqrt( mc_true_hist[0] ) / mc_true_scale,
+    mc_true_hist[0] / mc_true_scale, #yerr = np.sqrt( mc_true_hist[0] ) / mc_true_scale,
     label = "Source",
-    marker = ",", drawstyle = "steps-mid", lw = 2, alpha = 0.7, color = "green"  )
+    marker = ",", drawstyle = "steps-mid", lw = 2, color = "#f89c20" #, alpha = 0.7
+  )
   # plot the predicted
   ax.fill_between(
     0.5 * ( mc_pred_hist[1][1:] + mc_pred_hist[1][:-1] ),
     y2 = np.zeros( len( mc_pred_hist[0] ) ),
     y1 = mc_pred_hist[0] / mc_pred_scale, step = "mid",
     label = "ABCDnn",
-    color = "red", alpha = 0.5,
+    color = "#5790fc", #alpha = 0.5,
   )
   ax.fill_between(
     0.5 * ( mc_pred_hist[1][1:] + mc_pred_hist[1][:-1] ),
@@ -361,9 +362,21 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   #ax.set_title( "Region {}: {}".format( region, title_text ), ha = "right", x = 1.0, fontsize = 10 )
   #print("Region {}: {}".format( region, title_text ))
   ax.text(
-    0.055, 0.95, f'Region {region}',
+    0.06, 0.9, f'Region {region}',
     ha = "left", va = "top", transform = ax.transAxes, fontsize = 18 #, fontweight='bold' # guideline suggest to not use bold
   )
+  if 'case23' in args.tag:
+    ax.text(
+      0.06, 0.8, f'LepT',
+      ha = "left", va = "top", transform = ax.transAxes, fontsize = 18
+    )
+  elif 'case14' in args.tag:
+    ax.text(
+      0.055, 0.85, f'LepW',
+      ha = "left", va = "top", transform = ax.transAxes, fontsize = 18
+    )
+  else:
+    os.exit('Unexpected tag category')
   handles, labels = ax.get_legend_handles_labels()
   if len(handles)>2:
     if useMinor:
@@ -434,23 +447,28 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
     metrics[variable][region_key[x][y]]["overall"] = np.sum(metricvalue)
 
   if not blind:
-    ax.scatter(
+    ax.errorbar(
       0.5 * ( data_hist[1][1:] + data_hist[1][:-1] ),
-      ratio, 
-      linewidth = 0, marker = "o", 
-      color = "black", zorder = 3
+      ratio, yerr = (np.sqrt( data_mod ) / data_mod_scale) / ( mc_pred_hist[0][i] / float( mc_pred_scale ) ),
+      marker = "o", markersize = 3, markerfacecolor = "black", markeredgecolor = "black",
+      elinewidth = 1, ecolor = "black" , capsize = 2, lw = 0,
+      zorder = 3
     )
     ax.fill_between(
       0.5 * ( data_hist1[1:] + data_hist1[:-1] ),
       y1 = np.array( ratio ) + np.array( ratio_std ),
       y2 = np.array( ratio ) - np.array( ratio_std ),
       interpolate = False, step = "mid",
-      color = "gray", alpha = 0.2, label="Stat. Uncert."
+      facecolor = "none", edgecolor="gray", linewidth=0,
+      label="Stat. Uncert.", hatch='\\\\\\\\'
     )
+    
     ax.legend( loc="upper left", bbox_to_anchor=(0,1.1), fontsize = 15 )
-  ax.axhline(
-    y = 1.0, color = "r", linestyle = "-", zorder = 1
-  )
+  #ax.axhline(
+  #  y = 1.0, color = "r", linestyle = "-", zorder = 1
+  #)
+
+  ax.grid(axis='y', color='black', linestyle='--')
 
   if plotLog:
     ax.set_xlabel( "$log({})$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20 )
@@ -459,7 +477,7 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
     ax.set_xlabel( "${}$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20 )
     ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
   if y==0:
-    ax.set_ylabel( "Target/ABCDnn", loc = "bottom", fontsize = 14 )
+    ax.set_ylabel( "Data/ABCDnn", loc = "bottom", fontsize = 14 )
   ax.set_ylim( config.params[ "PLOT" ][ "RATIO" ][0], config.params[ "PLOT" ][ "RATIO" ][1] )
   ax.set_yticks( [ 0.60, 0.80, 1.0, 1.20, 1.40 ] )
   #ax.yaxis.set_minor_locator(plt.NullLocator())
