@@ -302,30 +302,40 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
       data_mod / data_mod_scale, yerr = np.sqrt( data_mod ) / data_mod_scale,
       label = "Data - Minor" if args.useMinor else "Data",
       marker = "o", markersize = 3, markerfacecolor = "black", markeredgecolor = "black",
-      elinewidth = 1, ecolor = "black" , capsize = 2, lw = 0
+      elinewidth = 1, ecolor = "black" , capsize = 2, lw = 0, zorder=3
     )
   # plot the mc
   ax.errorbar(
     0.5 * ( mc_true_hist[1][1:] + mc_true_hist[1][:-1] ),
-    mc_true_hist[0] / mc_true_scale, #yerr = np.sqrt( mc_true_hist[0] ) / mc_true_scale,
+    mc_true_hist[0] / mc_true_scale, yerr = np.sqrt( mc_true_hist[0] ) / mc_true_scale,
     label = "Source",
     marker = ",", drawstyle = "steps-mid", lw = 2, color = "#f89c20" #, alpha = 0.7
   )
   # plot the predicted
+  ax.errorbar(
+    0.5 * ( mc_pred_hist[1][1:] + mc_pred_hist[1][:-1] ),
+    mc_pred_hist[0]/ mc_pred_scale, yerr = np.sqrt(mc_pred_hist[0])/mc_pred_scale,
+    fmt='none', # add error bar only
+    #label = "ABCDnn",
+    color="#5790fc", drawstyle = "steps-mid"
+    )
+    
   ax.fill_between(
     0.5 * ( mc_pred_hist[1][1:] + mc_pred_hist[1][:-1] ),
     y2 = np.zeros( len( mc_pred_hist[0] ) ),
     y1 = mc_pred_hist[0] / mc_pred_scale, step = "mid",
     label = "ABCDnn",
-    color = "#5790fc", #alpha = 0.5,
+    color = "#5790fc", alpha = 0.8,
   )
-  ax.fill_between(
-    0.5 * ( mc_pred_hist[1][1:] + mc_pred_hist[1][:-1] ),
-    y1 = ( mc_pred_hist[0] + np.sqrt( mc_pred_hist[0] ) ) / mc_pred_scale,
-    y2 = ( mc_pred_hist[0] - np.sqrt( mc_pred_hist[0] ) ) / mc_pred_scale,
-    interpolate = False, step = "mid",
-    color = "red", alpha = 0.2
-  )
+  # ax.fill_between(
+  #   0.5 * ( mc_pred_hist[1][1:] + mc_pred_hist[1][:-1] ),
+  #   y1 = ( mc_pred_hist[0] + np.sqrt( mc_pred_hist[0] ) ) / mc_pred_scale,
+  #   y2 = ( mc_pred_hist[0] - np.sqrt( mc_pred_hist[0] ) ) / mc_pred_scale,
+  #   interpolate = False, step = "mid",
+  #   #label = "ABCDnn Uncert.",
+  #   #color = "#7a21dd", alpha = 0.4
+  #   color = "#5790fc", alpha = 0.4
+  # )
 
   if plotLog:
     ax.set_xlim( 5, np.log(config.variables[ variable ][ "LIMIT_plot" ][1]) )
@@ -363,21 +373,23 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   #print("Region {}: {}".format( region, title_text ))
   ax.text(
     0.06, 0.9, f'Region {region}',
-    ha = "left", va = "top", transform = ax.transAxes, fontsize = 18 #, fontweight='bold' # guideline suggest to not use bold
+    ha = "left", va = "top", transform = ax.transAxes, fontsize = 16 #, fontweight='bold' # guideline suggest to not use bold
   )
   if 'case23' in args.tag:
     ax.text(
       0.06, 0.8, f'LepT',
-      ha = "left", va = "top", transform = ax.transAxes, fontsize = 18
+      ha = "left", va = "top", transform = ax.transAxes, fontsize = 16
     )
   elif 'case14' in args.tag:
     ax.text(
-      0.055, 0.85, f'LepW',
-      ha = "left", va = "top", transform = ax.transAxes, fontsize = 18
+      0.06, 0.8, f'LepW',
+      ha = "left", va = "top", transform = ax.transAxes, fontsize = 16
     )
   else:
     os.exit('Unexpected tag category')
   handles, labels = ax.get_legend_handles_labels()
+  #print(ax.get_legend_handles_labels())
+  #exit()
   if len(handles)>2:
     if useMinor:
       ax.legend([handles[1], handles[2], handles[0]], ["Data-Minor", "MC", "ABCDnn"], loc = "upper right", ncol = 1, fontsize = 16 )
@@ -417,18 +429,22 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
     
   ratio = []
   ratio_std = []
+  #data_uncert = []
   for i in range( len( data_mod ) ):
     if data_mod[i] == 0 or mc_pred_hist[0][i] == 0: 
       ratio.append(0)
       ratio_std.append(0)
+      #data_uncert.append(0)
     else:
-      ratio.append( ( data_mod[i] / float( data_mod_scale ) /  ( mc_pred_hist[0][i] / float( mc_pred_scale ) ) ) )
+      ratio.append( ( data_mod[i] / float( data_mod_scale ) ) /  ( mc_pred_hist[0][i] / float( mc_pred_scale ) ) )
       ratio_std.append( ratio_err(
         mc_pred_hist[0][i],
         np.sqrt( mc_pred_hist[0][i] ),
         data_mod[i],
         np.sqrt( data_mod[i] )
       ) * ( data_mod_scale / mc_pred_scale ) )
+      #ratio_std.append( np.sqrt(mc_pred_hist[0][i])/float( mc_pred_scale ) )
+      #data_uncert.append((np.sqrt( data_mod[i] ) / data_mod_scale) / ( mc_pred_hist[0][i] / float( mc_pred_scale ) ))
 
   if region_key[x][y]=="D" and variable=="Bprime_mass":
     data_hist1 = data_hist[1][:21]
@@ -447,12 +463,18 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
     metrics[variable][region_key[x][y]]["overall"] = np.sum(metricvalue)
 
   if not blind:
-    ax.errorbar(
+    # ax.errorbar(
+    #   0.5 * ( data_hist[1][1:] + data_hist[1][:-1] ),
+    #   ratio, yerr = data_uncert,
+    #   marker = "o", markersize = 3, markerfacecolor = "black", markeredgecolor = "black",
+    #   elinewidth = 1, ecolor = "black" , capsize = 2, lw = 0,
+    #   zorder = 3
+    # )
+    ax.scatter(
       0.5 * ( data_hist[1][1:] + data_hist[1][:-1] ),
-      ratio, yerr = (np.sqrt( data_mod ) / data_mod_scale) / ( mc_pred_hist[0][i] / float( mc_pred_scale ) ),
-      marker = "o", markersize = 3, markerfacecolor = "black", markeredgecolor = "black",
-      elinewidth = 1, ecolor = "black" , capsize = 2, lw = 0,
-      zorder = 3
+      ratio, 
+      linewidth = 0, marker = "o", s=20,
+      color = "black", zorder = 3
     )
     ax.fill_between(
       0.5 * ( data_hist1[1:] + data_hist1[:-1] ),
