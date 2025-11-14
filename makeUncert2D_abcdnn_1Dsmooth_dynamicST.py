@@ -12,8 +12,10 @@ ROOT.gStyle.SetOptStat(0) # no stat box
 model_case14 = '22' #'22'
 model_case23 = '33'
 
-rootDir_case14 = f'logBpMlogST_mmd1_case14_random{model_case14}'
-rootDir_case23 = f'logBpMlogST_mmd1_case23_random{model_case23}'
+tag = '_SS1p2' # '' for ANv8
+
+rootDir_case14 = f'logBpMlogST_mmd1_case14_random{model_case14}{tag}'
+rootDir_case23 = f'logBpMlogST_mmd1_case23_random{model_case23}{tag}'
 
 # histogram settings
 #bin_lo_BpM = 400 #0
@@ -66,7 +68,7 @@ Nbins_BpM_eff = int(Nbins_BpM_eff/rebinX)
 Nbins_ST_eff = int(Nbins_ST_eff/rebinY)
 
 year = '' # '', '_2016', '_2016APV'
-varyBinSize = True
+varyBinSize = False
 
 plotDir ='2D_plots_2Dsmooth/'
 if not os.path.exists(plotDir):
@@ -211,19 +213,24 @@ def getNormalizedTgtPreHists(histFile, histTag, getTgt=True):
 
 
 alphaFactors = {}
-if bin_lo_BpM == 0:
-    with open(f'alphaRatio_factors{year}_2Dpadfull.json',"r") as alphaFile:
-        alphaFactors = json.load(alphaFile)
-elif bin_lo_BpM == 400:
-    with open(f'alphaRatio_factors{year}.json',"r") as alphaFile:
-        alphaFactors = json.load(alphaFile)
-else:
-    with open(f'alphaRatio_factors{year}_2Dpad.json',"r") as alphaFile:
-        alphaFactors = json.load(alphaFile)
-
 counts = {}
-with open(f'counts{year}_2Dpad.json',"r") as countsFile:
-    counts = json.load(countsFile)
+if bin_lo_BpM == 0:
+    with open(f'alphaRatio_factors{year}_2Dpadfull{tag}.json',"r") as alphaFile:
+        alphaFactors = json.load(alphaFile)
+    with open(f'counts{year}_2Dpadfull{tag}.json',"r") as countsFile:
+        counts = json.load(countsFile)
+elif bin_lo_BpM == 400:
+    with open(f'alphaRatio_factors{year}{tag}.json',"r") as alphaFile:
+        alphaFactors = json.load(alphaFile)
+    with open(f'counts{year}{tag}.json',"r") as countsFile:
+        counts = json.load(countsFile)
+else:
+    with open(f'alphaRatio_factors{year}_2Dpad{tag}.json',"r") as alphaFile:
+        alphaFactors = json.load(alphaFile)
+    with open(f'counts{year}_2Dpad{tag}.json',"r") as countsFile:
+        counts = json.load(countsFile)
+
+
     
 def getAlphaRatioTgtPreHists(histFile, histTag, case, getTgt=True):
     # outputs rebinned histograms. No need to call rebin if this function is called
@@ -473,13 +480,12 @@ def smoothAndTruncate(hist_pre_pad, uncertType, case, region, yBinLowEdge, smoot
     for ist in range(1,hist_pre2D_out.GetNbinsY()+1):
         newtotal = 0
         newError = 0
-        for imass in range(newHighBinBpM,Nbins_BpM_actual+1):
+        for imass in range(Nbins_BpM_eff,Nbins_BpM_actual+1):
+        #for imass in range(newHighBinBpM,Nbins_BpM_actual+1): # BUG
             newtotal+=hist_pre2D_out.GetBinContent(imass,ist)
             newError+=hist_pre2D_out.GetBinError(imass,ist)**2
-            
         hist_pre2D_out.SetBinContent(newHighBinBpM,ist,newtotal)
         hist_pre2D_out.SetBinError(newHighBinBpM,ist,np.sqrt(newError))
-
         
     # truncate BpM left pad and add the rest
     for i in range(1, Nbins_BpM_eff+1):
@@ -490,6 +496,7 @@ def smoothAndTruncate(hist_pre_pad, uncertType, case, region, yBinLowEdge, smoot
             bin_j = hist_pre2D_out.GetYaxis().FindFixBin(ST_value)
             hist_pre.SetBinContent(i,j,hist_pre2D_out.GetBinContent(bin_i,bin_j))
             hist_pre.SetBinError(i,j,hist_pre2D_out.GetBinError(bin_i,bin_j))
+
             
     # make sure that only lowST events are considered
     if ("V" in region) and (case=="case1" or case=="case2"):
@@ -498,7 +505,7 @@ def smoothAndTruncate(hist_pre_pad, uncertType, case, region, yBinLowEdge, smoot
                 #print(hist_pre.GetYaxis().FindFixBin(validationCut))
                 hist_pre.SetBinContent(i,j,0)
                 hist_pre.SetBinError(i,j,0)
-                #exit()
+                
     
     hist_pre1D_out = hist_pre.ProjectionX(f'1D_output_{case}_{uncertType}_{region}_{smooth}')
 
@@ -508,7 +515,7 @@ def addHistograms(histFileIn, histFileOut, case):
     ##############
     # Correction #
     ##############
-    for region in ["D","V","B"]:
+    for region in ["D","V","B"]: # ANv8
     #for region in ["D", "V", "B","BV"]: #general
     #for region in ["D", "V", "B"]: # year-by-year gof
         hist_tgt, hist_pre = getAlphaRatioTgtPreHists(histFileIn, f'{region}', case)
@@ -835,6 +842,7 @@ def applypNet(histFileIn, histFileOut, region, case):
     hist_pre_pad_raw.RebinY(rebinY)
     hist_preUp_pad_raw.RebinY(rebinY)
     hist_preDn_pad_raw.RebinY(rebinY)
+
     
     modifyOverflow2D(hist_pre_pad_raw)
     modifyOverflow2D(hist_preUp_pad_raw)
@@ -879,9 +887,22 @@ def applypNet(histFileIn, histFileOut, region, case):
     hist_preUp_pad.Add(hist_pre_pad_corrected)
     hist_preDn_pad.Add(hist_pre_pad_corrected)
 
+    # print(hist_preUp_pad.GetBinContent(210,14))
+    # print(hist_pre_pad_corrected.GetBinContent(210,14))
+    # print(hist_preDn_pad.GetBinContent(210,14))
+
+    hist_test = hist_pre_pad_corrected.ProjectionX('test')
+    hist_testUp = hist_preUp_pad.ProjectionX('testUp')
+    hist_testDn = hist_preDn_pad.ProjectionX('testDn')
+
+
     # smooth and truncate the padded histogram into [400,2500]x[0,1500]
     hist_preUp, hist_pre_1DUp = smoothAndTruncate(hist_preUp_pad, 'pNetUp', case, region, yBinLowEdges[f'{case}_{region}'], False)
     hist_preDn, hist_pre_1DDn = smoothAndTruncate(hist_preDn_pad, 'pNetDn', case, region, yBinLowEdges[f'{case}_{region}'], False)
+
+    #print(hist_testUp.GetBinContent(270))
+    #print(hist_test.GetBinContent(270))
+    #print(hist_testDn.GetBinContent(270))
     
     #hist_pre_1DUp = hist_preUp.ProjectionX(f'Bprime_mass_pre_{region}_pNetUp_1D')
     #hist_pre_1DDn = hist_preDn.ProjectionX(f'Bprime_mass_pre_{region}_pNetDn_1D')
@@ -903,7 +924,7 @@ for case in ['case1', 'case2', 'case3', 'case4']:
     print(f'{rootDir}/hists_ABCDnn_{case}_BpM{bin_lo_BpM}to{bin_hi_BpM}ST{bin_lo_ST}to{bin_hi_ST}_{Nbins_BpM}bins{Nbins_ST}bins_pNet{year}_modified.root')
     
     addHistograms(histFileIn, histFileOut, case)
-    for region in ['D', 'V']: # general
+    for region in ['D', 'V']: # general #ANv8
     #for region in ['D']: # year-by-year
         #applyCorrection(histFileIn, histFileOut, region, region, case) # Used until preapproval action 5
         #if case=='case1':
