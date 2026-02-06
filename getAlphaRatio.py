@@ -11,15 +11,18 @@ if len(sys.argv)>1:
 else:
     getAlphaRatio = "True"
 
+isSS1p2 = True
+
 year = '' # '', '_2016'
-iPlot = 'BpMass_pad_full' # BpMass, BpMass_pad, BpMass_padfull
+iPlot = 'BpMass_pad' # BpMass, BpMass_pad, BpMass_padfull
 
 if iPlot == 'BpMass_pad':
     fileNameTag = '_2Dpad'
-elif iPlot == 'BpMass_padfull':
+elif iPlot == 'BpMass_pad_full':
     fileNameTag = '_2Dpadfull'
 elif iPlot == 'BpMass':
     fileNameTag = ''
+
 
 ###############################
 # calculate correction factor #
@@ -48,7 +51,13 @@ if getAlphaRatio=="True":
     def getCounts(case, region):
         print(f'Processing {case}')
         #tempFileName  = f'/uscms/home/jmanagan/nobackup/BtoTW/CMSSW_13_0_18/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025/templates_BpMass_138fbfb.root'
-        tempFileName = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025/templates_{iPlot}_138fbfb{year}.root'
+        ########
+        # ANv8 #
+        ########
+        if isSS1p2:
+            tempFileName = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates_SS1p2/templates{region}_SS1p2/templates_{iPlot}_138fbfb{year}.root'
+        else:
+            tempFileName = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_Jan2025/templates_{iPlot}_138fbfb{year}.root'
         tFile = ROOT.TFile.Open(tempFileName, 'READ')
         hist_data  = tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__data_obs')
         hist_major = tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__qcd') + tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__wjets') + tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__singletop') + tFile.Get(f'{iPlot}_138fbfb_isL_{caseName[case]}_{region}__ttbar')
@@ -62,11 +71,29 @@ if getAlphaRatio=="True":
         counts[case][region]["data"]  = hist_data.Integral()
         counts[case][region]["major"] = hist_major.Integral()
         counts[case][region]["minor"] = hist_minor.Integral()
+
+        ###########################
+        # t-associated DR1p2 test #
+        ###########################
+        # tempFileName_major = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_SS1p2/templates_BpMass_138fbfb{year}.root'
+        # tempFileName_minordata = f'/uscms/home/xshen/nobackup/alma9/CMSSW_13_3_3/src/vlq-BtoTW-SLA/makeTemplates/templates{region}_SS1p2/templates_BpMass_ABCDnn_138fbfb{year}.root'
+        # tFile_major = ROOT.TFile.Open(tempFileName_major, 'READ')
+        # tFile_minordata = ROOT.TFile.Open(tempFileName_minordata, 'READ')
+        # hist_data  = tFile_minordata.Get(f'BpMass_ABCDnn_138fbfb_isL_{caseName[case]}_{region}__data_obs')
+        # hist_major = tFile_major.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__qcd') + tFile_major.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__wjets') + tFile_major.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__singletop') + tFile_major.Get(f'BpMass_138fbfb_isL_{caseName[case]}_{region}__ttbar')
+        # hist_minor = tFile_minordata.Get(f'BpMass_ABCDnn_138fbfb_isL_{caseName[case]}_{region}__ttx') + tFile_minordata.Get(f'BpMass_ABCDnn_138fbfb_isL_{caseName[case]}_{region}__ewk')
+       
+        # counts[case][region]["data"]  = hist_data.Integral(-9999,9999)
+        # counts[case][region]["major"] = hist_major.Integral(-9999,9999)
+        # counts[case][region]["minor"] = hist_minor.Integral(-9999,9999)
+        
         
         #if "D" in region or "V" in region:
         counts[case][region]["unweighted"] = hist_major.GetEntries()
 
-        tFile.Close()
+        tFile.Close() # ANv8
+        #tFile_major.Close()
+        #tFile_minordata.Close()
 
     #for region in ["B", "D", "V", "BV", "highST", "BhighST"]: #, "B2", "D2"]: # general
     for region in ["B", "D", "V", "BV"]: # for year-by-year gof test
@@ -90,9 +117,13 @@ if getAlphaRatio=="True":
             counts["case23"][region]["unweighted"]  = counts["case2"][region]["unweighted"]  + counts["case3"][region]["unweighted"]
 
     # store counts in a json file
-    print(f'Writing to counts{year}{fileNameTag}.json...')
+    if isSS1p2:
+        jfileName = f'counts{year}{fileNameTag}_SS1p2.json'
+    else:
+        jfileName = f'counts{year}{fileNameTag}.json'
+    print(f'Writing to {jfileName}...')
     json_object = json.dumps(counts, indent=4)
-    with open(f'counts{year}{fileNameTag}.json', "w") as outfile:
+    with open(f'{jfileName}.json', "w") as outfile:
         outfile.write(json_object)
 
         
@@ -158,9 +189,13 @@ if getAlphaRatio=="True":
             getPrediction(case, region)
 
     # write alpha-ratio restuls to a json file
-    print(f'Writing to alphaRatio_factors{year}{fileNameTag}.json...')
+    if isSS1p2:
+        jfileName = f'alphaRatio_factors{year}{fileNameTag}_SS1p2.json'
+    else:
+        jfileName = f'alphaRatio_factors{year}{fileNameTag}.json'
+    print(f'Writing to {jfileName}...')
     json_object = json.dumps(yield_pred, indent=4)
-    with open(f'alphaRatio_factors{year}{fileNameTag}.json', "w") as outjson:
+    with open(f'{jfileName}', "w") as outjson:
         outjson.write(json_object)
 else:
     print("Skipping counts and alpha-ratio estimation...")
