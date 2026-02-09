@@ -269,6 +269,7 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
     
   mc_minor = np.clip(mc_minor, bins[0], bins[-1])
   data = np.clip(data, bins[0], bins[-1])
+  mc_true = np.clip(mc_true, bins[0], bins[-1])
     
   mc_pred_hist = np.histogram( np.clip( mc_pred, bins[0], bins[-1] ), bins = bins, density = False )
   mc_pred_scale = float( np.sum( mc_pred_hist[0] ) )
@@ -340,13 +341,17 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
     ax.set_xlim( 5, np.log(config.variables[ variable ][ "LIMIT_plot" ][1]) )
   else:
     ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
-  y_max = max( [ max( data_mod ) / data_mod_scale, max( mc_true_hist[0] ) / mc_true_scale ] )
-  ax.set_ylim( 0, 1.4 * y_max )
+  #y_max = max( [ max( data_mod ) / data_mod_scale, max( mc_true_hist[0] ) / mc_true_scale ] )
+  #ax.set_ylim( 0, 1.4 * y_max )
+  ax.set_ylim( 0, 0.15 )
   #ax.set_yscale( config.params[ "PLOT" ][ "YSCALE" ] )
   ax.set_yticks( [0.02, 0.04, 0.06, 0.08, 0.10] )
   if y==0:
     ax.set_ylabel(r"$N_{bin}/N_{tot}$", y=0.8, fontsize=18)
-  ax.tick_params(axis='y', labelsize=15)
+    ax.tick_params(axis='y', labelsize=15)
+  else:
+    ax.tick_params(axis='y', labelsize=0)
+  #ax.tick_params(axis='y', labelsize=15)
   ax.tick_params(axis='x', which='both', labelbottom=False, labelsize=15)
   #ax.axes.yaxis.set_visible(False)
   #ax.axes.xaxis.set_visible(False)
@@ -440,7 +445,12 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
       #   data_mod[i],
       #   np.sqrt( data_mod[i] )
       # ) * ( data_mod_scale / mc_pred_scale ) )
-      ratio_std.append( np.sqrt(mc_pred_hist[0][i])/float( mc_pred_scale ) )
+      #ratio_std.append( np.sqrt(mc_pred_hist[0][i])/float( mc_pred_scale ) )
+      # uncert of x/y is (x/y)*sqrt((x_err/x)**2+(y_err/y)**2)
+      if mc_pred_hist[0][i]==0:
+        ratio_std.append(0)
+      else:
+        ratio_std.append( np.sqrt(2/mc_pred_hist[0][i]))
       data_uncert.append((np.sqrt( data_mod[i] ) / data_mod_scale) / ( mc_pred_hist[0][i] / float( mc_pred_scale ) ))
 
   if region_key[x][y]=="D" and variable=="Bprime_mass":
@@ -460,6 +470,7 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
     metrics[variable][region_key[x][y]]["overall"] = np.sum(metricvalue)
 
   if not blind:
+    # plot data uncert in ratio panel
     ax.errorbar(
       0.5 * ( data_hist[1][1:] + data_hist[1][:-1] ),
       ratio, yerr = data_uncert,
@@ -473,14 +484,18 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
     #   linewidth = 0, marker = "o", s=20,
     #   color = "black", zorder = 3
     # )
-    ax.fill_between(
-      0.5 * ( data_hist1[1:] + data_hist1[:-1] ),
-      y1 = np.array( ratio ) + np.array( ratio_std ),
-      y2 = np.array( ratio ) - np.array( ratio_std ),
-      interpolate = False, step = "mid",
-      facecolor = "none", edgecolor="gray", linewidth=0, hatch='\\\\\\\\'
-      #label="Stat. Uncert."
-    )
+    # plot hatch band in ratio panel
+    #print(np.array( ratio ) + np.array( ratio_std ))
+    #print(np.array( ratio_std ))
+    #exit()
+  ax.fill_between(
+    0.5 * ( data_hist1[1:] + data_hist1[:-1] ),
+    y1 = 1 + np.array( ratio_std ), #np.array( ratio ) + np.array( ratio_std ),
+    y2 = 1 - np.array( ratio_std ), #np.array( ratio ) - np.array( ratio_std ),
+    interpolate = False, step = "mid",
+    facecolor = "none", edgecolor="gray", linewidth=0, hatch='\\\\\\\\'
+    #label="Stat. Uncert."
+  )
     
     #ax.legend( loc="upper left", bbox_to_anchor=(0,1.1), fontsize = 15 )
   #ax.axhline(
@@ -489,18 +504,29 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
 
   ax.grid(axis='y', color='black', linestyle='--')
 
-  if plotLog:
-    ax.set_xlabel( "$log({})$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20 )
-    ax.set_xlim( 5, np.log(config.variables[ variable ][ "LIMIT_plot" ][1]) )
+  if y==1:
+    if plotLog:
+      ax.set_xlabel( "$log({})$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20 )
+      ax.set_xlim( 5, np.log(config.variables[ variable ][ "LIMIT_plot" ][1]) )
+    else:
+      ax.set_xlabel( "${}$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20 )
+      ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
+      #ax.set_xticks( [0, 500, 1000, 1500, 2000, 2500] )
+  #if y==0:
   else:
-    ax.set_xlabel( "${}$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20 )
-    ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
-  if y==0:
     ax.set_ylabel( "Data/ABCDnn", loc = "bottom", fontsize = 14 )
-  ax.set_ylim( config.params[ "PLOT" ][ "RATIO" ][0], config.params[ "PLOT" ][ "RATIO" ][1] )
+    #ax.set_xticks( [0, 500, 1000, 1500, 2000, 2500] )
+    #ax.set_xticklabels(["0","500","1000","1500","2000",""])
+    ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
+    xticks = ax.xaxis.get_major_ticks()
+    xticks[-1].label1.set_visible(False)
   ax.set_yticks( [ 0.60, 0.80, 1.0, 1.20, 1.40 ] )
+  ax.set_ylim( config.params[ "PLOT" ][ "RATIO" ][0], config.params[ "PLOT" ][ "RATIO" ][1] )
   #ax.yaxis.set_minor_locator(plt.NullLocator())
-  ax.tick_params( axis = "both", labelsize = 15 )
+  if y==1:
+    ax.tick_params( axis = "y", labelsize = 0 )
+  else:
+    ax.tick_params( axis = "both", labelsize = 15 )
   ax.tick_params( axis = "x", which = "both", top = False, labelsize = 15 )
   if x != 2: ax.axes.xaxis.set_visible(False)
 
@@ -528,7 +554,8 @@ if plotBest:
     #else:
     #  bins = np.linspace( config.variables[ variable ][ "LIMIT" ][0], config.variables[ variable ][ "LIMIT" ][1], config.params[ "PLOT" ][ "NBINS" ] )
     fig, axs = plt.subplots( 6, 2, figsize = (12,15), gridspec_kw = { "height_ratios": [3,1,3,1,3,1] } ) # figsize = (9,12)
-    plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9)
+    plt.subplots_adjust(wspace=0.04, hspace=0)
+    #plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9)
     #hep.cms.label("Preliminary", lumi=138.0, ax=axs[0][0], loc=0, fontsize=10)
     hep.cms.text("", ax=axs[0][0], loc=0, fontsize=22)
     hep.cms.lumitext(text="138 fb$^{-1}$ (13 TeV)", ax=axs[0][1], fontsize=22)
