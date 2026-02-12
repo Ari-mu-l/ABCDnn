@@ -21,6 +21,9 @@ plt.rcParams['font.family'] = 'sans-serif'
 import mplhep as hep # cms style
 hep.style.use("CMS")
 
+#import matplotlib.font_manager as fm
+#fm._rebuild()
+
 os.environ["KERAS_BACKEND"] = "tensorflow"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
@@ -510,6 +513,7 @@ def plot_ratio( ax, variable, x, y, mc_pred, mc_true, mc_minor, weights_minor, d
       ax.set_xlim( 5, np.log(config.variables[ variable ][ "LIMIT_plot" ][1]) )
     else:
       ax.set_xlabel( "${}$".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20 )
+      #ax.set_xlabel( r"{}".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20, fontname='Times New Roman' )
       ax.set_xlim( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1] )
       #ax.set_xticks( [0, 500, 1000, 1500, 2000, 2500] )
   #if y==0:

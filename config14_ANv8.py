@@ -10,13 +10,11 @@ eosUserName = "xshen"
 condorDir = "root://cmseos.fnal.gov//store/user/xshen/"
 
 sourceDir = {
-  #"LPC": "root://cmseos.fnal.gov//store/user/lpchtop/BtoTW_Sept2025_SS1p2/"
   "LPC": "root://cmseos.fnal.gov//store/user/lpchtop/BtoTW_Jan2025_fullRun2/",
   #"BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
 
 targetDir = {
-  #"LPC": "root://cmseos.fnal.gov//store/user/lpchtop/BtoTW_Sept2025_SS1p2/"
   "LPC": "root://cmseos.fnal.gov//store/user/{}/BtoTW_Jan2025_fullRun2/".format( eosUserName ),
   #"BRUX": "root://brux30.hep.brown.edu:1094//store/user/{}/".format( eosUserName )
 }
@@ -26,7 +24,6 @@ targetDir = {
   #year: "FWLJMET106XUL_singleLep{}UL_RunIISummer20_{}_step3/nominal/".format( year, postfix ) for year in [ "2016APV", "2016", "2017", "2018" ]
 #}
 sampleDir = "root://cmseos.fnal.gov//store/user/xshen/BtoTW_Jan2025_fullRun2/".format( eosUserName )
-#sampleDir = "root://cmseos.fnal.gov//store/user/lpchtop/BtoTW_Sept2025_SS1p2/"
 
 variables = {
   "Bprime_mass": {
@@ -35,8 +32,7 @@ variables = {
     "LIMIT": [0., 10], #TEMP
     "LIMIT_plot": [0., 2500.], # was 5000
     "MIN": 400,
-    "LATEX": "\mathrm{\mathit{m}}_{tW}\,[GeV]"
-    #"LATEX": "m$_{tW}$ [GeV]" #"\mathrm{\mathit{m}}_{tW}\,[GeV]"
+    "LATEX": "M_{reco}"
   },
   "gcJet_ST": {
     "CATEGORICAL": False,
@@ -116,19 +112,19 @@ regions = {
 
 params = {
   "MODEL": { # parameters for setting up the NAF model
-    "NODES_COND": 11,
-    "HIDDEN_COND": 10,
-    "NODES_TRANS": 8,
+    "NODES_COND": 9,
+    "HIDDEN_COND": 4,
+    "NODES_TRANS": 4,
     "LRATE": 0.01,
     "DECAY": 1.0,
-    "GAP": 400,
-    "DEPTH": 6,
-    "REGULARIZER": "L1+L2", # DROPOUT, BATCHNORM, ALL, NONE
+    "GAP": 1000,
+    "DEPTH": 10,
+    "REGULARIZER": "L1", # DROPOUT, BATCHNORM, ALL, NONE
     "INITIALIZER": "RandomNormal", # he_normal, RandomNormal
-    "ACTIVATION": "relu", # softplus, relu, swish
+    "ACTIVATION": "swish", # softplus, relu, swish
     "BETA1": 0.9,
-    "BETA2": 0.9,
-    "MMD SIGMAS": [0.4264219337570399, 0.5958933875166427, 0.7039713069831977],
+    "BETA2": 0.99,
+    "MMD SIGMAS": [0.6960726164020109, 0.4330409099943766, 0.8637412521071001],
     "MMD WEIGHTS": None,
     "MINIBATCH": 512,
     "RETRAIN": True,
@@ -139,7 +135,7 @@ params = {
     "VERBOSE": True  
   },
   "TRAIN": {
-    "EPOCHS": 5000, # for ARC review only
+    "EPOCHS": 8000,
     "PATIENCE": 0,
     "MONITOR": 100,
     "MONITOR THRESHOLD": 0,  # only save model past this epoch
@@ -148,7 +144,7 @@ params = {
     "EARLY STOP": False,      # early stop if validation loss begins diverging
   },
   "PLOT": {
-    "RATIO": [ 0.5, 1.49 ], # y limits for the ratio plot
+    "RATIO": [ 0.75, 1.25 ], # y limits for the ratio plot
     "YSCALE": "linear",      # which y-scale plots to produce
     "NBINS": 51,             # histogram x-bins
     "ERRORBARS": True,       # include errorbars on hist
@@ -256,11 +252,11 @@ samples_input = {
     "CLOSURE": [
     ],
     "SIGNAL MC":[
-      Bprime_M800_2016APV,
+      #Bprime_M800_2016APV,
       #Bprime_M1000_2016APV,
       #Bprime_M1200_2016APV,
       #Bprime_M1300_2016APV,
-      #Bprime_M1400_2016APV,
+      Bprime_M1400_2016APV,
       #Bprime_M1500_2016APV,
       #Bprime_M1600_2016APV,
       #Bprime_M1700_2016APV,
@@ -320,11 +316,11 @@ samples_input = {
     ],
     "CLOSURE": [],
     "SIGNAL MC":[
-      Bprime_M800_2016,
+      #Bprime_M800_2016,
       #Bprime_M1000_2016,
       #Bprime_M1200_2016,
       #Bprime_M1300_2016,
-      #Bprime_M1400_2016,
+      Bprime_M1400_2016,
       #Bprime_M1500_2016,
       #Bprime_M1600_2016,
       #Bprime_M1700_2016,
@@ -387,11 +383,11 @@ samples_input = {
     ],
     "CLOSURE": [],
     "SIGNAL MC":[
-      Bprime_M800_2017,
+      #Bprime_M800_2017,
       #Bprime_M1000_2017,
       #Bprime_M1200_2017,
       #Bprime_M1300_2017,
-      #Bprime_M1400_2017,
+      Bprime_M1400_2017,
       #Bprime_M1500_2017,
       #Bprime_M1600_2017,
       #Bprime_M1700_2017,
@@ -454,11 +450,11 @@ samples_input = {
     ],
     "CLOSURE": [],
     "SIGNAL MC":[
-      Bprime_M800_2018,
+      #Bprime_M800_2018,
       #Bprime_M1000_2018,
       #Bprime_M1200_2018,
       #Bprime_M1300_2018,
-      #Bprime_M1400_2018,
+      Bprime_M1400_2018,
       #Bprime_M1500_2018,
       #Bprime_M1600_2018,
       #Bprime_M1700_2018,

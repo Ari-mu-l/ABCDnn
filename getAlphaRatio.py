@@ -11,10 +11,11 @@ if len(sys.argv)>1:
 else:
     getAlphaRatio = "True"
 
-isSS1p2 = True
+isSS1p2 = False
 
 year = '' # '', '_2016'
-iPlot = 'BpMass_pad' # BpMass, BpMass_pad, BpMass_padfull
+iPlot = 'BpMass'
+#iPlot = 'BpMass_pad' # BpMass, BpMass_pad, BpMass_padfull
 
 if iPlot == 'BpMass_pad':
     fileNameTag = '_2Dpad'
@@ -45,7 +46,8 @@ if getAlphaRatio=="True":
 
     for case in counts:
         #for region in ["B", "D", "V", "BV", "highST", "BhighST"]: #, "B2", "D2"]: # general
-        for region in ["B", "D", "V", "BV"]: # for year-by-year gof
+        for region in ["A", "B", "C", "D", "X", "Y", "V"]: # for year-by-year gof
+        #for region in ["B", "D", "V", "BV"]:
             counts[case][region] = {}
 
     def getCounts(case, region):
@@ -96,7 +98,8 @@ if getAlphaRatio=="True":
         #tFile_minordata.Close()
 
     #for region in ["B", "D", "V", "BV", "highST", "BhighST"]: #, "B2", "D2"]: # general
-    for region in ["B", "D", "V", "BV"]: # for year-by-year gof test
+    for region in ["A", "B", "C", "D", "X", "Y", "V"]:
+    #for region in ["B", "D", "V", "BV"]: # for year-by-year gof test
         print(f'Getting counts for region {region}')
         getCounts("case1", region)
         getCounts("case4", region)
@@ -118,9 +121,9 @@ if getAlphaRatio=="True":
 
     # store counts in a json file
     if isSS1p2:
-        jfileName = f'counts{year}{fileNameTag}_SS1p2.json'
+        jfileName = f'counts{year}{fileNameTag}_SS1p2'
     else:
-        jfileName = f'counts{year}{fileNameTag}.json'
+        jfileName = f'counts{year}{fileNameTag}_ApprovalHW'
     print(f'Writing to {jfileName}...')
     json_object = json.dumps(counts, indent=4)
     with open(f'{jfileName}.json', "w") as outfile:
@@ -192,7 +195,7 @@ if getAlphaRatio=="True":
     if isSS1p2:
         jfileName = f'alphaRatio_factors{year}{fileNameTag}_SS1p2.json'
     else:
-        jfileName = f'alphaRatio_factors{year}{fileNameTag}.json'
+        jfileName = f'alphaRatio_factors{year}{fileNameTag}_ApprovalHW.json'
     print(f'Writing to {jfileName}...')
     json_object = json.dumps(yield_pred, indent=4)
     with open(f'{jfileName}', "w") as outjson:

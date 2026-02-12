@@ -499,8 +499,8 @@ def smoothAndTruncate(hist_pre_pad, uncertType, case, region, yBinLowEdge, smoot
             hist_pre.SetBinContent(i,j,hist_pre2D_temp.GetBinContent(bin_i,bin_j))
             hist_pre.SetBinError(i,j,hist_pre2D_temp.GetBinError(bin_i,bin_j))
 
-    test = hist_pre.ProjectionX('test')
-    print(test.GetBinContent(210))
+    #test = hist_pre.ProjectionX('test')
+    #print(test.GetBinContent(210))
 
     # make sure that only lowST events are considered
     if ("V" in region) and (case=="case1" or case=="case2"):
@@ -512,8 +512,8 @@ def smoothAndTruncate(hist_pre_pad, uncertType, case, region, yBinLowEdge, smoot
 
     hist_pre1D_out = hist_pre.ProjectionX(f'1D_output_{case}_{uncertType}_{region}_{smooth}')
 
-    print(f'1D_output_{case}_{uncertType}_{region}_{smooth}')
-    print(hist_pre1D_out.GetBinContent(210))
+    #print(f'1D_output_{case}_{uncertType}_{region}_{smooth}')
+    #print(hist_pre1D_out.GetBinContent(210))
 
     return hist_pre2D_out, hist_pre1D_out
         
@@ -751,8 +751,6 @@ def applyCorrection(histFileIn, histFileOut, corrType, region, case):
         hist_pre_pad = hist_pre_pad_raw.Clone()
         hist_tgt_pad = hist_tgt_pad_raw.Clone()
 
-    #print(len(yBinLowEdges[f'{case}_{region}']),corrType)
-
     # give clone names, so that ProfileX can distinguish them
     #hist_preUp_pad = hist_pre_pad.Clone(f'CorrpreUp_{region}')
     hist_preDn_pad = hist_pre_pad.Clone(f'CorrpreDn_{region}')
@@ -915,7 +913,7 @@ def applypNet(histFileIn, histFileOut, region, case):
     # print(testDn.GetBinContent(210))
 
 
-    print(case, region)
+    #print(case, region)
     # smooth and truncate the padded histogram into [400,2500]x[0,1500]
     hist_preUp, hist_pre_1DUp = smoothAndTruncate(hist_preUp_pad, 'pNetUp', case, region, yBinLowEdges[f'{case}_{region}'], False)
     #smoothAndTruncate(hist_pre_pad_corrected, 'pNetUp', case, region, yBinLowEdges[f'{case}_{region}'], False)
@@ -923,8 +921,7 @@ def applypNet(histFileIn, histFileOut, region, case):
 
     #print(hist_pre_1DUp.GetBinContent(210))
     #print(hist_pre_1DDn.GetBinContent(210))
-    print('')
-    #exit()
+    #print('')
 
     #print(hist_testUp.GetBinContent(270))
     #print(hist_test.GetBinContent(270))
