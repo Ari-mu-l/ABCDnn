@@ -616,7 +616,8 @@ if plotBest:
           position_old.set_points( points_old )
           axs[x,y].set_position( position_old )
       
-    plt.savefig( "{}/{}/{}_{}.png".format( folder, args.tag, args.tag, variable ) )  
+    plt.savefig( "{}/{}/{}_{}.png".format( folder, args.tag, args.tag, variable ) )
+    plt.savefig( "{}/{}/{}_{}.pdf".format( folder, args.tag, args.tag, variable ) )
     plt.close()
 
     hists_dictjson = dumps(hists_dict, indent=4)
