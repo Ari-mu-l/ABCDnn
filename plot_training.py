@@ -9,7 +9,7 @@ import abcdnn
 import tqdm
 from argparse import ArgumentParser
 from json import loads as load_json
-from json import dumps
+from json import dumps, dump
 from array import array
 import ROOT
 import matplotlib
@@ -237,8 +237,7 @@ else:
     except:
       print( "  + {}: {} = {:.3f} pm {:.3f}".format(checkpoint, variables_transform[0], x1_mean, x1_std ) )
     del NAF
-
-
+            
 print( ">> Generating images of plots" )
 region_key = { # the row and column of ABCDXY
   0: {
@@ -258,6 +257,7 @@ images = { variable: [] for variable in variables_transform }
 metrics = {"Bprime_mass":{"A":{}, "B":{}, "C":{}, "Avg":{}},
            "gcJet_ST":{"A":{}, "B":{}, "C":{}, "Avg":{}}
            }
+hists_dict = {"bins":[], "A":{}, "B":{}, "C":{}, "D":{}, "X":{}, "Y":{}}
 
 def ratio_err( x, xerr, y, yerr ):
   return np.sqrt( ( yerr * x / y**2 )**2 + ( xerr / y )**2 )
@@ -292,6 +292,14 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   for i in range( len( data_mod ) ):
     if data_mod[i] < 0: data_mod[i] = 0
   data_mod_scale = float( np.sum(data_mod) )
+  
+  # save histograms for one-click plotting macro (preservation purpose)
+  if hists_dict["bins"]==[]:
+    hists_dict["bins"] = mc_pred_hist[1].tolist()
+  hists_dict[region_key[x][y]]["data_mod"] = data_mod.tolist()
+  hists_dict[region_key[x][y]]["mc_true_hist"] = mc_true_hist[0].tolist()
+  hists_dict[region_key[x][y]]["mc_pred_hist"] = mc_pred_hist[0].tolist()
+  
   if region_key[x][y]=="D" and variable=="Bprime_mass":
     data_hist1 = data_hist[1][:21]
     data_mod = data_mod[:20]
@@ -611,11 +619,17 @@ if plotBest:
     plt.savefig( "{}/{}/{}_{}.png".format( folder, args.tag, args.tag, variable ) )  
     plt.close()
 
+    hists_dictjson = dumps(hists_dict, indent=4)
+    with open(f'hists_{args.tag}_{variable}.json', 'w') as histsfile:
+      histsfile.write(hists_dictjson)
+    print(f'hists_{args.tag}_{variable}.json created')
+
     metrics[variable]["Avg"]["overall"] = (metrics[variable]["A"]["overall"]+metrics[variable]["B"]["overall"]+metrics[variable]["C"]["overall"])/3
     
   metricjson = dumps(metrics, indent=4)
   with open(f'{folder}/{args.tag}/metrics.json', 'w') as metricfile:
     metricfile.write(metricjson)
+  
 else:
   print( "Plotting models per epoch:" )
   for epoch in sorted( predictions.keys() ):
