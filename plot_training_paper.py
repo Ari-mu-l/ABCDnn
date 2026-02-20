@@ -34,7 +34,7 @@ region_key = { # the row and column of ABCDXY
   }
 }
 
-with open(f'hists_{args.tag}_Bprime_mass.json', 'r') as jsonfile:
+with open(f'hists_{args.tag}_{variable}.json', 'r') as jsonfile:
   hists_dict = load(jsonfile)
   
 bins = np.array(hists_dict["bins"], dtype=int)
@@ -215,8 +215,8 @@ for x in range(6):
       position_old.set_points( points_old )
       axs[x,y].set_position( position_old )
 
-plt.savefig( f"{args.tag}_{variable}.png" )
-plt.savefig( f"{args.tag}_{variable}.pdf" )
+plt.savefig( f"plots/{args.tag}_{variable}.png" )
+plt.savefig( f"plots/{args.tag}_{variable}.pdf" )
 plt.close()
 
 print(f"{args.tag}_{variable}.png created")
