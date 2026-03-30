@@ -20,7 +20,7 @@ parser = ArgumentParser()
 parser.add_argument( "-m", "--tag", required = True )
 args = parser.parse_args()
 
-variable = "Bprime_mass"
+variable = "gcJet_ST" #"Bprime_mass"
 
 region_key = { # the row and column of ABCDXY
   0: {
@@ -36,8 +36,11 @@ region_key = { # the row and column of ABCDXY
 
 with open(f'hists_{args.tag}_{variable}.json', 'r') as jsonfile:
   hists_dict = load(jsonfile)
-  
-bins = np.array(hists_dict["bins"], dtype=int)
+
+if variable=="gcJet_ST":
+  bins = np.linspace( 0, 2500, 31)
+else:
+  bins = np.array(hists_dict["bins"], dtype=int)
 
 def plot_hist( ax, x, y ):
   region = region_key[x][y]
@@ -51,14 +54,14 @@ def plot_hist( ax, x, y ):
   mc_pred_scale  = float( np.sum(mc_pred_hist) )
 
   # plot the data first
-  if region!="D":
-    ax.errorbar(
-      0.5 * ( bins[1:] + bins[:-1] ),
-      data_mod / data_mod_scale, yerr = np.sqrt( data_mod ) / data_mod_scale,
-      label = "Data",
-      marker = "o", markersize = 3, markerfacecolor = "black", markeredgecolor = "black",
-      elinewidth = 1, ecolor = "black" , capsize = 2, lw = 0, zorder=3
-    )
+  #if region!="D":
+  ax.errorbar(
+    0.5 * ( bins[1:] + bins[:-1] ),
+    data_mod / data_mod_scale, yerr = np.sqrt( data_mod ) / data_mod_scale,
+    label = "Data",
+    marker = "o", markersize = 3, markerfacecolor = "black", markeredgecolor = "black",
+    elinewidth = 1, ecolor = "black" , capsize = 2, lw = 0, zorder=3
+  )
     
   # plot the mc
   ax.errorbar(
@@ -88,8 +91,12 @@ def plot_hist( ax, x, y ):
   )
 
   ax.set_xlim( 0, 2500 )
-  ax.set_ylim( 0, 0.15 )
-  ax.set_yticks( [0.02, 0.04, 0.06, 0.08, 0.10] )
+  if variable=="Bprime_mass":
+    ax.set_ylim( 0, 0.15 )
+    ax.set_yticks( [0.02, 0.04, 0.06, 0.08, 0.10] )
+  else:
+    ax.set_ylim( 0, 0.35 )
+    ax.set_yticks( [0.1, 0.2, 0.3] )
   if y==0:
     ax.set_ylabel(r"$N_{bin}/N_{tot}$", y=0.8, fontsize=18)
     ax.tick_params(axis='y', labelsize=15)
@@ -97,8 +104,12 @@ def plot_hist( ax, x, y ):
     ax.tick_params(axis='y', labelsize=0)
   ax.tick_params(axis='x', which='both', labelbottom=False, labelsize=15)
 
+  if region=="D":
+    regionLabel = f'Region {region} (SR)'
+  else:
+    regionLabel = f'Region {region}'
   ax.text(
-    0.06, 0.9, f'Region {region}',
+    0.06, 0.9, regionLabel,
     ha = "left", va = "top", transform = ax.transAxes, fontsize = 16 #, fontweight='bold' # guideline suggest to not use bold
   )
   if 'case23' in args.tag:
@@ -147,15 +158,15 @@ def plot_ratio( ax, x, y ):
         ratio_std.append( np.sqrt(2/mc_pred_hist[i]))
       data_uncert.append((np.sqrt( data_mod[i] ) / data_mod_scale) / ( mc_pred_hist[i] / float( mc_pred_scale ) ))
 
-  if region!="D":
+  #if region!="D":
     # plot data uncert in ratio panel
-    ax.errorbar(
-      0.5 * ( bins[1:] + bins[:-1] ),
-      ratio, yerr = data_uncert,
-      marker = "o", markersize = 3, markerfacecolor = "black", markeredgecolor = "black",
-      elinewidth = 1, ecolor = "black" , capsize = 2, lw = 0,
-      zorder = 3
-    )
+  ax.errorbar(
+    0.5 * ( bins[1:] + bins[:-1] ),
+    ratio, yerr = data_uncert,
+    marker = "o", markersize = 3, markerfacecolor = "black", markeredgecolor = "black",
+    elinewidth = 1, ecolor = "black" , capsize = 2, lw = 0,
+    zorder = 3
+  )
 
   ax.fill_between(
     0.5 * ( bins[1:] + bins[:-1] ),
