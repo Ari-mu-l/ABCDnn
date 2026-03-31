@@ -1,11 +1,17 @@
 import ROOT
 import math
+from samples import xsec as sigXsec
 
 ROOT.gROOT.SetBatch(True)
 
 year = 'all'
-mass = 800
-case = 'Case1'
+mass = 2000
+case = 'Case2'
+highST = True
+if highST:
+    postFix = '_highST'
+
+print(f'years:{year}, mass:{mass}, case:{case}')
 if case in ['Case1','Case4','Case14']:
     rfileMajor = ROOT.TFile.Open(f'rootFiles_logBpMlogST_Jan2025Run2/Case14/JanMajor_{year}_mc_p100.root','READ')
     rfileSignal = ROOT.TFile.Open(f'rootFiles_logBpMlogST_Jan2025Run2/Case14/JanSignal{mass}_{year}_mc_p100.root','READ')
@@ -49,8 +55,15 @@ for evt in tTreeMajor:
         NJets_forward = evt.NJets_forward
         NJets_DeepFlavL = evt.NJets_DeepFlavL
         xsecWeight = evt.xsecWeight
+        gcJet_ST = evt.gcJet_ST
+        
+        if highST:
+            ST_cut = gcJet_ST>850
+        else:
+            ST_cut = True
 
-        hist2DMajor.Fill(NJets_forward,NJets_DeepFlavL,xsecWeight)
+        if highST:
+            hist2DMajor.Fill(NJets_forward,NJets_DeepFlavL,xsecWeight)
 
         if NJets_forward == 0 and NJets_DeepFlavL == 3:
             regionBkg["A"]+=xsecWeight
@@ -88,31 +101,38 @@ for evt in tTreeSignal:
         NJets_forward = evt.NJets_forward
         NJets_DeepFlavL = evt.NJets_DeepFlavL
         xsecWeight = evt.xsecWeight
+        gcJet_ST = evt.gcJet_ST
 
-        hist2DSignal.Fill(evt.NJets_forward,evt.NJets_DeepFlavL,evt.xsecWeight)
+        if highST:
+            ST_cut = gcJet_ST>850
+        else:
+            ST_cut = True
+
+        if highST:
+            hist2DSignal.Fill(evt.NJets_forward,evt.NJets_DeepFlavL,evt.xsecWeight)
 
         if NJets_forward == 0 and NJets_DeepFlavL == 3:
-            regionSig["A"]+=xsecWeight
+            regionSig["A"]+=xsecWeight*sigXsec[f'{mass}']*0.5
         elif NJets_forward == 0 and NJets_DeepFlavL < 3:
-            regionSig["B"]+=xsecWeight
+            regionSig["B"]+=xsecWeight*sigXsec[f'{mass}']*0.5
         elif NJets_forward > 0 and NJets_DeepFlavL == 3:
-            regionSig["C"]+=xsecWeight
+            regionSig["C"]+=xsecWeight*sigXsec[f'{mass}']*0.5
         elif NJets_forward > 0 and NJets_DeepFlavL < 3:
-            regionSig["D"]+=xsecWeight
+            regionSig["D"]+=xsecWeight*sigXsec[f'{mass}']*0.5
         elif NJets_forward == 0 and NJets_DeepFlavL > 3:
-            regionSig["X"]+=xsecWeight
+            regionSig["X"]+=xsecWeight*sigXsec[f'{mass}']*0.5
         elif NJets_forward > 0 and NJets_DeepFlavL > 3:
-            regionSig["Y"]+=xsecWeight
+            regionSig["Y"]+=xsecWeight*sigXsec[f'{mass}']*0.5
         
 print('Signal histogram created.')
 
 c1 = ROOT.TCanvas('c1','c1')
 hist2DMajor.Draw('COLZ')
-c1.SaveAs(f'N_b_vs_N_forward_Major_{case}.png')
+c1.SaveAs(f'N_b_vs_N_forward_Major_{case}{postFix}.png')
 
 c2 = ROOT.TCanvas('c2','c2')
 hist2DSignal.Draw('COLZ')
-c2.SaveAs(f'N_b_vs_N_forward_Signal_{case}.png')
+c2.SaveAs(f'N_b_vs_N_forward_Signal_{case}{postFix}.png')
 
 for i in range(1,9):
     for j in range(1,9):
@@ -129,11 +149,11 @@ for i in range(1,9):
 
 c3 = ROOT.TCanvas('c3','c3')
 hist2DSignificance.Draw('COLZ')
-c3.SaveAs(f'N_b_vs_N_forward_Significance_{case}.png')
+c3.SaveAs(f'N_b_vs_N_forward_Significance_{case}{postFix}.png')
 
 c4 = ROOT.TCanvas('c4','c4')
 hist2DPurity.Draw('COLZ')
-c4.SaveAs(f'N_b_vs_N_forward_Purity_{case}.png')
+c4.SaveAs(f'N_b_vs_N_forward_Purity_{case}{postFix}.png')
 
 for region in regionPur:
     regionPur[region] = regionSig[region]/(regionSig[region]+regionBkg[region])

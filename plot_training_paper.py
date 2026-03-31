@@ -20,7 +20,8 @@ parser = ArgumentParser()
 parser.add_argument( "-m", "--tag", required = True )
 args = parser.parse_args()
 
-variable = "gcJet_ST" #"Bprime_mass"
+#variable = "gcJet_ST"
+variable ="Bprime_mass"
 
 region_key = { # the row and column of ABCDXY
   0: {
@@ -37,10 +38,57 @@ region_key = { # the row and column of ABCDXY
 with open(f'hists_{args.tag}_{variable}.json', 'r') as jsonfile:
   hists_dict = load(jsonfile)
 
-if variable=="gcJet_ST":
-  bins = np.linspace( 0, 2500, 31)
-else:
+if variable=="Bprime_mass":
   bins = np.array(hists_dict["bins"], dtype=int)
+else:
+  bins = np.linspace( 0, 2500, 26)
+  # merge bins into 1500 for ST
+  bins=bins[3:17]
+  for region in ["A","B","C","D","X","Y"]:
+    temp_data = 0
+    temp_pred = 0
+    temp_true = 0
+    temp_minor = 0
+    for i in range(16,25):
+      temp_data+=hists_dict[region]["data_mod"][i]
+      temp_pred+=hists_dict[region]["mc_pred_hist"][i]
+      temp_true+=hists_dict[region]["mc_true_hist"][i]
+      temp_minor+=hists_dict[region]["mc_minor_hist"][i]
+      #hists_dict[region]["data_mod"][i]=0
+    hists_dict[region]["data_mod"]=hists_dict[region]["data_mod"][3:16]
+    hists_dict[region]["mc_pred_hist"]=hists_dict[region]["mc_pred_hist"][3:16]
+    hists_dict[region]["mc_true_hist"]=hists_dict[region]["mc_true_hist"][3:16]
+    hists_dict[region]["mc_minor_hist"]=hists_dict[region]["mc_minor_hist"][3:16]
+
+    hists_dict[region]["data_mod"][0]=0
+    hists_dict[region]["mc_pred_hist"][0]=0
+    hists_dict[region]["mc_true_hist"][0]=0
+    hists_dict[region]["mc_minor_hist"][0]=0
+
+def getTrainingUncert():
+  # weighted average
+  data_mod     = np.array(hists_dict["A"]["data_mod"])+np.array(hists_dict["B"]["data_mod"])+np.array(hists_dict["C"]["data_mod"])
+  mc_pred_hist = np.array(hists_dict["A"]["mc_pred_hist"])+np.array(hists_dict["B"]["mc_pred_hist"])+np.array(hists_dict["C"]["mc_pred_hist"])
+  mc_minor_hist = np.array(hists_dict["A"]["mc_minor_hist"])+np.array(hists_dict["B"]["mc_minor_hist"])+np.array(hists_dict["C"]["mc_minor_hist"])
+
+  data_mod = data_mod-mc_minor_hist
+  data_mod_scale = float( np.sum(data_mod) )
+  mc_pred_scale  = float( np.sum(mc_pred_hist) )
+
+  data_mod = data_mod/data_mod_scale
+  mc_pred_hist = mc_pred_hist/mc_pred_scale
+    
+  #mc_minor_hist = np.array()
+
+  for i in range(len(data_mod)): # set dev to 0 for empty bins in mc_pred_hist
+    if mc_pred_hist[i]==0:
+      data_mod[i] = 1
+      mc_pred_hist[i] = 1
+        
+  return (data_mod - mc_pred_hist)/mc_pred_hist
+  
+trainUncert = getTrainingUncert()
+#trainUncert = np.zeros(len(hists_dict["A"]["data_mod"]))
 
 def plot_hist( ax, x, y ):
   region = region_key[x][y]
@@ -48,6 +96,7 @@ def plot_hist( ax, x, y ):
   data_mod     = np.array(hists_dict[region]["data_mod"])
   mc_true_hist = np.array(hists_dict[region]["mc_true_hist"])
   mc_pred_hist = np.array(hists_dict[region]["mc_pred_hist"])
+  #mc_minor_hist = np.array()
   
   data_mod_scale = float( np.sum(data_mod) )
   mc_true_scale  = float( np.sum(mc_true_hist) )
@@ -68,7 +117,7 @@ def plot_hist( ax, x, y ):
     0.5 * ( bins[1:] + bins[:-1] ),
     mc_true_hist / mc_true_scale, yerr = np.sqrt( mc_true_hist ) / mc_true_scale,
     label = "Source",
-    marker = ",", drawstyle = "steps-mid", lw = 2, color = "#f89c20" #, alpha = 0.7
+    marker = ",", drawstyle = "steps-mid", lw = 2, color = "#f89c20" #, alpha = 0.7 
   )
 
   # plot the predicted    
@@ -83,20 +132,35 @@ def plot_hist( ax, x, y ):
   # plot ABCDnn stats uncert
   ax.fill_between(
     0.5 * ( bins[1:] + bins[:-1] ),
-    y1 = ( mc_pred_hist + np.sqrt( mc_pred_hist ) ) / mc_pred_scale,
-    y2 = ( mc_pred_hist - np.sqrt( mc_pred_hist ) ) / mc_pred_scale,
+    #y1 = (( mc_pred_hist + np.sqrt( mc_pred_hist ) ) / mc_pred_scale) + trainUncert*mc_pred_hist/mc_pred_scale, # statUncert+trainUncert,
+    #y2 = (( mc_pred_hist - np.sqrt( mc_pred_hist ) ) / mc_pred_scale) - trainUncert*mc_pred_hist/mc_pred_scale,
+    y1 = (mc_pred_hist + np.sqrt(mc_pred_hist+(trainUncert*mc_pred_hist)**2))/mc_pred_scale,
+    y2 = (mc_pred_hist - np.sqrt(mc_pred_hist+(trainUncert*mc_pred_hist)**2))/mc_pred_scale,
     interpolate = False, step = "mid",
-    label = "ABCDnn Uncert.",
+    label = "ABCDnn Uncert.\nStat.$\oplus$Train.",
     facecolor = "none", edgecolor="gray", linewidth=0, hatch='\\\\\\\\'
   )
 
-  ax.set_xlim( 0, 2500 )
   if variable=="Bprime_mass":
+    ax.set_xlim( 0, 2500 )
     ax.set_ylim( 0, 0.15 )
-    ax.set_yticks( [0.02, 0.04, 0.06, 0.08, 0.10] )
+    ax.set_yticks( [0.02, 0.04, 0.06, 0.08, 0.10, 0.12] )
   else:
-    ax.set_ylim( 0, 0.35 )
-    ax.set_yticks( [0.1, 0.2, 0.3] )
+    ax.set_xlim( 400, 1500 )
+    if 'case14' in args.tag:
+      if region!="B" and region!="D":
+        ax.set_ylim( 0, 0.35 )
+        ax.set_yticks( [0.1, 0.2, 0.3] )
+      else:
+        ax.set_ylim( 0, 0.55 )
+        ax.set_yticks( [0.1, 0.2, 0.3, 0.4, 0.5] )
+    else:
+      if region!="B" and region!="D":
+        ax.set_ylim( 0, 0.26 )
+        ax.set_yticks( [0.1, 0.2] )
+      else:
+        ax.set_ylim( 0, 0.45 )
+        ax.set_yticks( [0.1, 0.2, 0.3, 0.4] )
   if y==0:
     ax.set_ylabel(r"$N_{bin}/N_{tot}$", y=0.8, fontsize=18)
     ax.tick_params(axis='y', labelsize=15)
@@ -127,9 +191,9 @@ def plot_hist( ax, x, y ):
     
   handles, labels = ax.get_legend_handles_labels()
   if len(handles)>3:
-    ax.legend([handles[2], handles[3], handles[0], handles[1]], ["Data", "MC", "ABCDnn", "ABCDnn Uncert."], loc = "upper right", ncol = 1, fontsize = 16 )
+    ax.legend([handles[2], handles[3], handles[0], handles[1]], ["Data", "MC", "ABCDnn", "ABCDnn Uncert.\nStat.$\oplus$Train."], loc = "upper right", ncol = 1, fontsize = 16 )
   else:
-    ax.legend([handles[2], handles[0], handles[1]], ["MC", "ABCDnn", "ABCDnn Uncert."], loc = "upper right", ncol = 1, fontsize = 16 )
+    ax.legend([handles[2], handles[0], handles[1]], ["MC", "ABCDnn", "ABCDnn Uncert.\nStat.$\oplus$Train."], loc = "upper right", ncol = 1, fontsize = 16 )
 
 def plot_ratio( ax, x, y ):
   region = region_key[x][y]
@@ -146,7 +210,8 @@ def plot_ratio( ax, x, y ):
   ratio_std = []
   data_uncert = []
   for i in range( len( data_mod ) ):
-    if data_mod[i] == 0 or mc_pred_hist[i] == 0: 
+    #if data_mod[i] == 0 or mc_pred_hist[i] == 0:
+    if mc_pred_hist[i] == 0:
       ratio.append(0)
       ratio_std.append(0)
       data_uncert.append(0)
@@ -155,7 +220,8 @@ def plot_ratio( ax, x, y ):
       if mc_pred_hist[i]==0:
         ratio_std.append(0)
       else:
-        ratio_std.append( np.sqrt(2/mc_pred_hist[i]))
+        #ratio_std.append( np.sqrt(2/mc_pred_hist[i]))
+        ratio_std.append( (data_mod[i]/(mc_pred_hist[i])**2) * np.sqrt(mc_pred_hist[i]+(mc_pred_hist[i]*trainUncert[i])**2) * (mc_pred_scale/data_mod_scale)) # (d(ratio)/dmc)*del_mc # del_mc = sqrt(stat**2+train**2)
       data_uncert.append((np.sqrt( data_mod[i] ) / data_mod_scale) / ( mc_pred_hist[i] / float( mc_pred_scale ) ))
 
   #if region!="D":
@@ -179,13 +245,19 @@ def plot_ratio( ax, x, y ):
 
   ax.grid(axis='y', color='black', linestyle='--')
 
+  if variable=="Bprime_mass":
+    ax.set_xlim( 0, 2500)
+  else:
+    ax.set_xlim( 400, 1500)
+
   if y==1:
-    ax.set_xlabel( "${\mathrm{\mathit{m}}_{tW}\,[GeV]}$", ha = "right", x = 1.0, fontsize = 20 )
-    #ax.set_xlabel( r"{}".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20, fontname='Times New Roman' )
-    ax.set_xlim( 0, 2500 )
+    if variable=="Bprime_mass":
+      ax.set_xlabel( "${\mathrm{\mathit{m}}_{tW}\,[GeV]}$", ha = "right", x = 1.0, fontsize = 20 )
+      #ax.set_xlabel( r"{}".format( config.variables[ variable ][ "LATEX" ] ), ha = "right", x = 1.0, fontsize = 20, fontname='Times New Roman' )
+    else:
+      ax.set_xlabel( "$\mathit{S}_T\,[GeV]$", ha = "right", x = 1.0, fontsize = 20 )
   else:
     ax.set_ylabel( "Data/ABCDnn", loc = "bottom", fontsize = 14 )
-    ax.set_xlim( 0, 2500 )
     xticks = ax.xaxis.get_major_ticks()
     xticks[-1].label1.set_visible(False)
   ax.set_yticks( [ 0.60, 0.80, 1.0, 1.20, 1.40 ] )

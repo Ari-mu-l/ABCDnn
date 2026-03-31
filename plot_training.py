@@ -299,6 +299,7 @@ def plot_hist( ax, variable, x, y, epoch, mc_pred, mc_true, mc_minor, weights_mi
   hists_dict[region_key[x][y]]["data_mod"] = data_mod.tolist()
   hists_dict[region_key[x][y]]["mc_true_hist"] = mc_true_hist[0].tolist()
   hists_dict[region_key[x][y]]["mc_pred_hist"] = mc_pred_hist[0].tolist()
+  hists_dict[region_key[x][y]]["mc_minor_hist"] = mc_minor_hist[0].tolist()
   
   if region_key[x][y]=="D" and variable=="Bprime_mass":
     data_hist1 = data_hist[1][:21]
@@ -551,7 +552,7 @@ if plotBest:
     elif variable == "gcJet_ST":
       #bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],700,config.variables[ variable ][ "LIMIT_plot" ][1]]) # ANv1-6
       #bins = np.array([config.variables[ variable ][ "LIMIT_plot" ][0],850,config.variables[ variable ][ "LIMIT_plot" ][1]]) # ANv7
-      bins = np.linspace( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1], 31) # 30 bins
+      bins = np.linspace( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1], 26) # 30 bins
       #bins = np.linspace( 0, 1500, 31 ) # 30 bins
     else:
       bins = np.linspace( config.variables[ variable ][ "LIMIT_plot" ][0], config.variables[ variable ][ "LIMIT_plot" ][1], config.params[ "PLOT" ][ "NBINS" ] )
