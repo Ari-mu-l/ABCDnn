@@ -20,8 +20,8 @@ parser = ArgumentParser()
 parser.add_argument( "-m", "--tag", required = True )
 args = parser.parse_args()
 
-#variable = "gcJet_ST"
-variable ="Bprime_mass"
+variable = "gcJet_ST"
+#variable ="Bprime_mass"
 
 region_key = { # the row and column of ABCDXY
   0: {
@@ -172,28 +172,47 @@ def plot_hist( ax, x, y ):
     regionLabel = f'Region {region} (SR)'
   else:
     regionLabel = f'Region {region}'
-  ax.text(
-    0.06, 0.9, regionLabel,
-    ha = "left", va = "top", transform = ax.transAxes, fontsize = 16 #, fontweight='bold' # guideline suggest to not use bold
-  )
-  if 'case23' in args.tag:
+  if region=="X":
     ax.text(
-      0.06, 0.8, f'LepT',
-      ha = "left", va = "top", transform = ax.transAxes, fontsize = 16
+      0.06, 0.8, regionLabel,
+      ha = "left", va = "top", transform = ax.transAxes, fontsize = 16 #, fontweight='bold' # guideline suggest to not use bold
     )
-  elif 'case14' in args.tag:
-    ax.text(
-      0.06, 0.8, f'LepW',
-      ha = "left", va = "top", transform = ax.transAxes, fontsize = 16
-    )
+    if 'case23' in args.tag:
+      ax.text(
+        0.06, 0.7, f'LepT',
+        ha = "left", va = "top", transform = ax.transAxes, fontsize = 16
+      )
+    elif 'case14' in args.tag:
+      ax.text(
+        0.06, 0.7, f'LepW',
+        ha = "left", va = "top", transform = ax.transAxes, fontsize = 16
+      )
+    else:
+      os.exit('Unexpected tag category')
   else:
-    os.exit('Unexpected tag category')
+    ax.text(
+      0.06, 0.9, regionLabel,
+      ha = "left", va = "top", transform = ax.transAxes, fontsize = 16 #, fontweight='bold' # guideline suggest to not use bold
+    )
+    if 'case23' in args.tag:
+      ax.text(
+        0.06, 0.8, f'LepT',
+        ha = "left", va = "top", transform = ax.transAxes, fontsize = 16
+      )
+    elif 'case14' in args.tag:
+      ax.text(
+        0.06, 0.8, f'LepW',
+        ha = "left", va = "top", transform = ax.transAxes, fontsize = 16
+      )
+    else:
+      os.exit('Unexpected tag category')
+    
     
   handles, labels = ax.get_legend_handles_labels()
   if len(handles)>3:
-    ax.legend([handles[2], handles[3], handles[0], handles[1]], ["Data", "MC", "ABCDnn", "ABCDnn Uncert.\nStat.$\oplus$Train."], loc = "upper right", ncol = 1, fontsize = 16 )
+    ax.legend([handles[2], handles[3][0], handles[0], handles[1]], ["Data", "MC", "ABCDnn", "ABCDnn Uncert.\nStat.$\oplus$Train."], loc = "upper right", ncol = 1, fontsize = 16 )
   else:
-    ax.legend([handles[2], handles[0], handles[1]], ["MC", "ABCDnn", "ABCDnn Uncert.\nStat.$\oplus$Train."], loc = "upper right", ncol = 1, fontsize = 16 )
+    ax.legend([handles[2][0], handles[0], handles[1]], ["MC", "ABCDnn", "ABCDnn Uncert.\nStat.$\oplus$Train."], loc = "upper right", ncol = 1, fontsize = 16 )
 
 def plot_ratio( ax, x, y ):
   region = region_key[x][y]
@@ -262,6 +281,9 @@ def plot_ratio( ax, x, y ):
     xticks[-1].label1.set_visible(False)
   ax.set_yticks( [ 0.60, 0.80, 1.0, 1.20, 1.40 ] )
   ax.set_ylim( 0.5, 1.49 )
+  yticks = ax.yaxis.get_major_ticks()
+  yticks[1].label1.set_visible(False)
+  yticks[3].label1.set_visible(False)
   if y==1:
     ax.tick_params( axis = "y", labelsize = 0 )
   else:
@@ -274,7 +296,7 @@ fig, axs = plt.subplots( 6, 2, figsize = (12,15), gridspec_kw = { "height_ratios
 plt.subplots_adjust(wspace=0.04, hspace=0)
 #plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9)
 #hep.cms.label("Preliminary", lumi=138.0, ax=axs[0][0], loc=0, fontsize=10)
-hep.cms.text("", ax=axs[0][0], loc=0, fontsize=22)
+hep.cms.text("", ax=axs[0][0], loc=2, fontsize=22)
 hep.cms.lumitext(text="138 fb$^{-1}$ (13 TeV)", ax=axs[0][1], fontsize=22)
 
 for x in range(6):
