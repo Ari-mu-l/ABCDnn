@@ -20,8 +20,8 @@ parser = ArgumentParser()
 parser.add_argument( "-m", "--tag", required = True )
 args = parser.parse_args()
 
-variable = "gcJet_ST"
-#variable ="Bprime_mass"
+#variable = "gcJet_ST"
+variable ="Bprime_mass"
 
 region_key = { # the row and column of ABCDXY
   0: {
@@ -117,7 +117,7 @@ def plot_hist( ax, x, y ):
     0.5 * ( bins[1:] + bins[:-1] ),
     mc_true_hist / mc_true_scale, yerr = np.sqrt( mc_true_hist ) / mc_true_scale,
     label = "Source",
-    marker = ",", drawstyle = "steps-mid", lw = 2, color = "#f89c20" #, alpha = 0.7 
+    marker = ",", drawstyle = "steps-mid", lw = 3, color = "#f89c20" #, alpha = 0.7 
   )
 
   # plot the predicted    
@@ -173,18 +173,26 @@ def plot_hist( ax, x, y ):
   else:
     regionLabel = f'Region {region}'
   if region=="X":
+    loc_x = 0.06
+    loc_y = 0.8
+    
+    if variable=="gcJet_ST":
+      loc_y -= 0.05
+      
     ax.text(
-      0.06, 0.8, regionLabel,
+      loc_x, loc_y, regionLabel,
       ha = "left", va = "top", transform = ax.transAxes, fontsize = 16 #, fontweight='bold' # guideline suggest to not use bold
     )
+    loc_y -= 0.1
+    
     if 'case23' in args.tag:
       ax.text(
-        0.06, 0.7, f'LepT',
+        loc_x, loc_y, f'LepT',
         ha = "left", va = "top", transform = ax.transAxes, fontsize = 16
       )
     elif 'case14' in args.tag:
       ax.text(
-        0.06, 0.7, f'LepW',
+        loc_x, loc_y, f'LepW',
         ha = "left", va = "top", transform = ax.transAxes, fontsize = 16
       )
     else:
@@ -262,7 +270,7 @@ def plot_ratio( ax, x, y ):
     #label="Stat. Uncert."
   )
 
-  ax.grid(axis='y', color='black', linestyle='--')
+  #ax.grid(axis='y', color='black', linestyle='--')
 
   if variable=="Bprime_mass":
     ax.set_xlim( 0, 2500)
@@ -276,7 +284,7 @@ def plot_ratio( ax, x, y ):
     else:
       ax.set_xlabel( "$\mathit{S}_T\,[GeV]$", ha = "right", x = 1.0, fontsize = 20 )
   else:
-    ax.set_ylabel( "Data/ABCDnn", loc = "bottom", fontsize = 14 )
+    ax.set_ylabel( "Data/ABCDnn", loc = "bottom", fontsize = 16 )
     xticks = ax.xaxis.get_major_ticks()
     xticks[-1].label1.set_visible(False)
   ax.set_yticks( [ 0.60, 0.80, 1.0, 1.20, 1.40 ] )
@@ -296,7 +304,10 @@ fig, axs = plt.subplots( 6, 2, figsize = (12,15), gridspec_kw = { "height_ratios
 plt.subplots_adjust(wspace=0.04, hspace=0)
 #plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9)
 #hep.cms.label("Preliminary", lumi=138.0, ax=axs[0][0], loc=0, fontsize=10)
-hep.cms.text("", ax=axs[0][0], loc=2, fontsize=22)
+if variable == "gcJet_ST":
+  hep.cms.text("Supplementary", ax=axs[0][0], loc=2, fontsize=16)
+else:
+  hep.cms.text("", ax=axs[0][0], loc=2, fontsize=22)
 hep.cms.lumitext(text="138 fb$^{-1}$ (13 TeV)", ax=axs[0][1], fontsize=22)
 
 for x in range(6):
